@@ -81,6 +81,7 @@ import { useTaskStore } from "@/store/task";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
 import { defineComponent } from "vue";
+import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 
 export default defineComponent({
   props: {
@@ -93,7 +94,10 @@ export default defineComponent({
   setup(props) {
     const { activeTask } = storeToRefs(useTaskStore());
     const { onResult } = useQuery(GET_TASK, { id: props.id });
-
+    const token = localStorage.getItem("token");
+    const userInfo = getUserFromToken(token);          
+    const NULL_UUID = "00000000-0000-0000-0000-000000000000";
+    const authorId = userInfo?.id ?? NULL_UUID;        
     onResult((response) => {
       if (response.data) {
         activeTask.value = response.data.getTask;
@@ -101,7 +105,7 @@ export default defineComponent({
     });
 
     return {
-      activeTask,
+      activeTask, authorId
     };
   },
   data() {
@@ -132,7 +136,7 @@ export default defineComponent({
         solution: {
           id: self.crypto.randomUUID(),
           taskId: this.activeTask.id,
-          authorId: "00000000-0000-0000-0000-000000000000",
+          authorId: this.authorId,
           code: jarFile,
         },
       };
