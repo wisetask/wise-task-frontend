@@ -79,6 +79,7 @@ import { useNodeStore } from "@/features/graph/stores/nodes";
 import { convertToGqlFormat } from "@/features/graph/lib/helpers/GqlFormatter";
 import { MAX_INPUT_LENGTH } from "@/shared/config/SIZES";
 import { bulkIndexTasks } from "@/services/semanticSearchApi";
+import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 
 const nodeStore = useNodeStore();
 
@@ -86,6 +87,10 @@ export default defineComponent({
   setup() {
     const { taskGraphConstructorInfo, taskGraphInput } =
       storeToRefs(useTaskStore());
+    const token = localStorage.getItem("token");
+    const userInfo = getUserFromToken(token);          
+    const NULL_UUID = "00000000-0000-0000-0000-000000000000";
+    const authorId = userInfo?.id ?? NULL_UUID;        
     const graphPresentModel = computed({
       get() {
         return taskGraphConstructorInfo.value.isGraphPresent;
@@ -192,6 +197,7 @@ export default defineComponent({
       taskGraphInput,
       taskNameModel,
       taskCategoryModel,
+      authorId
     };
   },
   data() {
@@ -219,7 +225,7 @@ export default defineComponent({
       };
       console.log(request);
       this.taskGraphInput.id = self.crypto.randomUUID();
-      this.taskGraphInput.authorId = "00000000-0000-0000-0000-000000000000"; //TODO: activeUser
+      this.taskGraphInput.authorId = this.authorId
       mutate(request);
 
       onDone((response) => {

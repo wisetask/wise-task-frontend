@@ -72,11 +72,16 @@ import { useMutation } from "@vue/apollo-composable";
 import { CREATE_PLUGIN, UPDATE_PLUGIN } from "@/api/Mutations";
 import { MAX_INPUT_LENGTH } from "@/shared/config/SIZES";
 import { bulkIndexPlugins } from "@/services/semanticSearchApi";
+import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 
 export default defineComponent({
   setup() {
     const { pluginInput, plugins, dialog } = storeToRefs(usePluginStore());
     const MAX_LENGTH = MAX_INPUT_LENGTH;
+    const token = localStorage.getItem("token");
+    const userInfo = getUserFromToken(token);          
+    const NULL_UUID = "00000000-0000-0000-0000-000000000000";
+    const authorId = userInfo?.id ?? NULL_UUID;        
     const {
       nameModel,
       descriptionModel,
@@ -107,6 +112,7 @@ export default defineComponent({
       dialogModel,
       dialog,
       errorMessage,
+      authorId
     };
   },
   methods: {
@@ -149,7 +155,7 @@ export default defineComponent({
           graphType: this.pluginInput.graphType,
           pluginType: this.pluginInput.pluginType,
           isInternal: false,
-          authorId: "00000000-0000-0000-0000-000000000000", //TODO: replace to security context
+          authorId: this.authorId, 
           isValid: false,
           jarName: fileName,
           jarFile: jarFile,
@@ -204,7 +210,7 @@ export default defineComponent({
           graphType: this.pluginInput.graphType,
           pluginType: this.pluginInput.pluginType,
           isInternal: false,
-          authorId: "00000000-0000-0000-0000-", //TODO: replace to security context
+          authorId: this.authorId,
           isValid: false,
           jarName: fileName,
           jarFile: jarFile,

@@ -25,6 +25,7 @@ import router from "./router";
 import { setContext } from "@apollo/client/link/context";
 import { UserStorageKeys } from "@/entities/user/storage/config";
 import { UserStorageGetters } from "@/entities/user/storage/getters";
+import "@/api/rest/eventsInit";
 
 async function getAuthToken(): Promise<string | null> {
   return await UserStorageGetters.getToken();
