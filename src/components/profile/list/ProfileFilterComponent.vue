@@ -20,6 +20,14 @@
           >
           </v-text-field>
           <v-text-field
+            label="Отчество"
+            color="primary"
+            v-model="patronymic"
+            density="compact"
+            variant="outlined"
+          >
+          </v-text-field>
+          <v-text-field
             label="Email"
             color="primary"
             v-model="email"
@@ -29,12 +37,14 @@
           </v-text-field>
           <v-select
             label="Роль"
-            :items="['', Role.ADMIN, Role.AUTHOR, Role.USER]"
+            :items="roleItems"
             v-model="role"
-            variant="solo-filled"
+            variant="outlined"
+            density="compact"
+            hide-details="auto"
           ></v-select>
 
-          <v-row>
+          <v-row class="mt-6">
             <v-col>
               <v-btn
                 :loading="loading"
@@ -56,11 +66,15 @@
 import {defineComponent} from 'vue'
 import {useProfileStore} from '@/store/profile'
 import {Role} from '@/common/Role'
+
 export default defineComponent({
   computed: {
-    Role() {
-      return Role
-    }
+    roleItems() {
+      return [
+        { title: 'Все', value: '' },
+        ...Object.values(Role).map((value) => ({ title: value, value })),
+      ]
+    },
   },
   data () {
     return {
@@ -68,6 +82,7 @@ export default defineComponent({
       email:'',
       firstName: '',
       lastName: '',
+      patronymic: '',
       role: '' as string,
       profileStore: useProfileStore(),
     }
@@ -78,7 +93,8 @@ export default defineComponent({
         email: this.email,
         firstName: this.firstName,
         lastName: this.lastName,
-        role: this.role ?? '', //TODO: fix role filter
+        patronymic: this.patronymic,
+        role: this.role ?? '',
       }
     }
   }

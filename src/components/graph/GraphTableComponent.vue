@@ -1,18 +1,7 @@
 <template>
   <v-card>
-	<template v-slot:text>
-      <v-text-field
-        v-model="search"
-        label="Поиск"
-        prepend-inner-icon="mdi-magnify"
-        variant="outlined"
-        hide-details
-        single-line
-      ></v-text-field>
-    </template>
 		<v-data-table
 			:headers="headers"
-			:search="search"
 			:items="graphLibrary"
 		>
 			<template v-slot:item.actions="{ item }">
@@ -42,7 +31,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useGraphStore, Graph } from '@/store/graph'
 import { addNode, addLayout, addEdge } from './network/helper/graph'
@@ -57,11 +46,9 @@ export default defineComponent({
 			{ key: 'actions', title: 'Действия', sortable: false },
 			{ key: 'graph', title: 'Граф', sortable: false }
 		]
-		const search = ref('')
 		return {
 			graphLibrary,
 			headers,
-			search,
 			activeGraph
 		}
 	},

@@ -10,25 +10,6 @@
         v-model:items-per-page="pageSize"
         :items-per-page-options="[5, 10, 25, 50, 100]"
     >
-      <template #header.firstName="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.firstName" />
-      </template>
-      <template #header.lastName="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.lastName" />
-      </template>
-      <template #header.patronymic="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.patronymic" />
-      </template>
-      <template #header.email="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.email" />
-      </template>
-      <template #header.profileRole="{ column }">
-        <table-header-filter
-            :title="column.title"
-            v-model="filters.profileRole"
-            :items="['USER', 'AUTHOR', 'ADMIN']"
-        />
-      </template>
       <template v-slot:item.patronymic="{ value }">
         {{ (value as string)?.length === 0 ? '-' : value }}
       </template>
@@ -75,15 +56,6 @@ export default defineComponent({
     const page = ref(1)
     const pageSize = ref(10)
 
-    const search = ref("")
-    const filters = reactive({
-      firstName: "",
-      lastName: "",
-      patronymic: "",
-      email: "",
-      profileRole: "",
-    })
-
     const headers = [
       { title: 'Имя', align: 'start' as const, key: 'firstName' },
       { title: 'Фамилия', align: 'start' as const, key: 'lastName' },
@@ -94,7 +66,7 @@ export default defineComponent({
     ]
 
     const requestVariables = computed(() => {
-      const { email, firstName, lastName, role } = profileStore.filterState
+      const { email, firstName, lastName, patronymic, role } = profileStore.filterState
       return {
         request: {
           pagination: {
@@ -102,14 +74,11 @@ export default defineComponent({
             pageSize: pageSize.value,
           },
           filter: {
-            email: filters.email || email || undefined,
-            firstName: filters.firstName || firstName || undefined,
-            lastName: filters.lastName || lastName || undefined,
-            patronymic: filters.patronymic || undefined,
-            profileRole:
-                filters.profileRole || role
-                    ? [filters.profileRole || role]
-                    : undefined,
+            email: email || undefined,
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            patronymic: patronymic || undefined,
+            profileRole: role ? [role] : undefined,
           },
         },
       }
@@ -140,7 +109,7 @@ export default defineComponent({
 
     let searchTimeout: number | undefined
 
-    watch([filters, () => ({ ...profileStore.filterState })], () => {
+    watch(() => ({ ...profileStore.filterState }), () => {
       if (searchTimeout) {
         window.clearTimeout(searchTimeout)
       }
@@ -184,7 +153,6 @@ export default defineComponent({
       totalCount,
       page,
       pageSize,
-      search,
       headers,
       isUserAdmin,
       mapRole,

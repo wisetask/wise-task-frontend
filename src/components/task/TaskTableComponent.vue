@@ -1,34 +1,28 @@
 <template>
   <v-card>
+    <template v-slot:text>
+      <v-row>
+        <v-text-field
+            v-model="vectorQuery"
+            label="Векторный поиск"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            hide-details
+            single-line
+            clearable
+        />
+      </v-row>
+    </template>
     <v-data-table-server
       :headers="headers"
-      :items="tasks"
+      :items="displayItems"
       :group-by="groupBy"
-      :loading="loading"
-      :items-length="totalCount"
+      :loading="loading || vectorLoading"
+      :items-length="displayTotal"
       v-model:page="page"
       v-model:items-per-page="pageSize"
       :items-per-page-options="[5, 10, 25, 50, 100]"
     >
-      <template #header.name="{ column }">
-        <table-header-filter
-          :title="column.title"
-          v-model="filters.name"
-        />
-      </template>
-      <template #header.category="{ column }">
-        <table-header-filter
-          :title="column.title"
-          v-model="filters.category"
-        />
-      </template>
-      <template #header.taskType="{ column }">
-        <table-header-filter
-          :title="column.title"
-          v-model="filters.taskType"
-          :items="['GRAPH', 'IMPLEMENTATION']"
-        />
-      </template>
       <template v-slot:item.solve="{ item }">
         <v-icon class="me-2" size="small" @click="solveTask(item)">
           mdi-school
@@ -52,7 +46,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, reactive, ref, watch } from "vue";
+import { computed, defineComponent, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useTaskStore } from "@/store/task";
 import { Profile, Task, TaskType } from "@/__generated__/graphql";
@@ -61,6 +55,7 @@ import { GET_ALL_TASKS } from "@/api/Queries";
 import { DELETE_TASK } from "@/api/Mutations";
 import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser";
 import { useProfileStore } from "@/store/profile";
+import { searchTasks } from "@/services/semanticSearchApi";
 
 export default defineComponent({
   name: "TaskList",
@@ -86,12 +81,6 @@ export default defineComponent({
       { key: "actions", title: "Действия", sortable: false },
     ];
 
-    const filters = reactive({
-      name: "",
-      category: "",
-      taskType: "",
-    });
-
     const groupBy = [
       {
         key: "category",
@@ -99,19 +88,28 @@ export default defineComponent({
       },
     ];
 
-    const requestVariables = computed(() => ({
-      request: {
-        pagination: {
-          page: page.value - 1,
-          pageSize: pageSize.value,
+    const requestVariables = computed(() => {
+      const filter = taskStore.taskFilter;
+      // Поля фильтра уходят на бэкенд только после нажатия «Найти» (isFiltered).
+      // Векторный поиск сюда не попадает: он ходит только в сервис на localhost.
+      const requestFilter: Record<string, unknown> = {};
+      if (filter.isFiltered) {
+        requestFilter.name = filter.name || undefined;
+        requestFilter.description = filter.description || undefined;
+        requestFilter.category = filter.category || undefined;
+        requestFilter.taskType = filter.taskType || undefined;
+        requestFilter.authorId = filter.authorId || undefined;
+      }
+      return {
+        request: {
+          pagination: {
+            page: page.value - 1,
+            pageSize: pageSize.value,
+          },
+          filter: requestFilter,
         },
-        filter: {
-          name: filters.name || undefined,
-          category: filters.category || undefined,
-          taskType: filters.taskType || undefined,
-        },
-      },
-    }));
+      };
+    });
 
     const { loading, onResult, refetch } = useQuery(
       GET_ALL_TASKS,
@@ -126,6 +124,9 @@ export default defineComponent({
             description: task.description ?? "",
           }),
         );
+        profileStore.addAuthors(
+          (response.data.getAllTasks.items ?? []).map((task: Task) => task.author),
+        );
         totalCount.value = response.data.getAllTasks.pagination?.totalCount ?? tasks.value.length;
       }
     });
@@ -136,18 +137,80 @@ export default defineComponent({
 
     let filterTimeout: number | undefined;
 
-    watch(filters, () => {
-      if (filterTimeout) {
-        window.clearTimeout(filterTimeout);
+    watch(
+        () => taskStore.taskFilter.appliedAt,
+        () => {
+          // «Найти»/«Сбросить» в карточке фильтра — выходим из векторного
+          // режима и перезапрашиваем список с бэкенда.
+          if (vectorQuery.value || vectorResults.value) {
+            vectorQuery.value = "";
+            vectorResults.value = null;
+          }
+          if (filterTimeout) {
+            window.clearTimeout(filterTimeout);
+          }
+          filterTimeout = window.setTimeout(() => {
+            if (page.value !== 1) {
+              page.value = 1;
+            } else {
+              refetch(requestVariables.value);
+            }
+          }, 300);
+        },
+    );
+
+    // Векторный поиск: запрос только в сервис на localhost, GraphQL не трогаем.
+    const vectorQuery = ref("");
+    const vectorLoading = ref(false);
+    const vectorResults = ref<Task[] | null>(null);
+
+    const displayItems = computed(
+        () => vectorResults.value ?? tasks.value,
+    );
+    const displayTotal = computed(() =>
+        vectorResults.value ? vectorResults.value.length : totalCount.value,
+    );
+
+    let vectorTimeout: number | undefined;
+
+    watch(vectorQuery, (value) => {
+      if (vectorTimeout) {
+        window.clearTimeout(vectorTimeout);
       }
-      filterTimeout = window.setTimeout(() => {
-        if (page.value !== 1) {
-          page.value = 1;
-        } else {
+      vectorTimeout = window.setTimeout(async () => {
+        const query = (value || "").trim();
+        if (!query) {
+          vectorResults.value = null;
           refetch(requestVariables.value);
+          return;
+        }
+        // Ввод в векторный поиск сбрасывает карточку фильтра без
+        // перезапроса: appliedAt не меняем.
+        taskStore.taskFilter = {
+          name: "",
+          description: "",
+          category: "",
+          taskType: "",
+          authorId: "",
+          isPublic: false,
+          isFiltered: false,
+          appliedAt: taskStore.taskFilter.appliedAt,
+        };
+        vectorLoading.value = true;
+        try {
+          const found = await searchTasks(query, 10);
+          vectorResults.value = found.map((item) => ({
+            ...item,
+            description: item.description ?? "",
+          })) as unknown as Task[];
+        } catch (error) {
+          console.error("Векторный поиск недоступен:", error);
+          vectorResults.value = [];
+        } finally {
+          vectorLoading.value = false;
         }
       }, 300);
-    }, { deep: true });
+    });
 
     const formatAuthor = (author?: Profile | null) => {
       if (!author) return "-";
@@ -158,6 +221,10 @@ export default defineComponent({
     };
 
     return {
+      vectorQuery,
+      vectorLoading,
+      displayItems,
+      displayTotal,
       groupBy,
       headers,
       tasks,
@@ -165,7 +232,6 @@ export default defineComponent({
       totalCount,
       page,
       pageSize,
-      filters,
       formatAuthor,
       profileStore,
     };

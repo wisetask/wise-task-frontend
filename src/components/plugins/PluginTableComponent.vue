@@ -1,41 +1,29 @@
 <template>
   <v-card>
-    <v-card-text class="d-flex justify-end pb-0">
-      <v-btn color="primary" @click="addPlugin" icon="mdi-plus" variant="tonal" />
-    </v-card-text>
+    <template v-slot:text>
+      <v-row>
+        <v-text-field
+            v-model="vectorQuery"
+            label="Векторный поиск"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            hide-details
+            single-line
+            clearable
+        ></v-text-field>
+        <v-btn class="ma-2" @click="addPlugin" icon="mdi-plus" />
+      </v-row>
+    </template>
     <v-data-table-server
         :headers="headers"
-        :items="plugins"
+        :items="displayItems"
         :group-by="groupBy"
-        :loading="loading"
-        :items-length="totalCount"
+        :loading="loading || vectorLoading"
+        :items-length="displayTotal"
         v-model:page="page"
         v-model:items-per-page="pageSize"
         :items-per-page-options="[5, 10, 25, 50, 100]"
     >
-      <template #header.name="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.name" />
-      </template>
-      <template #header.description="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.description" />
-      </template>
-      <template #header.category="{ column }">
-        <table-header-filter :title="column.title" v-model="filters.category" />
-      </template>
-      <template #header.isValid="{ column }">
-        <table-header-filter
-            :title="column.title"
-            v-model="filters.isValid"
-            :items="['true', 'false']"
-        />
-      </template>
-      <template #header.graphType="{ column }">
-        <table-header-filter
-            :title="column.title"
-            v-model="filters.graphType"
-            :items="['DIRECT', 'UNDIRECT', 'ANY']"
-        />
-      </template>
       <template v-slot:item.isValid="{ item }">
         <v-chip :color="item.isValid ? 'success' : 'warning'" size="small">
           {{ item.isValid ? 'Да' : 'Нет' }}
@@ -75,15 +63,15 @@ import { GET_ALL_PLUGINS } from "@/api/Queries";
 import { usePluginStore } from "@/store/plugin";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
-import { computed, defineComponent, onMounted, reactive, ref, watch } from "vue";
+import { computed, defineComponent, onMounted, ref, watch } from "vue";
 import { useProfileStore } from "@/store/profile";
 import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser";
 import { Plugin as GraphQLPlugin, Profile } from "@/__generated__/graphql";
-import { bulkIndexPlugins } from "@/services/semanticSearchApi";
+import { searchPlugins } from "@/services/semanticSearchApi";
 
 export default defineComponent({
   setup() {
-    const { plugins, dialog, pluginInput } =
+    const { plugins, dialog, pluginInput, pluginFilter } =
         storeToRefs(usePluginStore());
     const profileStore = useProfileStore();
 
@@ -105,13 +93,6 @@ export default defineComponent({
       { key: "actions", title: "Действия", sortable: false },
     ];
 
-    const filters = reactive({
-      name: "",
-      description: "",
-      category: "",
-      isValid: "",
-      graphType: "",
-    });
     const groupBy = [
       {
         key: "category",
@@ -119,21 +100,32 @@ export default defineComponent({
       },
     ];
 
-    const requestVariables = computed(() => ({
-      request: {
-        pagination: {
-          page: page.value - 1,
-          pageSize: pageSize.value,
+    const requestVariables = computed(() => {
+      // Поля PluginFilterInput; незаполненные уходят как undefined,
+      // чтобы бэкенд не фильтровал по ним. Векторный поиск сюда не
+      // попадает: он ходит только в сервис на localhost.
+      const filter: Record<string, unknown> = {};
+      if (pluginFilter.value.isFiltered) {
+        const f = pluginFilter.value;
+        filter.name = f.name || undefined;
+        filter.description = f.description || undefined;
+        filter.category = f.category || undefined;
+        filter.graphType = f.graphType || undefined;
+        filter.pluginType = f.pluginType || undefined;
+        filter.isInternal = f.isInternal;
+        filter.isValid = f.isValid;
+        filter.authorId = f.authorId || undefined;
+      }
+      return {
+        request: {
+          pagination: {
+            page: page.value - 1,
+            pageSize: pageSize.value,
+          },
+          filter,
         },
-        filter: {
-          name: filters.name || undefined,
-          description: filters.description || undefined,
-          category: filters.category || undefined,
-          isValid: filters.isValid === "" ? undefined : filters.isValid === "true",
-          graphType: filters.graphType || undefined,
-        },
-      },
-    }));
+      };
+    });
 
     const { loading, onResult, refetch } = useQuery(
         GET_ALL_PLUGINS,
@@ -147,35 +139,93 @@ export default defineComponent({
             response.data.getAllPlugins.pagination?.totalCount ??
             plugins.value.length;
 
-        bulkIndexPlugins(
-            plugins.value.map((plugin) => ({
-              id: plugin.id,
-              name: plugin.name,
-              description: plugin.description ?? "",
-              category: plugin.category ?? "",
-              graphType: plugin.graphType ?? "",
-              pluginType: plugin.pluginType ?? "",
-            })),
-        ).catch((error) =>
-            console.error("Failed to sync plugins with semantic search", error),
+        profileStore.addAuthors(
+            (response.data.getAllPlugins.items ?? []).map(
+                (plugin: GraphQLPlugin) => plugin.author,
+            ),
         );
       }
     });
 
     let filterTimeout: number | undefined;
 
-    watch(filters, () => {
-      if (filterTimeout) {
-        window.clearTimeout(filterTimeout);
+    watch(
+        () => pluginFilter.value.appliedAt,
+        () => {
+          // «Найти»/«Сбросить» в карточке фильтра — выходим из векторного
+          // режима и перезапрашиваем список с бэкенда.
+          if (vectorQuery.value || vectorResults.value) {
+            vectorQuery.value = "";
+            vectorResults.value = null;
+          }
+          if (filterTimeout) {
+            window.clearTimeout(filterTimeout);
+          }
+          filterTimeout = window.setTimeout(() => {
+            if (page.value !== 1) {
+              page.value = 1;
+            } else {
+              refetch(requestVariables.value);
+            }
+          }, 300);
+        },
+    );
+
+    // Векторный поиск: запрос только в сервис на localhost, GraphQL не трогаем.
+    const vectorQuery = ref("");
+    const vectorLoading = ref(false);
+    const vectorResults = ref<GraphQLPlugin[] | null>(null);
+
+    const displayItems = computed(
+        () => vectorResults.value ?? plugins.value,
+    );
+    const displayTotal = computed(() =>
+        vectorResults.value ? vectorResults.value.length : totalCount.value,
+    );
+
+    let vectorTimeout: number | undefined;
+
+    watch(vectorQuery, (value) => {
+      if (vectorTimeout) {
+        window.clearTimeout(vectorTimeout);
       }
-      filterTimeout = window.setTimeout(() => {
-        if (page.value !== 1) {
-          page.value = 1;
-        } else {
+      vectorTimeout = window.setTimeout(async () => {
+        const query = (value || "").trim();
+        if (!query) {
+          vectorResults.value = null;
           refetch(requestVariables.value);
+          return;
+        }
+        // Ввод в векторный поиск сбрасывает карточку фильтра без
+        // перезапроса: appliedAt не меняем.
+        pluginFilter.value = {
+          name: "",
+          description: "",
+          category: "",
+          graphType: "",
+          pluginType: "",
+          isInternal: false,
+          authorId: "",
+          isValid: false,
+          isFiltered: false,
+          appliedAt: pluginFilter.value.appliedAt,
+        };
+        vectorLoading.value = true;
+        try {
+          const found = await searchPlugins(query, 10);
+          vectorResults.value = found.map((item) => ({
+            ...item,
+            isValid: false,
+            author: null,
+          })) as unknown as GraphQLPlugin[];
+        } catch (error) {
+          console.error("Векторный поиск недоступен:", error);
+          vectorResults.value = [];
+        } finally {
+          vectorLoading.value = false;
         }
       }, 300);
-    }, { deep: true });
+    });
 
     watch([page, pageSize], () => {
       refetch(requestVariables.value);
@@ -190,6 +240,10 @@ export default defineComponent({
     };
 
     return {
+      vectorQuery,
+      vectorLoading,
+      displayItems,
+      displayTotal,
       plugins,
       profileStore,
       headers,
@@ -197,7 +251,6 @@ export default defineComponent({
       totalCount,
       page,
       pageSize,
-      filters,
       formatAuthor,
       groupBy,
       dialog,

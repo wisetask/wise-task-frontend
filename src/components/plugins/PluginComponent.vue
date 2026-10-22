@@ -1,23 +1,15 @@
 <template>
-  <v-layout>
-		<v-row>
-			<v-col>
-				<v-row>
-					<v-col>
-						<plugin-input-component></plugin-input-component>
-					</v-col>
-				</v-row>
-				<v-row>
-					<v-col cols="9">
-						<plugin-table-component></plugin-table-component>
-					</v-col>
-					<v-col cols="3">
-						<plugin-filter-component></plugin-filter-component>
-					</v-col>
-				</v-row>
-			</v-col>
-		</v-row>
-	</v-layout>
+  <div>
+    <plugin-input-component></plugin-input-component>
+    <v-row>
+      <v-col cols="9">
+        <plugin-table-component></plugin-table-component>
+      </v-col>
+      <v-col cols="3">
+        <plugin-filter-component></plugin-filter-component>
+      </v-col>
+    </v-row>
+  </div>
 </template>
 
 <script lang="ts">

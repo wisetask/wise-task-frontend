@@ -274,6 +274,14 @@ export const GET_ALL_GRAPHS = gql`
         }
         isNamed
         name
+        author {
+          id
+          email
+          firstName
+          lastName
+          patronymic
+          profileRole
+        }
       }
       pagination {
         page
