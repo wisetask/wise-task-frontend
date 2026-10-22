@@ -157,14 +157,14 @@ export default defineComponent({
 
       onDone((response) => {
         this.loading = false;
-        const token = response.data.signUp.token;
-        UserStorageSetters.setToken(token);
-        const jwtData = token.split(".")[1];
+        const accessToken = response.data.signUp.accessToken;
+        UserStorageSetters.setToken(accessToken);
+        const jwtData = accessToken.split(".")[1];
         const decodedJwtJsonData = window.atob(jwtData);
         const decodedJwtData = JSON.parse(decodedJwtJsonData);
         this.profileStore.activeUser = {
           role: decodedJwtData.role,
-          id: decodedJwtData.id,
+          id: decodedJwtData.sub ?? decodedJwtData.id,
           email: decodedJwtData.email,
         };
       });

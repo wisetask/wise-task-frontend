@@ -102,8 +102,8 @@ export default defineComponent({
 
       onDone((response) => {
         this.loading = false;
-        const token = response.data.signIn.token;
-        UserStorageSetters.setToken(token);
+        const accessToken = response.data.signIn.accessToken;
+        UserStorageSetters.setToken(accessToken);
         setTimeout(() => this.$router.push("/tasks"), 30);
       });
 

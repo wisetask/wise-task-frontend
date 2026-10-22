@@ -11,6 +11,16 @@
       </template>
 
       <v-app-bar-title>Wise Task</v-app-bar-title>
+
+      <v-chip
+        v-if="activeUser != null"
+        class="mr-2"
+        prepend-icon="mdi-account-circle"
+        :title="'Вы вошли как ' + activeUser.email"
+      >
+        {{ activeUserFullName }} ({{ activeUserRole }})
+      </v-chip>
+
       <v-btn
         v-if="activeUser != null"
         density="comfortable"
@@ -27,23 +37,38 @@ import { defineComponent } from 'vue'
 import { useProfileStore } from '@/store/profile'
 import { mapState } from 'pinia'
 import Navigation from './Navigation.vue'
-import {UserStorageGetters} from "@/entities/user/storage/getters";
+import { UserStorageGetters } from "@/entities/user/storage/getters";
+import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser";
+import { getKeyByValue } from '@/common/Role'
 
 
 export default defineComponent({
   components: { Navigation },
   computed: {
-    ...mapState(useProfileStore, ['activeUser'])
+    ...mapState(useProfileStore, ['activeUser']),
+    activeUserFullName(): string {
+      const user = this.activeUser
+      if (!user) return ''
+      return [user.lastName, user.firstName, user.patronymic]
+          .filter((part) => part && part.length > 0)
+          .join(' ') || user.email
+    },
+    activeUserRole(): string {
+      return this.activeUser?.role ? getKeyByValue(this.activeUser.role) : ''
+    },
   },
   data () {
     return {
       drawer: false,
     }
   },
+  mounted () {
+    ensureActiveUser()
+  },
   methods: {
     logout () {
       UserStorageGetters.removeToken()
-      this.activeUser = null
+      useProfileStore().activeUser = null
       this.$router.push('/auth/signin')
     },
 

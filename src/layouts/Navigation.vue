@@ -61,11 +61,10 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted } from "vue"
+import { computed, defineComponent } from "vue"
 import { useRouter } from "vue-router"
 import { useProfileStore } from "@/store/profile"
-import { UserStorageGetters } from "@/entities/user/storage/getters"
-import { getUserFromToken } from "@/entities/user/lib/getUserFromToken"
+import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser"
 
 export default defineComponent({
   props: {
@@ -79,14 +78,7 @@ export default defineComponent({
     const router = useRouter()
     const profileStore = useProfileStore()
 
-    onMounted(async () => {
-      if (!profileStore.activeUser) {
-        const token = await UserStorageGetters.getToken()
-        if (token) {
-          profileStore.activeUser = await getUserFromToken(token)
-        }
-      }
-    })
+    ensureActiveUser()
 
     const isUserAdminOrAuthor = computed(() => {
       return profileStore.activeUser?.role === "ADMIN" || profileStore.activeUser?.role === "AUTHOR"

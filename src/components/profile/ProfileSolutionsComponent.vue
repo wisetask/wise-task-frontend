@@ -32,7 +32,7 @@
 
 <script lang="ts">
 import { Solution, SolutionGraph, SolutionImplementation } from '@/__generated__/graphql'
-import { GET_USER_SOLUTION_STATISTIC } from '@/api/Queries'
+import { GET_ALL_TASK_SOLUTIONS } from '@/api/Queries'
 import { useSolutionStore } from '@/store/solution'
 import { useQuery } from '@vue/apollo-composable'
 import { storeToRefs } from 'pinia'
@@ -65,8 +65,13 @@ export default defineComponent({
 
 
     const { onResult, loading: solutionsLoading } = useQuery(
-        GET_USER_SOLUTION_STATISTIC,
-        () => ({ userId: userId.value }),
+        GET_ALL_TASK_SOLUTIONS,
+        () => ({
+          request: {
+            authorId: userId.value,
+            pagination: { page: 0, pageSize: 100 },
+          },
+        }),
         () => ({
           skip: !userId.value,
           fetchPolicy: 'cache-and-network'
@@ -74,8 +79,8 @@ export default defineComponent({
     )
 
     onResult(response => {
-      if (response.data?.getUserSolutionStatistic) {
-        solutions.value = response.data.getUserSolutionStatistic
+      if (response.data?.getAllTaskSolutions?.items) {
+        solutions.value = response.data.getAllTaskSolutions.items
       }
     })
 
@@ -103,7 +108,7 @@ export default defineComponent({
 
       switch (s.__typename) {
         case 'SolutionGraph':
-          this.$router.push(`/tasks/graph/${s.taskId}/solution/${s.id}`)
+          this.$router.push(`/tasks/graph/${s.task?.id}/solution/${s.id}`)
           break
         case 'SolutionImplementation':
           this.$router.push(`/solution/implementation/${s.id}`)

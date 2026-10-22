@@ -71,7 +71,6 @@ import { buildPluginInputModels } from "./helper/inputModel";
 import { useMutation } from "@vue/apollo-composable";
 import { CREATE_PLUGIN, UPDATE_PLUGIN } from "@/api/Mutations";
 import { MAX_INPUT_LENGTH } from "@/shared/config/SIZES";
-import { bulkIndexPlugins } from "@/services/semanticSearchApi";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 
 export default defineComponent({
@@ -172,7 +171,6 @@ export default defineComponent({
         this.dialog = false;
         this.dialogModel = false;
         this.errorMessage = null;
-        this.indexPluginForSemantic(response.data.createPlugin);
       });
 
       onError(({ graphQLErrors }) => {
@@ -230,7 +228,6 @@ export default defineComponent({
         this.dialog = false;
         this.dialogModel = false;
         this.errorMessage = null;
-        this.indexPluginForSemantic(response.data.updatePlugin);
       });
 
       onError(({ graphQLErrors }) => {
@@ -246,29 +243,6 @@ export default defineComponent({
     closeDialogAndClearError() {
       this.dialogModel = false;
       this.errorMessage = null;
-    },
-    async indexPluginForSemantic(plugin: {
-      id: string;
-      name: string;
-      description?: string | null;
-      category?: string | null;
-      graphType?: string | null;
-      pluginType?: string | null;
-    }) {
-      try {
-        await bulkIndexPlugins([
-          {
-            id: plugin.id,
-            name: plugin.name,
-            description: plugin.description ?? "",
-            category: plugin.category ?? "",
-            graphType: plugin.graphType ?? "",
-            pluginType: plugin.pluginType ?? "",
-          },
-        ]);
-      } catch (error) {
-        console.error("Failed to sync plugin with semantic search", error);
-      }
     },
   },
 });

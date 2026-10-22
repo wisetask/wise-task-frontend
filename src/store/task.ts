@@ -1,10 +1,31 @@
 import { Maybe, RuleInput, Task, TaskGraphInput, TaskType, PluginInfoInput, GraphType, PluginType, TaskImplementationInput, TaskGraph, TaskImplementation } from "@/__generated__/graphql";
 import { defineStore } from "pinia";
 
+export interface TaskFilter {
+  name: string;
+  description: string;
+  category: string;
+  taskType: string;
+  authorId: string;
+  isPublic: boolean;
+  isFiltered: boolean;
+  appliedAt: number;
+}
+
 export const useTaskStore = defineStore('task', {
     state: () => {
         return {
             tasks: [] as Task[],
+            taskFilter: {
+                name: "",
+                description: "",
+                category: "",
+                taskType: "",
+                authorId: "",
+                isPublic: false,
+                isFiltered: false,
+                appliedAt: 0,
+            } as TaskFilter,
             taskGraphInput: {
                 name: "",
                 description: "Постройте граф, который удовлетворяет следующим условиям",
