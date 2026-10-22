@@ -11,7 +11,7 @@ export const getUserFromToken =  (
   localStorage.setItem(UserStorageKeys.Token, token);
   return {
     role: decodedJwtData.role,
-    id: decodedJwtData.id,
+    id: decodedJwtData.sub ?? decodedJwtData.id,
     email: decodedJwtData.email,
   };
 };

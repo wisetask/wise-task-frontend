@@ -51,7 +51,7 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@vue/apollo-composable";
-import { GET_GRAPH_LIBRARY } from "@/api/Queries";
+import { GET_ALL_GRAPHS } from "@/api/Queries";
 import { useGraphStore } from "@/store/graph";
 import { toVGraph } from "./network/helper/graph";
 import Graph from "@/features/graph/ui/graph/Graph.vue";
@@ -76,10 +76,10 @@ export default defineComponent({
     });
 
     useGraphStore().graphLibrary = [];
-    const { onResult } = useQuery(GET_GRAPH_LIBRARY);
+    const { onResult } = useQuery(GET_ALL_GRAPHS);
     onResult((response) => {
       if (response.data) {
-        response.data.getGraphLibrary.forEach((graph: any) => {
+        response.data.getAllGraphs.items?.forEach((graph: any) => {
           useGraphStore().graphLibrary.push(toVGraph(graph));
         });
       }

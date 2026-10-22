@@ -29,7 +29,7 @@
           </v-text-field>
           <v-select
             label="Роль"
-            :items="[Role.ADMIN, Role.AUTHOR, Role.USER]"
+            :items="['', Role.ADMIN, Role.AUTHOR, Role.USER]"
             v-model="role"
             variant="solo-filled"
           ></v-select>
@@ -68,7 +68,7 @@ export default defineComponent({
       email:'',
       firstName: '',
       lastName: '',
-      role: Role.USER,
+      role: '' as string,
       profileStore: useProfileStore(),
     }
   },
@@ -78,7 +78,7 @@ export default defineComponent({
         email: this.email,
         firstName: this.firstName,
         lastName: this.lastName,
-        role: this.role, //TODO: fix role filter
+        role: this.role ?? '', //TODO: fix role filter
       }
     }
   }

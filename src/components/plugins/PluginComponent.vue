@@ -22,36 +22,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { usePluginStore } from '@/store/plugin';
-import { storeToRefs } from 'pinia';
-import { useQuery } from '@vue/apollo-composable';
-import { GET_ALL_PLUGINS } from '@/api/Queries';
-import { bulkIndexPlugins } from '@/services/semanticSearchApi';
 export default defineComponent({
-        setup() {
-                const { plugins } = storeToRefs(usePluginStore())
-                const { onResult } = useQuery(GET_ALL_PLUGINS)
-                onResult(response => {
-                        if (response.data) {
-                                plugins.value = response.data.getAllPlugins
-
-                                bulkIndexPlugins(
-                                        response.data.getAllPlugins.map((plugin) => ({
-                                                id: plugin.id,
-                                                name: plugin.name,
-                                                description: plugin.description ?? "",
-                                                category: plugin.category ?? "",
-                                                graphType: plugin.graphType ?? "",
-                                                pluginType: plugin.pluginType ?? "",
-                                        })),
-                                ).catch((error) =>
-                                        console.error(
-                                                "Failed to sync plugins with semantic search",
-                                                error,
-                                        ),
-                                )
-                        }
-                })
-        },
 })
 </script>

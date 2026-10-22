@@ -60,7 +60,7 @@ export default defineComponent({
     const { onResult } = useQuery(GET_ALL_PLUGINS);
     onResult((response) => {
       if (response.data) {
-        plugins.value = response.data.getAllPlugins;
+        plugins.value = response.data.getAllPlugins.items ?? [];
       }
     });
     const nameModel = computed({
@@ -126,7 +126,7 @@ export default defineComponent({
       try {
         await bulkIndexTasks([
           {
-            id: this.taskImplementationInput.id,
+            id: this.taskImplementationInput.id ?? self.crypto.randomUUID(),
             name: this.taskImplementationInput.name,
             description: this.taskImplementationInput.description,
             category: this.taskImplementationInput.category,

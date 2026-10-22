@@ -11,13 +11,16 @@ export interface ActiveUserInfo {
   role: string;
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  patronymic?: string;
 }
 
 interface FilterState {
   email: string;
   firstName: string;
   lastName: string;
-  role: Role;
+  role: string;
 }
 
 export const useProfileStore = defineStore("profile", {
@@ -30,7 +33,7 @@ export const useProfileStore = defineStore("profile", {
         email: "",
         firstName: "",
         lastName: "",
-        role: Role.USER,
+        role: "",
       } as FilterState,
     };
   },
@@ -43,7 +46,7 @@ export const useProfileStore = defineStore("profile", {
             (email === "" || user.email === email) &&
             (firstName === "" || user.firstName === firstName) &&
             (lastName === "" || user.lastName === lastName) &&
-            (role === null || user.profileRole === role.toString())
+            (role === "" || user.profileRole === role)
         );
       });
     },

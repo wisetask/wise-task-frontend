@@ -1,19 +1,49 @@
 <template>
   <v-card>
-    <template v-slot:text>
-      <v-row>
-        <v-text-field
-            v-model="search"
-            label="Поиск"
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            hide-details
-            single-line
-        ></v-text-field>
-        <v-btn class="ma-2" @click="addPlugin" icon="mdi-plus" />
-      </v-row>
-    </template>
-    <v-data-table :headers="headers" :items="displayedPlugins" :group-by="groupBy">
+    <v-card-text class="d-flex justify-end pb-0">
+      <v-btn color="primary" @click="addPlugin" icon="mdi-plus" variant="tonal" />
+    </v-card-text>
+    <v-data-table-server
+        :headers="headers"
+        :items="plugins"
+        :group-by="groupBy"
+        :loading="loading"
+        :items-length="totalCount"
+        v-model:page="page"
+        v-model:items-per-page="pageSize"
+        :items-per-page-options="[5, 10, 25, 50, 100]"
+    >
+      <template #header.name="{ column }">
+        <table-header-filter :title="column.title" v-model="filters.name" />
+      </template>
+      <template #header.description="{ column }">
+        <table-header-filter :title="column.title" v-model="filters.description" />
+      </template>
+      <template #header.category="{ column }">
+        <table-header-filter :title="column.title" v-model="filters.category" />
+      </template>
+      <template #header.isValid="{ column }">
+        <table-header-filter
+            :title="column.title"
+            v-model="filters.isValid"
+            :items="['true', 'false']"
+        />
+      </template>
+      <template #header.graphType="{ column }">
+        <table-header-filter
+            :title="column.title"
+            v-model="filters.graphType"
+            :items="['DIRECT', 'UNDIRECT', 'ANY']"
+        />
+      </template>
+      <template v-slot:item.isValid="{ item }">
+        <v-chip :color="item.isValid ? 'success' : 'warning'" size="small">
+          {{ item.isValid ? 'Да' : 'Нет' }}
+        </v-chip>
+      </template>
+      <template v-slot:item.author="{ item }">
+        {{ formatAuthor(item.author) }}
+      </template>
       <template v-slot:item.actions="{ item }">
         <v-icon class="me-2" size="small" @click="editPlugin(item)">
           mdi-pencil
@@ -35,28 +65,35 @@
           mdi-check-decagram
         </v-icon>
       </template>
-    </v-data-table>
+    </v-data-table-server>
   </v-card>
 </template>
 
 <script lang="ts">
 import { DELETE_PLUGIN, VALIDATE_PLUGIN } from "@/api/Mutations";
+import { GET_ALL_PLUGINS } from "@/api/Queries";
 import { usePluginStore } from "@/store/plugin";
-import { useMutation } from "@vue/apollo-composable";
+import { useMutation, useQuery } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
-import { computed, defineComponent, onMounted, ref, watch } from "vue";
+import { computed, defineComponent, onMounted, reactive, ref, watch } from "vue";
 import { useProfileStore } from "@/store/profile";
-import { UserStorageGetters } from "@/entities/user/storage/getters";
-import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
-import { Plugin as GraphQLPlugin } from "@/__generated__/graphql";
-import { searchPlugins, SemanticPluginWithScore } from "@/services/semanticSearchApi";
-
+import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser";
+import { Plugin as GraphQLPlugin, Profile } from "@/__generated__/graphql";
+import { bulkIndexPlugins } from "@/services/semanticSearchApi";
 
 export default defineComponent({
   setup() {
-    const { getFilteredPlugins, plugins, dialog, pluginInput } =
+    const { plugins, dialog, pluginInput } =
         storeToRefs(usePluginStore());
     const profileStore = useProfileStore();
+
+    onMounted(() => {
+      ensureActiveUser();
+    });
+
+    const totalCount = ref(0);
+    const page = ref(1);
+    const pageSize = ref(10);
 
     const headers = [
       { key: "name", title: "Название" },
@@ -64,124 +101,107 @@ export default defineComponent({
       { key: "category", title: "Категория" },
       { key: "isValid", title: "Одобрен" },
       { key: "graphType", title: "Тип графа" },
+      { key: "author", title: "Автор", sortable: false },
       { key: "actions", title: "Действия", sortable: false },
     ];
 
-    const search = ref("");
-    const searchResults = ref<Array<GraphQLPlugin & { score?: number }>>([]);
+    const filters = reactive({
+      name: "",
+      description: "",
+      category: "",
+      isValid: "",
+      graphType: "",
+    });
     const groupBy = [
       {
         key: "category",
         order: "asc" as const,
       },
     ];
-    
-    const filteredPlugins = computed(() => getFilteredPlugins.value);
 
-    const displayedPlugins = computed(() => {
-      const trimmedSearch = search.value.trim();
-
-      if (!trimmedSearch) {
-        return filteredPlugins.value;
-      }
-
-      const filteredIds = new Set(filteredPlugins.value.map((plugin) => plugin.id));
-
-      return searchResults.value.filter((plugin) => filteredIds.has(plugin.id));
-    });
-
-    const fallbackSearch = (
-      value: string,
-    ): Array<GraphQLPlugin & { score?: number }> => {
-      const normalizedQuery = value.trim().toLowerCase();
-
-      if (!normalizedQuery) {
-        return filteredPlugins.value;
-      }
-
-      return filteredPlugins.value.filter((plugin) => {
-        const haystack = [
-          plugin.name,
-          plugin.description ?? "",
-          plugin.category ?? "",
-          plugin.graphType ?? "",
-          plugin.pluginType ?? "",
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        return haystack.includes(normalizedQuery);
-      });
-    };
-
-    const mapSemanticResults = (
-      results: SemanticPluginWithScore[],
-    ): Array<GraphQLPlugin & { score: number }> =>
-      results
-        .map((result) => {
-          const basePlugin = plugins.value.find(
-            (plugin) => plugin.id === result.id,
-          );
-
-          if (!basePlugin) {
-            console.warn(
-              `Plugin with id ${result.id} not found in store for semantic result`,
-            );
-            return null;
-          }
-
-          return { ...basePlugin, score: result.score };
-        })
-        .filter((plugin): plugin is GraphQLPlugin & { score: number } => Boolean(plugin));
-
-    const performSearch = async (value: string) => {
-      if (!value.trim()) {
-        searchResults.value = [];
-        return;
-      }
-
-      try {
-        const results = await searchPlugins(value.trim(), 3);
-        searchResults.value = mapSemanticResults(results);
-      } catch (error) {
-        console.error("Semantic plugin search request failed", error);
-        searchResults.value = fallbackSearch(value);
-      }
-    };
-
-    let searchTimeout: number | undefined;
-
-    watch(
-      search,
-      (value) => {
-        if (searchTimeout) {
-          window.clearTimeout(searchTimeout);
-        }
-
-        searchTimeout = window.setTimeout(() => performSearch(value), 300);
+    const requestVariables = computed(() => ({
+      request: {
+        pagination: {
+          page: page.value - 1,
+          pageSize: pageSize.value,
+        },
+        filter: {
+          name: filters.name || undefined,
+          description: filters.description || undefined,
+          category: filters.category || undefined,
+          isValid: filters.isValid === "" ? undefined : filters.isValid === "true",
+          graphType: filters.graphType || undefined,
+        },
       },
-      { immediate: false },
+    }));
+
+    const { loading, onResult, refetch } = useQuery(
+        GET_ALL_PLUGINS,
+        requestVariables,
     );
 
-    onMounted(async () => {
-      if (!profileStore.activeUser) {
-        const token = await UserStorageGetters.getToken();
-        if (token) {
-          profileStore.activeUser = await getUserFromToken(token);
-        }
+    onResult((response) => {
+      if (response.data) {
+        plugins.value = response.data.getAllPlugins.items ?? [];
+        totalCount.value =
+            response.data.getAllPlugins.pagination?.totalCount ??
+            plugins.value.length;
+
+        bulkIndexPlugins(
+            plugins.value.map((plugin) => ({
+              id: plugin.id,
+              name: plugin.name,
+              description: plugin.description ?? "",
+              category: plugin.category ?? "",
+              graphType: plugin.graphType ?? "",
+              pluginType: plugin.pluginType ?? "",
+            })),
+        ).catch((error) =>
+            console.error("Failed to sync plugins with semantic search", error),
+        );
       }
     });
 
+    let filterTimeout: number | undefined;
+
+    watch(filters, () => {
+      if (filterTimeout) {
+        window.clearTimeout(filterTimeout);
+      }
+      filterTimeout = window.setTimeout(() => {
+        if (page.value !== 1) {
+          page.value = 1;
+        } else {
+          refetch(requestVariables.value);
+        }
+      }, 300);
+    }, { deep: true });
+
+    watch([page, pageSize], () => {
+      refetch(requestVariables.value);
+    });
+
+    const formatAuthor = (author?: Profile | null) => {
+      if (!author) return "-";
+      const fullName = [author.lastName, author.firstName, author.patronymic]
+          .filter((part) => part && part.length > 0)
+          .join(" ");
+      return fullName || author.email;
+    };
+
     return {
-      getFilteredPlugins,
+      plugins,
       profileStore,
       headers,
-      search,
-      displayedPlugins,
+      loading,
+      totalCount,
+      page,
+      pageSize,
+      filters,
+      formatAuthor,
       groupBy,
       dialog,
       pluginInput,
-      plugins,
     };
   },
   computed: {
@@ -205,7 +225,9 @@ export default defineComponent({
       try {
         const { mutate } = useMutation(DELETE_PLUGIN);
         await mutate({ id: plugin.id });
-        this.plugins = this.plugins.filter((item: GraphQLPlugin) => item.id !== plugin.id);
+        this.plugins = this.plugins.filter(
+            (item: GraphQLPlugin) => item.id !== plugin.id,
+        );
       } catch (error) {
         console.error("Ошибка при удалении плагина:", error);
       }
@@ -215,7 +237,9 @@ export default defineComponent({
         const { mutate } = useMutation(VALIDATE_PLUGIN);
         await mutate({ id: plugin.id });
 
-        const index = this.plugins.findIndex((item: GraphQLPlugin) => item.id === plugin.id);
+        const index = this.plugins.findIndex(
+            (item: GraphQLPlugin) => item.id === plugin.id,
+        );
         if (index !== -1) {
           this.plugins = [
             ...this.plugins.slice(0, index),

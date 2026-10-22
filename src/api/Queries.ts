@@ -1,15 +1,27 @@
 import gql from "graphql-tag";
 
 export const GET_ALL_PROFILES_QUERY = gql`
-  {
-    getAllProfiles {
-      id
-      email
-      profilePassword
-      firstName
-      lastName
-      patronymic
-      profileRole
+  query getAllProfiles(
+    $request: GetAllProfilesRequestInput! = { pagination: { page: 0, pageSize: 100 } }
+  ) {
+    getAllProfiles(request: $request) {
+      items {
+        id
+        email
+        profilePassword
+        firstName
+        lastName
+        patronymic
+        profileRole
+      }
+      pagination {
+        page
+        pageSize
+        totalCount
+        totalPages
+        hasNext
+        hasPrevious
+      }
     }
   }
 `;
@@ -28,6 +40,19 @@ export const GET_PROFILE = gql`
   }
 `;
 
+export const GET_MY_PROFILE = gql`
+  query getMyProfile {
+    getMyProfile {
+      id
+      email
+      firstName
+      lastName
+      patronymic
+      profileRole
+    }
+  }
+`;
+
 export const GET_TASK = gql`
   query getTask($id: ID!) {
     getTask(id: $id) {
@@ -36,8 +61,15 @@ export const GET_TASK = gql`
       description
       category
       taskType
-      authorId
       isPublic
+      author {
+        id
+        email
+        firstName
+        lastName
+        patronymic
+        profileRole
+      }
       __typename
       ... on TaskGraph {
         isHiddenMistake
@@ -62,13 +94,24 @@ export const GET_TASK = gql`
             color
           }
         }
-        condition {
-          pluginId
+        conditions {
+          plugin {
+            id
+            name
+            pluginType
+          }
+          value
           mistakeText
+          sign
+          pluginType
         }
       }
       ... on TaskImplementation {
-        pluginId
+        plugin {
+          id
+          name
+          pluginType
+        }
       }
     }
   }
@@ -102,14 +145,55 @@ export const GET_GRAPH_BY_ID = gql`
   }
 `;
 
-export const GET_USER_SOLUTION_STATISTIC = gql`
-  query getUserSolutionStatistic($userId: ID!) {
-    getUserSolutionStatistic(userId: $userId) {
-      id
-      taskId
-      authorId
-      isCorrect
-      __typename
+export const GET_ALL_TASK_SOLUTIONS = gql`
+  query getAllTaskSolutions(
+    $request: GetAllTaskSolutionsRequestInput! = { pagination: { page: 0, pageSize: 100 } }
+  ) {
+    getAllTaskSolutions(request: $request) {
+      items {
+        id
+        isCorrect
+        __typename
+        author {
+          id
+        }
+        task {
+          id
+          name
+          taskType
+        }
+        ... on SolutionGraph {
+          graph {
+            id
+          }
+          pluginResults {
+            plugin {
+              id
+            }
+            isCorrect
+            value
+            trueValue
+            pluginMessage
+          }
+        }
+        ... on SolutionImplementation {
+          implementationResult {
+            id
+            originalTimeResult
+            timeResult
+            originalResult
+            result
+          }
+        }
+      }
+      pagination {
+        page
+        pageSize
+        totalCount
+        totalPages
+        hasNext
+        hasPrevious
+      }
     }
   }
 `;
@@ -118,10 +202,11 @@ export const GET_SOLUTION_WITH_TASK_DESCRIPTION = gql`
   query getSolutionWithTaskDescription($taskId: ID!, $solutionId: ID!) {
     getTaskSolution(id: $solutionId) {
       id
-      taskId
-      authorId
       isCorrect
       __typename
+      author {
+        id
+      }
       ... on SolutionGraph {
         graph {
           id
@@ -145,7 +230,10 @@ export const GET_SOLUTION_WITH_TASK_DESCRIPTION = gql`
           }
         }
         pluginResults {
-          pluginId
+          plugin {
+            id
+            name
+          }
           isCorrect
           value
           trueValue
@@ -159,63 +247,111 @@ export const GET_SOLUTION_WITH_TASK_DESCRIPTION = gql`
   }
 `;
 
-export const GET_GRAPH_LIBRARY = gql`
-  {
-    getGraphLibrary {
-      id
-      vertexCount
-      edgeCount
-      isDirect
-      vertexList {
+export const GET_ALL_GRAPHS = gql`
+  query getAllGraphs(
+    $request: GetAllGraphsRequestInput! = { pagination: { page: 0, pageSize: 100 } }
+  ) {
+    getAllGraphs(request: $request) {
+      items {
         id
-        weight
-        label
-        xCoordinate
-        yCoordinate
-        color
+        vertexCount
+        edgeCount
+        isDirect
+        vertexList {
+          id
+          weight
+          label
+          xCoordinate
+          yCoordinate
+          color
+        }
+        edgeList {
+          source
+          target
+          weight
+          label
+          color
+        }
+        isNamed
+        name
       }
-      edgeList {
-        source
-        target
-        weight
-        label
-        color
+      pagination {
+        page
+        pageSize
+        totalCount
+        totalPages
+        hasNext
+        hasPrevious
       }
-      isNamed
-      name
     }
   }
 `;
 
 export const GET_ALL_PLUGINS = gql`
-  {
-    getAllPlugins {
-      id
-      name
-      description
-      category
-      jarName
-      jarFile
-      authorId
-      graphType
-      isValid
-      beanName
-      pluginType
-      isInternal
+  query getAllPlugins(
+    $request: GetAllPluginRequestInput! = { pagination: { page: 0, pageSize: 100 } }
+  ) {
+    getAllPlugins(request: $request) {
+      items {
+        id
+        name
+        description
+        category
+        graphType
+        isValid
+        beanName
+        pluginType
+        isInternal
+        author {
+          id
+          email
+          firstName
+          lastName
+          patronymic
+          profileRole
+        }
+      }
+      pagination {
+        page
+        pageSize
+        totalCount
+        totalPages
+        hasNext
+        hasPrevious
+      }
     }
   }
 `;
 
 export const GET_ALL_TASKS = gql`
-  {
-    getAllTasks {
-      id
-      name
-      description
-      category
-      taskType
-      authorId
-      isPublic
+  query getAllTasks(
+    $request: GetAllTaskRequestInput! = { pagination: { page: 0, pageSize: 100 } }
+  ) {
+    getAllTasks(request: $request) {
+      items {
+        id
+        name
+        description
+        category
+        taskType
+        isPublic
+        author {
+          id
+          email
+          firstName
+          lastName
+          patronymic
+          profileRole
+        }
+      }
+      pagination {
+        page
+        pageSize
+        totalCount
+        totalPages
+        hasNext
+        hasPrevious
+      }
     }
   }
 `;

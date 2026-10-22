@@ -463,8 +463,8 @@ const solveTask = async () => {
       result.value = result.value.map((item) => ({
         ...item,
         mistakeText:
-          activeTask.value.condition.find(
-            (element: any) => element.pluginId === item.pluginId,
+          activeTask.value.conditions?.find(
+            (element: any) => element.plugin?.id === item.plugin?.id,
           )?.mistakeText || "",
       }));
     }
