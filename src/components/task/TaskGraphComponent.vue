@@ -70,6 +70,10 @@
                             closable variant="tonal" />
                         <v-alert v-model="errorAlert" text="В решении есть ошибка" title="Ошибка!" type="error" closable
                             variant="tonal" />
+                        <v-alert v-model="pluginErrorAlert" type="error" title="Плагин совершил ошибку выполнения"
+                            closable variant="tonal">
+                            <span class="text-pre-wrap">{{ pluginErrorReason }}</span>
+                        </v-alert>
 
                         <v-card v-if="errorAlert">
                             <v-card-title>Ошибки в модулях</v-card-title>
@@ -82,20 +86,32 @@
                         </v-card>
 
                         <v-card class="mt-4">
-                            <v-card-text class="text-center">
-                                <div v-if="statisticLoading" class="d-flex align-center justify-center">
+                            <v-card-text class="py-3">
+                                <div v-if="taskStatsLoading || statisticLoading"
+                                    class="d-flex align-center justify-center">
                                     <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
                                     <span class="text-caption">Загрузка...</span>
                                 </div>
-                                <div v-else-if="statistic">
-                                    <div class="text-h5 font-weight-bold primary--text mb-1">
-                                        {{ formatPercentage(statistic.value) }}
-                                    </div>
-                                    <div class="text-body-2">успешно решили задачу</div>
-                                </div>
-                                <div v-else class="text-body-2">
-                                    Ошибка загрузки сервиса статистики
-                                </div>
+                                <v-row v-else no-gutters class="text-center">
+                                    <v-col>
+                                        <div class="text-h6 font-weight-bold">{{ formatCount(taskStats.submits) }}</div>
+                                        <div class="text-caption">отправок</div>
+                                    </v-col>
+                                    <v-col>
+                                        <div class="text-h6 font-weight-bold text-success">
+                                            {{ formatCount(taskStats.solved) }}
+                                        </div>
+                                        <div class="text-caption">решили верно</div>
+                                    </v-col>
+                                    <v-col>
+                                        <div class="text-h6 font-weight-bold">{{ formatCount(taskStats.opened) }}</div>
+                                        <div class="text-caption">открытий</div>
+                                    </v-col>
+                                    <v-col>
+                                        <div class="text-h6 font-weight-bold text-primary">{{ successRateText }}</div>
+                                        <div class="text-caption">успешность</div>
+                                    </v-col>
+                                </v-row>
                             </v-card-text>
                         </v-card>
                     </v-col>
@@ -110,7 +126,7 @@ import { SOLVE_TASK_GRAPH } from "@/api/Mutations";
 import { GET_GRAPH_BY_ID, GET_TASK, GET_STATISTIC } from "@/api/Queries";
 import { StatisticRequestInput, StatisticResponse } from "@/api/Statistic";
 import { useTaskStore } from "@/store/task";
-import { useMutation, useQuery } from "@vue/apollo-composable";
+import { useMutation, useQuery, useApolloClient } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
 import { PluginResult, Graph as GraphType } from "@/__generated__/graphql";
 import Graph from "@/features/graph/ui/graph/Graph.vue";
@@ -122,6 +138,7 @@ import undirectGraphConfigs, {
 } from "@/components/graph/network/helper/graphConfig";
 import { useEventsApi } from "@/api/rest/Events";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
+import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
 
 const props = defineProps({
   id: String,
@@ -169,12 +186,71 @@ const sendEvent = async (
 
 const successAlert = ref(false);
 const errorAlert = ref(false);
+const pluginErrorAlert = ref(false);
+const pluginErrorReason = ref("");
 const result = ref<PluginResult[]>([]);
 const extraGraph = ref<null | GraphType>(null);
 const drawer = ref(true);
 const drawerWidth = ref(600);
 const statistic = ref<StatisticResponse | null>(null);
 const statisticLoading = ref(false);
+
+interface TaskStats {
+  submits: number | null;
+  solved: number | null;
+  opened: number | null;
+}
+
+const { client: apolloClient } = useApolloClient();
+
+const taskStats = ref<TaskStats>({ submits: null, solved: null, opened: null });
+const taskStatsLoading = ref(false);
+
+const fetchTaskStat = (taskId: string, eventType: string): Promise<number | null> =>
+  apolloClient
+    .query({
+      query: GET_STATISTIC,
+      variables: {
+        request: {
+          type: "SUM",
+          scope: "TASK",
+          event_type: eventType,
+          task_id: taskId,
+        },
+      },
+      fetchPolicy: "no-cache",
+    })
+    .then((response) => response.data?.getStatistic?.value ?? null)
+    .catch((error) => {
+      console.error("Ошибка загрузки статистики:", eventType, error);
+      return null;
+    });
+
+const loadTaskStats = () => {
+  const taskId = activeTask.value?.id;
+  if (!taskId) return;
+
+  taskStatsLoading.value = true;
+  Promise.all([
+    fetchTaskStat(taskId, "submit"),
+    fetchTaskStat(taskId, "task_success"),
+    fetchTaskStat(taskId, "open_task"),
+  ])
+    .then(([submits, solved, opened]) => {
+      taskStats.value = { submits, solved, opened };
+    })
+    .finally(() => {
+      taskStatsLoading.value = false;
+    });
+};
+
+const formatCount = (value: number | null) =>
+  value == null ? "—" : String(Math.round(value));
+
+const successRateText = computed(() => {
+  const response = statistic.value;
+  return response ? formatPercentage(response.value) : "—";
+});
 
 const updateDrawerWidth = () => {
   drawerWidth.value = Math.max(600, window.innerWidth / 2);
@@ -357,6 +433,7 @@ watch(
 
     if (newValue?.id) {
       loadStatisticForTask(newValue.id);
+      loadTaskStats();
     }
   },
   { immediate: true },
@@ -439,6 +516,7 @@ const solveTask = async () => {
       return;
     }
 
+    pluginErrorAlert.value = false;
     const { isCorrect, pluginResults } = response.data.solveTaskGraph;
 
     if (isCorrect) {
@@ -451,7 +529,6 @@ const solveTask = async () => {
       sendEvent("task_wrong", "Задача решена неверно");
       errorAlert.value = true;
       successAlert.value = false;
-
       const incorrectResults = pluginResults.filter(
         (item: PluginResult) => !item.isCorrect,
       );
@@ -468,10 +545,19 @@ const solveTask = async () => {
           )?.mistakeText || "",
       }));
     }
+    loadTaskStats();
   } catch (error) {
     console.error("Error solving task:", error);
-    errorAlert.value = true;
     successAlert.value = false;
+
+    const pluginError = extractPluginExecutionError(error);
+    if (pluginError) {
+      pluginErrorReason.value = pluginError.reason;
+      pluginErrorAlert.value = true;
+      errorAlert.value = false;
+    } else {
+      errorAlert.value = true;
+    }
   }
 };
 </script>

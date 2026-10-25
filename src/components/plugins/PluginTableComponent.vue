@@ -54,6 +54,15 @@
         </v-icon>
       </template>
     </v-data-table-server>
+    <v-snackbar
+        v-model="validateErrorSnackbar"
+        multi-line
+        timeout="8000"
+        color="error"
+        location="bottom right"
+    >
+      {{ validateErrorMessage }}
+    </v-snackbar>
   </v-card>
 </template>
 
@@ -68,6 +77,7 @@ import { useProfileStore } from "@/store/profile";
 import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser";
 import { Plugin as GraphQLPlugin, Profile } from "@/__generated__/graphql";
 import { searchPlugins } from "@/services/semanticSearchApi";
+import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
 
 export default defineComponent({
   setup() {
@@ -82,6 +92,9 @@ export default defineComponent({
     const totalCount = ref(0);
     const page = ref(1);
     const pageSize = ref(10);
+
+    const validateErrorSnackbar = ref(false);
+    const validateErrorMessage = ref("");
 
     const headers = [
       { key: "name", title: "Название" },
@@ -246,6 +259,8 @@ export default defineComponent({
       displayTotal,
       plugins,
       profileStore,
+      validateErrorSnackbar,
+      validateErrorMessage,
       headers,
       loading,
       totalCount,
@@ -302,6 +317,11 @@ export default defineComponent({
         }
       } catch (error) {
         console.error("Ошибка при подтверждении плагина:", error);
+        const pluginError = extractPluginExecutionError(error);
+        this.validateErrorMessage = pluginError
+            ? `Плагин совершил ошибку выполнения:\n${pluginError.reason}`
+            : "Не удалось подтвердить плагин.";
+        this.validateErrorSnackbar = true;
       }
     },
     addPlugin() {

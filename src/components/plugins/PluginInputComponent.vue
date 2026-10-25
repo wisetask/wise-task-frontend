@@ -41,7 +41,7 @@
             type="error"
             dense
             dismissible
-            class="mt-4"
+            class="mt-4 plugin-error-alert"
           >
             {{ errorMessage }}
           </v-alert>
@@ -72,6 +72,7 @@ import { useMutation } from "@vue/apollo-composable";
 import { CREATE_PLUGIN, UPDATE_PLUGIN } from "@/api/Mutations";
 import { MAX_INPUT_LENGTH } from "@/shared/config/SIZES";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
+import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
 
 export default defineComponent({
   setup() {
@@ -173,8 +174,12 @@ export default defineComponent({
         this.errorMessage = null;
       });
 
-      onError(({ graphQLErrors }) => {
-        if (graphQLErrors && graphQLErrors.length > 0) {
+      onError((error) => {
+        const { graphQLErrors } = error;
+        const pluginError = extractPluginExecutionError(error);
+        if (pluginError) {
+          this.errorMessage = `Ошибка при выгрузке плагина: плагин совершил ошибку выполнения:\n${pluginError.reason}`;
+        } else if (graphQLErrors && graphQLErrors.length > 0) {
           this.errorMessage = `Ошибка при выгрузке плагина: ${graphQLErrors[0].message}`;
         } else {
           this.errorMessage =
@@ -230,8 +235,12 @@ export default defineComponent({
         this.errorMessage = null;
       });
 
-      onError(({ graphQLErrors }) => {
-        if (graphQLErrors && graphQLErrors.length > 0) {
+      onError((error) => {
+        const { graphQLErrors } = error;
+        const pluginError = extractPluginExecutionError(error);
+        if (pluginError) {
+          this.errorMessage = `Ошибка при обновлении плагина: плагин совершил ошибку выполнения:\n${pluginError.reason}`;
+        } else if (graphQLErrors && graphQLErrors.length > 0) {
           this.errorMessage = `Ошибка при обновлении плагина: ${graphQLErrors[0].message}`;
         } else {
           this.errorMessage =
@@ -247,3 +256,9 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.plugin-error-alert {
+  white-space: pre-wrap;
+}
+</style>
