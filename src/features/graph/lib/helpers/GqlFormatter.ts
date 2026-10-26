@@ -17,7 +17,6 @@ export const generateEdgesList = (
 
   for (let edge of edges) {
     const color: Color = (() => {
-      console.log(edge.data);
       if (!edge.data || !edge.data.color) {
         return Color.Gray;
       }

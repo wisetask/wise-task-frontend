@@ -14,7 +14,8 @@
             ></v-file-input>
           </v-card-text>
           <v-card-actions>
-            <v-btn color="primary" variant="outlined" @click="solveTask">
+            <v-btn color="primary" variant="outlined" :loading="isSubmitting"
+              :disabled="isSubmitting" @click="solveTask">
               Отправить решение
             </v-btn>
           </v-card-actions>
@@ -152,8 +153,7 @@ export default defineComponent({
           eventEntityId: 0,
           eventValue,
         });
-      } catch (e) {
-        console.error("Event error:", eventType, e);
+      } catch {
       }
     };
 
@@ -235,6 +235,7 @@ export default defineComponent({
       errorAlert: false,
       pluginErrorAlert: false,
       pluginErrorReason: "",
+      isSubmitting: false,
       result: [],
       jarFileModel: [],
     };
@@ -249,65 +250,75 @@ export default defineComponent({
       });
     },
     async solveTask() {
-      const { mutate, onDone, onError } = useMutation(
-        SOLVE_TASK_IMPLEMENTATION,
-      );
-      const jarFile = (
-        (await this.toBase64(this.jarFileModel[0])) as string
-      ).replace("data:application/x-java-archive;base64,", "");
-      const request = {
-        solution: {
-          id: self.crypto.randomUUID(),
-          taskId: this.activeTask.id,
-          authorId: this.authorId,
-          code: jarFile,
-        },
-      };
+      if (this.isSubmitting || !this.jarFileModel.length) return;
+      this.isSubmitting = true;
 
-      this.sendEvent("submit", "Пользователь отправил решение");
+      try {
+        const { mutate, onDone, onError } = useMutation(
+          SOLVE_TASK_IMPLEMENTATION,
+        );
+        const jarFile = (
+          (await this.toBase64(this.jarFileModel[0])) as string
+        ).replace("data:application/x-java-archive;base64,", "");
+        const request = {
+          solution: {
+            id: self.crypto.randomUUID(),
+            taskId: this.activeTask.id,
+            authorId: this.authorId,
+            code: jarFile,
+          },
+        };
 
-      mutate(request);
+        this.sendEvent("submit", "Пользователь отправил решение");
 
-      onDone((response) => {
-        if (response.data) {
-          this.pluginErrorAlert = false;
-          if (response.data.solveTaskImplementation.isCorrect) {
-            this.successAlert = true;
-            this.errorAlert = false;
-            this.sendEvent("task_success", "Задача решена успешно");
-            if (this.onCorrectSolution) {
-              this.onCorrectSolution();
+        mutate(request);
+
+        onDone((response) => {
+          this.isSubmitting = false;
+          if (response.data) {
+            this.pluginErrorAlert = false;
+            if (response.data.solveTaskImplementation.isCorrect) {
+              this.successAlert = true;
+              this.errorAlert = false;
+              this.sendEvent("task_success", "Задача решена успешно");
+              if (this.onCorrectSolution) {
+                this.onCorrectSolution();
+              }
+            } else {
+              this.errorAlert = true;
+              this.successAlert = false;
+              this.sendEvent("task_wrong", "Задача решена неверно");
             }
-          } else {
-            this.errorAlert = true;
-            this.successAlert = false;
-            this.sendEvent("task_wrong", "Задача решена неверно");
+            this.result =
+              response.data.solveTaskImplementation.implementationResult;
+            console.log(response.data);
+            this.loadTaskStats();
           }
-          this.result =
-            response.data.solveTaskImplementation.implementationResult;
-          console.log(response.data);
-          this.loadTaskStats();
-        }
-      });
+        });
 
-      onError((error) => {
-        this.successAlert = false;
+        onError((error) => {
+          this.isSubmitting = false;
+          this.successAlert = false;
 
-        const pluginError = extractPluginExecutionError(error);
-        if (pluginError) {
-          this.pluginErrorReason = pluginError.reason;
-          this.pluginErrorAlert = true;
-          this.errorAlert = false;
-          return;
-        }
+          const pluginError = extractPluginExecutionError(error);
+          if (pluginError) {
+            this.pluginErrorReason = pluginError.reason;
+            this.pluginErrorAlert = true;
+            this.errorAlert = false;
+            return;
+          }
 
-        if (error.graphQLErrors) {
-          error.graphQLErrors.map(({ message }) => {
-            console.error(message);
-          });
-        }
-        this.errorAlert = true;
-      });
+          if (error.graphQLErrors) {
+            error.graphQLErrors.map(({ message }) => {
+              console.error(message);
+            });
+          }
+          this.errorAlert = true;
+        });
+      } catch (error) {
+        this.isSubmitting = false;
+        console.error("Error preparing solution:", error);
+      }
     },
   },
 });

@@ -27,7 +27,8 @@
                             <v-card-title>{{ activeTask.name }}</v-card-title>
                             <v-card-text class="text-pre-wrap" v-html="formatDescription(activeTask.description)" />
                             <v-card-actions>
-                                <v-btn color="primary" variant="outlined" @click="solveTask">
+                                <v-btn color="primary" variant="outlined" :loading="isSubmitting"
+                                    :disabled="isSubmitting" @click="solveTask">
                                     Отправить решение
                                 </v-btn>
                             </v-card-actions>
@@ -182,8 +183,7 @@ const sendEvent = async (
       eventEntityId: entityId,
       eventValue,
     });
-  } catch (e) {
-    console.error("Event error:", eventType, e);
+  } catch {
   }
 };
 
@@ -432,11 +432,12 @@ watch(
     });
 
     onGraphResult((response) => {
-      extraGraph.value = response.data.getGraphById;
+      const graph = response.data?.getGraphById;
+      if (!graph) return;
+
+      extraGraph.value = graph;
       if (nodeStore.nodes.length === 0 && nodeStore.edges.length === 0) {
-        applyEditorGraphState(
-          gqlGraphToEditorState(response.data.getGraphById),
-        );
+        applyEditorGraphState(gqlGraphToEditorState(graph));
       }
     });
 
@@ -502,7 +503,12 @@ watch(
 
 const { mutate: solveTaskMutation } = useMutation(SOLVE_TASK_GRAPH);
 
+const isSubmitting = ref(false);
+
 const solveTask = async () => {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+
   const graph = convertToGqlFormat(nodeStore);
   graph.id = self.crypto.randomUUID();
 
@@ -567,6 +573,8 @@ const solveTask = async () => {
     } else {
       errorAlert.value = true;
     }
+  } finally {
+    isSubmitting.value = false;
   }
 };
 </script>
