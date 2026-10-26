@@ -24,8 +24,8 @@ const getNodesPriority = (
   const incoming = new Map<string, CustomEdge>();
 
   for (const edge of edges) {
-    outgoing.set(edge.sourceNode.id, edge);
-    incoming.set(edge.targetNode.id, edge);
+    outgoing.set(edge.source, edge);
+    incoming.set(edge.target, edge);
   }
 
   let startNode: CustomNode | undefined = undefined;

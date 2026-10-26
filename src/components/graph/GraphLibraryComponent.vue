@@ -45,7 +45,7 @@
         </v-row>
         <v-row>
           <v-col>
-            <graph-table-component />
+            <graph-table-component @edited="drawer = false" />
           </v-col>
         </v-row>
       </v-container>

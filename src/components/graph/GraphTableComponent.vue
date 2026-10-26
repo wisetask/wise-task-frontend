@@ -34,11 +34,15 @@
 import { defineComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useGraphStore, Graph } from '@/store/graph'
-import { addNode, addLayout, addEdge } from './network/helper/graph'
 import { DELETE_GRAPH } from '@/api/Mutations'
 import { useMutation } from '@vue/apollo-composable'
+import {
+  applyEditorGraphState,
+  vGraphToEditorState,
+} from '@/features/graph/lib/helpers/graphToEditor'
 
 export default defineComponent({
+	emits: ['edited'],
 	setup() {
 		const { graphLibrary, activeGraph } = storeToRefs(useGraphStore())
 		const headers = [
@@ -70,46 +74,12 @@ export default defineComponent({
 				graphQLErrors.map(({message}) => {
 					console.error(message)
 				})
-				} 
+				}
 			})
 		},
 		editItem(graph: Graph) {
-			this.activeGraph = {
-				name: null,
-				isDirect: false,
-                edges: {},
-                nodes: {},
-                layouts: { nodes: {} }
-			}
-			Object.entries(graph.nodes).forEach(([key, node]) => {
-				addNode({
-					id: node?.id,
-					color: node?.color,
-					label: node?.label,
-					weight: node?.weight,
-				}, this.activeGraph.nodes)
-			})
-			console.log(graph.nodes)
-			Object.entries(graph.layouts).forEach(([key, layout]) => {
-				Object.entries(layout).forEach(([k, nodeLayout]) => {
-					addLayout({
-						x: nodeLayout?.x,
-						y: nodeLayout?.y,
-						nodeId: nodeLayout.nodeId
-					}, this.activeGraph.layouts)
-				})
-			})
-			Object.entries(graph.edges).forEach(([key, edge]) => {
-				addEdge({
-					id: edge?.id,
-					color: edge?.color,
-					label: edge?.label,
-					weight: edge?.weight,
-					source: edge?.source,
-					target: edge?.target 
-				}, this.activeGraph.edges)
-			})
-			this.activeGraph.name = graph.name
+			applyEditorGraphState(vGraphToEditorState(graph))
+			this.$emit('edited')
 		}
 	}
 })

@@ -7,7 +7,7 @@ export const isGraphNearlyFull = (
 
   const uniqueNodePairs: Set<string> = new Set();
   for (const edge of connectedComponent.edges) {
-    const [id1, id2] = [edge.sourceNode.id, edge.targetNode.id].sort();
+    const [id1, id2] = [edge.source, edge.target].sort();
     uniqueNodePairs.add(`${id1}-${id2}`);
   }
 

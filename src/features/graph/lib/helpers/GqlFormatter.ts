@@ -33,8 +33,8 @@ export const generateEdgesList = (
       return Color.Gray;
     })();
 
-    const sourceId = nodeIdMap.get(edge.sourceNode.id);
-    const targetId = nodeIdMap.get(edge.targetNode.id);
+    const sourceId = nodeIdMap.get(edge.source);
+    const targetId = nodeIdMap.get(edge.target);
 
     if (sourceId !== undefined && targetId !== undefined) {
       edgeList.push({

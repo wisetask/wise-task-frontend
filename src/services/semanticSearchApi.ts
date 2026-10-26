@@ -20,13 +20,20 @@ export type SemanticPluginWithScore = SemanticPluginInput & { score: number };
 
 const SEMANTIC_SEARCH_API_URL = "http://localhost:8001";
 
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem("token");
+  return token
+    ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    : { "Content-Type": "application/json" };
+}
+
 export async function searchTasks(
   query: string,
   topK = 3,
 ): Promise<SemanticTaskWithScore[]> {
   const response = await fetch(`${SEMANTIC_SEARCH_API_URL}/tasks/search`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ query, top_k: topK }),
   });
 
@@ -44,7 +51,7 @@ export async function searchPlugins(
 ): Promise<SemanticPluginWithScore[]> {
   const response = await fetch(`${SEMANTIC_SEARCH_API_URL}/plugins/search`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ query, top_k: topK }),
   });
 

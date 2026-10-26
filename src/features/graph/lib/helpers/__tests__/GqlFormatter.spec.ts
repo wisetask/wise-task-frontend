@@ -24,6 +24,8 @@ const makeEdge = (
   createCustomEdge({
     label,
     data,
+    source: sourceId,
+    target: targetId,
     sourceNode: createNode(sourceId),
     targetNode: createNode(targetId),
   });
@@ -239,6 +241,8 @@ const convertToGqlFormatTestCases = [
       ],
       edges: [
         createCustomEdge({
+          source: "1",
+          target: "2",
           sourceNode: createCustomNode("1", { x: 1, y: 2 }) as GraphNode,
           targetNode: createCustomNode("2", { x: 3, y: 4 }) as GraphNode,
           data: { color: "#ff0000", weight: 1 },

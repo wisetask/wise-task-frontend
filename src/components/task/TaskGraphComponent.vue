@@ -139,6 +139,10 @@ import undirectGraphConfigs, {
 import { useEventsApi } from "@/api/rest/Events";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
+import {
+  applyEditorGraphState,
+  gqlGraphToEditorState,
+} from "@/features/graph/lib/helpers/graphToEditor";
 
 const props = defineProps({
   id: String,
@@ -429,6 +433,11 @@ watch(
 
     onGraphResult((response) => {
       extraGraph.value = response.data.getGraphById;
+      if (nodeStore.nodes.length === 0 && nodeStore.edges.length === 0) {
+        applyEditorGraphState(
+          gqlGraphToEditorState(response.data.getGraphById),
+        );
+      }
     });
 
     if (newValue?.id) {
