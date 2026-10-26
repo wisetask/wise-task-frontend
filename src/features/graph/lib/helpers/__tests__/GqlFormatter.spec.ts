@@ -24,6 +24,8 @@ const makeEdge = (
   createCustomEdge({
     label,
     data,
+    source: sourceId,
+    target: targetId,
     sourceNode: createNode(sourceId),
     targetNode: createNode(targetId),
   });
@@ -70,7 +72,7 @@ const edgeTestCases: EdgeTestCase[] = [
   },
   {
     name: "converts a single edge correctly",
-    edges: [makeEdge("2", "1", { color: "#ff0000", weight: 0 })],
+    edges: [makeEdge("1", "2", { color: "#ff0000", weight: 0 })],
     nodesMap,
     expected: [baseEdge],
   },
@@ -82,8 +84,8 @@ const edgeTestCases: EdgeTestCase[] = [
       {
         color: Color.Green,
         label: "test-label",
-        source: 3,
-        target: 2,
+        source: 2,
+        target: 3,
         weight: 5,
       },
     ],
@@ -91,7 +93,7 @@ const edgeTestCases: EdgeTestCase[] = [
   {
     name: "filters edges with missing target node",
     edges: [
-      makeEdge("2", "1", { color: "#ff0000", weight: 0 }),
+      makeEdge("1", "2", { color: "#ff0000", weight: 0 }),
       makeEdge("1", "99", { color: "#0000ff", weight: 1 }, "missing"),
     ],
     nodesMap,
@@ -100,8 +102,8 @@ const edgeTestCases: EdgeTestCase[] = [
   {
     name: "handles multiple edges",
     edges: [
-      makeEdge("2", "1", { color: "#ff0000", weight: 1 }, "edge1"),
-      makeEdge("3", "2", { color: "#00ff00", weight: 2 }, "edge2"),
+      makeEdge("1", "2", { color: "#ff0000", weight: 1 }, "edge1"),
+      makeEdge("2", "3", { color: "#00ff00", weight: 2 }, "edge2"),
     ],
     nodesMap,
     expected: [
@@ -118,7 +120,7 @@ const edgeTestCases: EdgeTestCase[] = [
   },
   {
     name: "handles edge without data (uses defaults)",
-    edges: [makeEdge("2", "1", undefined)],
+    edges: [makeEdge("1", "2", undefined)],
     nodesMap,
     expected: [
       {
@@ -239,8 +241,10 @@ const convertToGqlFormatTestCases = [
       ],
       edges: [
         createCustomEdge({
-          sourceNode: createCustomNode("2", { x: 3, y: 4 }) as GraphNode,
-          targetNode: createCustomNode("1", { x: 1, y: 2 }) as GraphNode,
+          source: "1",
+          target: "2",
+          sourceNode: createCustomNode("1", { x: 1, y: 2 }) as GraphNode,
+          targetNode: createCustomNode("2", { x: 3, y: 4 }) as GraphNode,
           data: { color: "#ff0000", weight: 1 },
           label: "edge-label",
         }),

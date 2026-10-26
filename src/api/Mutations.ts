@@ -3,7 +3,8 @@ import gql from 'graphql-tag'
 export const SIGN_IN = gql`
     mutation signIn ($signInRequest: SignInRequest!) {
         signIn (signInRequest: $signInRequest) {
-            token
+            accessToken
+            refreshToken
         }
     }
 `
@@ -11,7 +12,8 @@ export const SIGN_IN = gql`
 export const SIGN_UP = gql`
     mutation signUp ($signUpRequest: SignUpRequest!) {
         signUp (signUpRequest: $signUpRequest) {
-            token
+            accessToken
+            refreshToken
         }
     }
 `
@@ -78,17 +80,22 @@ export const CREATE_TASK_GRAPH = gql`
             description
             category
             taskType
-            authorId
             isPublic
             isHiddenMistake
+            author {
+                id
+            }
             rule {
                 isColor
                 isEdit
                 isMove
                 isDelete
             }
-            condition {
-                pluginId
+            conditions {
+                plugin {
+                    id
+                    name
+                }
                 value
                 mistakeText
                 sign
@@ -112,9 +119,14 @@ export const CREATE_TASK_IMPLEMENTATION = gql`
             description
             category
             taskType
-            authorId
             isPublic
-            pluginId
+            author {
+                id
+            }
+            plugin {
+                id
+                name
+            }
         }
     }
 `
@@ -126,14 +138,14 @@ export const CREATE_PLUGIN = gql`
             name
             description
             category
-            jarName
-            jarFile
-            authorId
             graphType
             isValid
             beanName
             pluginType
             isInternal
+            author {
+                id
+            }
         }
     }
 `
@@ -145,14 +157,14 @@ export const UPDATE_PLUGIN = gql`
             name
             description
             category
-            jarName
-            jarFile
-            authorId
             graphType
             isValid
             beanName
             pluginType
             isInternal
+            author {
+                id
+            }
         }
     }
 `
@@ -173,14 +185,22 @@ export const SOLVE_TASK_GRAPH = gql`
     mutation solveTaskGraph ($solution: SolutionGraphInput!) {
         solveTaskGraph (solution: $solution) {
             id
-            taskId
-            authorId
             isCorrect
+            task {
+                id
+            }
+            author {
+                id
+            }
             pluginResults {
-                pluginId
+                plugin {
+                    id
+                    name
+                }
                 isCorrect
                 value
                 trueValue
+                pluginMessage
             }
         }
     }
@@ -190,9 +210,13 @@ export const SOLVE_TASK_IMPLEMENTATION = gql`
     mutation solveTaskImplementation ($solution: SolutionImplementationInput!) {
         solveTaskImplementation (solution: $solution) {
             id
-            taskId
-            authorId
             isCorrect
+            task {
+                id
+            }
+            author {
+                id
+            }
             implementationResult {
                 id
                 originalTimeResult

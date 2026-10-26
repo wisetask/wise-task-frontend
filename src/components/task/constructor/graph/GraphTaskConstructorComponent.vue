@@ -99,7 +99,7 @@ export default defineComponent({
 
     onResult((response) => {
       if (response.data) {
-        plugins.value = response.data.getAllPlugins;
+        plugins.value = response.data.getAllPlugins.items ?? [];
       }
     });
 

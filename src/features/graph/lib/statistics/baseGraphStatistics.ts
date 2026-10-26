@@ -5,7 +5,7 @@ export const calculateSelfConnectedEdgesAmount = (
   edges: CustomEdge[],
 ): number => {
   return edges.filter(
-    (edge: CustomEdge) => edge.sourceNode.id === edge.targetNode.id,
+    (edge: CustomEdge) => edge.source === edge.target,
   ).length;
 };
 
@@ -19,11 +19,11 @@ export const calculateHangingNodesAmount = (
     }),
   );
   for (const edge of edges) {
-    if (uniqueIds.has(edge.sourceNode.id)) {
-      uniqueIds.delete(edge.sourceNode.id);
+    if (uniqueIds.has(edge.source)) {
+      uniqueIds.delete(edge.source);
     }
-    if (uniqueIds.has(edge.targetNode.id)) {
-      uniqueIds.delete(edge.targetNode.id);
+    if (uniqueIds.has(edge.target)) {
+      uniqueIds.delete(edge.target);
     }
   }
   return uniqueIds.size;

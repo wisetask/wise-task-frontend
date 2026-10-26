@@ -25,6 +25,7 @@ import router from "./router";
 import { setContext } from "@apollo/client/link/context";
 import { UserStorageKeys } from "@/entities/user/storage/config";
 import { UserStorageGetters } from "@/entities/user/storage/getters";
+import { useProfileStore } from "@/store/profile";
 import "@/api/rest/eventsInit";
 
 async function getAuthToken(): Promise<string | null> {
@@ -34,7 +35,7 @@ async function getAuthToken(): Promise<string | null> {
 const cache = new InMemoryCache({ addTypename: false });
 
 const httpLink = new HttpLink({
-  uri: "https://wisetask.ru:82/graphql",
+  uri: "https://wisetask.ru/graphql",
 });
 
 const authLink = setContext(async (_, { headers }) => {
@@ -47,18 +48,47 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
+function redirectToSignIn() {
+  if (router.currentRoute.value.path === "/auth/signIn") {
+    return;
+  }
+  console.warn("Unauthorized error detected. Redirecting to /auth/signIn");
+  // Токен и пользователя в памяти чистим ДО перехода: signIn при живом
+  // токене в заголовке получит от бэкенда 401, а catch-all редирект
+  // роутера смотрит на profileStore.activeUser.
+  UserStorageGetters.removeToken();
+  useProfileStore().activeUser = null;
+  router.push("/auth/signIn");
+}
+
 const errorLink = onError(({ graphQLErrors, networkError }) => {
+  // При истёкшем/невалидном токене сервер отвечает HTTP 401 с пустым телом.
+  // Это не GraphQL-ошибка, а ServerError у networkError — проверяем статус.
+  if (
+    networkError &&
+    "statusCode" in networkError &&
+    (networkError as { statusCode?: number }).statusCode === 401
+  ) {
+    redirectToSignIn();
+    return;
+  }
+
   if (graphQLErrors)
     graphQLErrors.forEach(({ message, locations, path, extensions }) => {
       console.log(
         `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
       );
 
-      if (message == "Access Denied") {
-        console.warn(
-          "Access Denied error detected. Redirecting to /auth/signup",
-        );
-        router.push("/auth/signup");
+      // Бэкенд маппит gRPC UNAUTHENTICATED в ErrorType.UNAUTHORIZED
+      // (extensions.errorType === "Unauthorized"). Сюда попадаем в том числе
+      // при истёкшем access-токене.
+      const isUnauthorized =
+        extensions?.errorType === "Unauthorized" ||
+        message == "Access Denied" ||
+        /unauthenticated|expired|invalid token/i.test(message);
+
+      if (isUnauthorized) {
+        redirectToSignIn();
       }
     });
 
@@ -81,5 +111,4 @@ const app = createApp({
 });
 
 registerPlugins(app);
-app.use(router);
 app.mount("#app");
