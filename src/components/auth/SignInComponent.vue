@@ -60,6 +60,16 @@
                   ></v-btn>
                 </v-col>
               </v-row>
+              <v-divider class="my-4">или</v-divider>
+              <v-btn
+                block
+                color="primary"
+                variant="outlined"
+                type="button"
+                @click="signInWithGoogle"
+              >
+                Войти через Google
+              </v-btn>
             </v-form>
           </v-card-text>
         </v-card>
@@ -74,6 +84,7 @@ import { SIGN_IN } from "@/api/Mutations";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { defineComponent } from "vue";
 import { UserStorageSetters } from "@/entities/user/storage/setters";
+import { redirectToGoogleOAuth } from "@/entities/user/lib/googleOAuth";
 
 export default defineComponent({
   data() {
@@ -120,6 +131,9 @@ export default defineComponent({
     },
     signUp() {
       this.$router.push("/auth/signup");
+    },
+    async signInWithGoogle() {
+      await redirectToGoogleOAuth();
     },
   },
 });
