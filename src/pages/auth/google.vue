@@ -34,7 +34,7 @@
 import { defineComponent } from "vue";
 
 const GOOGLE_CLIENT_ID = "";
-
+// выдат ошибку "The provided client secret is invalid." недействительный ?
 
 export default defineComponent({
   name: "GoogleAuthCallback",
@@ -93,7 +93,11 @@ export default defineComponent({
           },
           body: new URLSearchParams({
             client_id: GOOGLE_CLIENT_ID,
+<<<<<<< HEAD
             
+=======
+            client_secret: GOOGLE_CLIENT_SECRET,
+>>>>>>> abbdc06 (Ошибка client secret is invalid)
             code,
             code_verifier: codeVerifier,
             redirect_uri: `${window.location.origin}/auth/google`,
