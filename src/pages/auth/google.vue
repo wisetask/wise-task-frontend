@@ -33,8 +33,8 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 
+
 const GOOGLE_CLIENT_ID = "";
-// выдат ошибку "The provided client secret is invalid." недействительный ?
 
 export default defineComponent({
   name: "GoogleAuthCallback",
