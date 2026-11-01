@@ -42,6 +42,7 @@ export function createEventHandlers(
 			}
 		},
 		"edge:click": ({ edge }) => {
+			if (edge === undefined) return
 			if (constructorGraphState.value.mode === ConstructionMode.DELETE) {
 				if (!graph.value) return
 				delete activeGraph.value.edges[edge]

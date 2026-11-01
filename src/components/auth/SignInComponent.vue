@@ -51,7 +51,7 @@
                 <v-col cols="6">
                   <v-btn
                     :loading="loading"
-                    type="submit"
+                    type="button"
                     @click="signUp"
                     block
                     color="primary"
@@ -59,7 +59,16 @@
                     variant="outlined"
                   ></v-btn>
                 </v-col>
-              </v-row>
+              </v-row>       
+            <v-divider class="my-4">или</v-divider>
+              <v-btn
+                block
+                color="primary"
+                variant="outlined"
+                @click="signInWithGoogle"
+              >
+                Войти через Google
+              </v-btn>
             </v-form>
           </v-card-text>
         </v-card>
@@ -69,13 +78,18 @@
 </template>
 
 <script lang="ts">
+import { defineComponent } from "vue";
+import { useRouter } from "vue-router";
+import { useApolloClient } from "@vue/apollo-composable";
+
 import { useProfileStore } from "@/store/profile";
 import { SIGN_IN } from "@/api/Mutations";
-import { useMutation, useQuery } from "@vue/apollo-composable";
-import { defineComponent } from "vue";
 import { UserStorageSetters } from "@/entities/user/storage/setters";
+import { UserStorageKeys } from "@/entities/user/storage/config";
+import { redirectToGoogleOAuth } from "@/entities/user/lib/googleOAuth";
 
 export default defineComponent({
+  name: "SignInComponent",
   data() {
     return {
       loading: false,
@@ -85,41 +99,49 @@ export default defineComponent({
       visible: false,
     };
   },
+
+  setup() {
+    const { client } = useApolloClient();
+    const router = useRouter();
+    return {
+      apolloClient: client,
+      router,
+    };
+  },
+
   methods: {
-    signIn(event: any) {
-      UserStorageSetters.removeToken();
-      this.loading = true;
-      const { mutate: signIn, onDone, onError } = useMutation(SIGN_IN);
-
-      const request = {
-        signInRequest: {
-          email: this.email,
-          password: this.password,
-        },
-      };
-
-      signIn(request);
-
-      onDone((response) => {
-        this.loading = false;
-        const token = response.data.signIn.token;
-        UserStorageSetters.setToken(token);
-        setTimeout(() => this.$router.push("/tasks"), 30);
-      });
-
-      onError(({ networkError, graphQLErrors }) => {
-        this.loading = false;
-        if (graphQLErrors) {
-          graphQLErrors.map(({ message }) => {
-            if (message === "NOT_FOUND") {
-              console.log("profile not found");
-            }
-          });
-        }
-      });
+    async signInWithGoogle() {
+      await redirectToGoogleOAuth();
     },
-    signUp() {
-      this.$router.push("/auth/signup");
+    async signIn() {
+      if (this.loading) return;
+      this.loading = true;
+      UserStorageSetters.removeToken();
+      try {
+        const result = await this.apolloClient.mutate({
+          mutation: SIGN_IN,
+          variables: {
+            signInRequest: {
+              email: this.email,
+              password: this.password,
+            },
+          },
+        });
+        const token = result.data?.signIn?.token;
+        if (!token) {
+          throw new Error("Сервер не вернул токен авторизации.");
+        }
+
+        UserStorageSetters.setToken(token);
+        await this.router.push("/tasks");
+      } catch (error: unknown) {
+        console.error("Sign-in failed:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async signUp() {
+      await this.router.push("/auth/signup");
     },
   },
 });

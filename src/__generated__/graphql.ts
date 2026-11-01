@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -13,6 +14,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  Long: { input: any; output: any; }
 };
 
 export enum AdditionPayloadType {
@@ -61,8 +63,66 @@ export type GenerateGraphRequest = {
   vertexCount: Scalars['Int']['input'];
 };
 
+export type GetAllGraphsRequestInput = {
+  filter?: InputMaybe<GraphFilterInput>;
+  pagination?: InputMaybe<PaginationRequestInput>;
+};
+
+export type GetAllGraphsResponse = {
+  __typename?: 'GetAllGraphsResponse';
+  items?: Maybe<Array<Graph>>;
+  pagination?: Maybe<PaginationResponse>;
+};
+
+export type GetAllPluginRequestInput = {
+  filter?: InputMaybe<PluginFilterInput>;
+  pagination?: InputMaybe<PaginationRequestInput>;
+};
+
+export type GetAllPluginsResponse = {
+  __typename?: 'GetAllPluginsResponse';
+  items?: Maybe<Array<Plugin>>;
+  pagination?: Maybe<PaginationResponse>;
+};
+
+export type GetAllProfilesRequestInput = {
+  filter?: InputMaybe<ProfileFilterInput>;
+  pagination?: InputMaybe<PaginationRequestInput>;
+};
+
+export type GetAllProfilesResponse = {
+  __typename?: 'GetAllProfilesResponse';
+  items?: Maybe<Array<Profile>>;
+  pagination?: Maybe<PaginationResponse>;
+};
+
+export type GetAllTaskRequestInput = {
+  filter?: InputMaybe<TaskFilterInput>;
+  pagination?: InputMaybe<PaginationRequestInput>;
+};
+
+export type GetAllTaskResponse = {
+  __typename?: 'GetAllTaskResponse';
+  items?: Maybe<Array<Task>>;
+  pagination?: Maybe<PaginationResponse>;
+};
+
+export type GetAllTaskSolutionsRequestInput = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
+  isCorrect?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination?: InputMaybe<PaginationRequestInput>;
+  taskId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GetAllTaskSolutionsResponse = {
+  __typename?: 'GetAllTaskSolutionsResponse';
+  items?: Maybe<Array<Solution>>;
+  pagination?: Maybe<PaginationResponse>;
+};
+
 export type Graph = {
   __typename?: 'Graph';
+  author?: Maybe<Profile>;
   edgeCount: Scalars['Int']['output'];
   edgeList: Array<Maybe<Edge>>;
   id: Scalars['String']['output'];
@@ -73,10 +133,20 @@ export type Graph = {
   vertexList: Array<Maybe<Vertex>>;
 };
 
+export type GraphFilterInput = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
+  edgeCount?: InputMaybe<Scalars['Int']['input']>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  isDirect?: InputMaybe<Scalars['Boolean']['input']>;
+  isNamed?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  vertexCount?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type GraphInput = {
   edgeCount: Scalars['Int']['input'];
   edgeList: Array<InputMaybe<EdgeInput>>;
-  id: Scalars['ID']['input'];
+  id?: InputMaybe<Scalars['ID']['input']>;
   isDirect: Scalars['Boolean']['input'];
   isNamed: Scalars['Boolean']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -95,7 +165,7 @@ export type GraphResult = {
 
 export type GraphTestResult = {
   __typename?: 'GraphTestResult';
-  graphId: Scalars['ID']['output'];
+  graph?: Maybe<Graph>;
   originalResult: Scalars['String']['output'];
   originalTimeResult: Scalars['Int']['output'];
   result: Scalars['String']['output'];
@@ -131,6 +201,7 @@ export type Mutation = {
   /** task */
   deleteTask: Scalars['String']['output'];
   generateGraph?: Maybe<Graph>;
+  refreshToken: Token;
   resetPassword: Token;
   sendResetPasswordEmail: Scalars['String']['output'];
   signIn: Token;
@@ -209,6 +280,11 @@ export type MutationGenerateGraphArgs = {
 };
 
 
+export type MutationRefreshTokenArgs = {
+  refreshToken: Scalars['String']['input'];
+};
+
+
 export type MutationResetPasswordArgs = {
   resetPasswordRequest: ResetPasswordRequest;
 };
@@ -263,6 +339,21 @@ export type MutationValidatePluginArgs = {
   id: Scalars['ID']['input'];
 };
 
+export type PaginationRequestInput = {
+  page?: InputMaybe<Scalars['Int']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type PaginationResponse = {
+  __typename?: 'PaginationResponse';
+  hasNext?: Maybe<Scalars['Boolean']['output']>;
+  hasPrevious?: Maybe<Scalars['Boolean']['output']>;
+  page?: Maybe<Scalars['Int']['output']>;
+  pageSize?: Maybe<Scalars['Int']['output']>;
+  totalCount?: Maybe<Scalars['Long']['output']>;
+  totalPages?: Maybe<Scalars['Int']['output']>;
+};
+
 export type Payload = {
   discriminator: PayloadType;
   graph?: InputMaybe<GraphInput>;
@@ -274,7 +365,7 @@ export enum PayloadType {
 
 export type Plugin = {
   __typename?: 'Plugin';
-  authorId: Scalars['ID']['output'];
+  author?: Maybe<Profile>;
   beanName?: Maybe<Scalars['String']['output']>;
   category: Scalars['String']['output'];
   description: Scalars['String']['output'];
@@ -288,10 +379,21 @@ export type Plugin = {
   pluginType: PluginType;
 };
 
+export type PluginFilterInput = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
+  category?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  graphType?: InputMaybe<GraphType>;
+  isInternal?: InputMaybe<Scalars['Boolean']['input']>;
+  isValid?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  pluginType?: InputMaybe<PluginType>;
+};
+
 export type PluginInfo = {
   __typename?: 'PluginInfo';
   mistakeText?: Maybe<Scalars['String']['output']>;
-  pluginId: Scalars['String']['output'];
+  plugin?: Maybe<Plugin>;
   pluginType: PluginType;
   sign?: Maybe<Scalars['String']['output']>;
   value: Scalars['String']['output'];
@@ -307,12 +409,12 @@ export type PluginInfoInput = {
 };
 
 export type PluginInput = {
-  authorId: Scalars['ID']['input'];
+  authorId?: InputMaybe<Scalars['ID']['input']>;
   beanName?: InputMaybe<Scalars['String']['input']>;
   category: Scalars['String']['input'];
   description: Scalars['String']['input'];
   graphType: GraphType;
-  id: Scalars['ID']['input'];
+  id?: InputMaybe<Scalars['ID']['input']>;
   isInternal: Scalars['Boolean']['input'];
   isValid: Scalars['Boolean']['input'];
   jarFile?: InputMaybe<Scalars['String']['input']>;
@@ -324,7 +426,7 @@ export type PluginInput = {
 export type PluginResult = {
   __typename?: 'PluginResult';
   isCorrect: Scalars['Boolean']['output'];
-  pluginId: Scalars['String']['output'];
+  plugin?: Maybe<Plugin>;
   pluginMessage: Scalars['String']['output'];
   trueValue: Scalars['String']['output'];
   value: Scalars['String']['output'];
@@ -354,6 +456,14 @@ export type Profile = {
   profileRole: Role;
 };
 
+export type ProfileFilterInput = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  patronymic?: InputMaybe<Scalars['String']['input']>;
+  profileRole?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type ProfileInput = {
   email: Scalars['String']['input'];
   firstName: Scalars['String']['input'];
@@ -366,15 +476,13 @@ export type ProfileInput = {
 
 export type Query = {
   __typename?: 'Query';
-  /** plugin */
-  getAllPlugins: Array<Maybe<Plugin>>;
-  /** profile */
-  getAllProfiles: Array<Maybe<Profile>>;
-  getAllTaskSolutions: Array<Maybe<Solution>>;
-  getAllTasks: Array<Maybe<Task>>;
-  /** graph */
+  getAllGraphs: GetAllGraphsResponse;
+  getAllPlugins: GetAllPluginsResponse;
+  getAllProfiles: GetAllProfilesResponse;
+  getAllTaskSolutions: GetAllTaskSolutionsResponse;
+  getAllTasks: GetAllTaskResponse;
   getGraphById: Graph;
-  getGraphLibrary: Array<Maybe<Graph>>;
+  getMyProfile: Profile;
   getPlugin: Plugin;
   getProfile: Profile;
   /** event */
@@ -382,13 +490,31 @@ export type Query = {
   /** task */
   getTask: Task;
   getTaskSolution: Solution;
-  getUserSolutionStatistic: Array<Maybe<Solution>>;
+};
+
+
+export type QueryGetAllGraphsArgs = {
+  request: GetAllGraphsRequestInput;
+};
+
+
+export type QueryGetAllPluginsArgs = {
+  request: GetAllPluginRequestInput;
+};
+
+
+export type QueryGetAllProfilesArgs = {
+  request: GetAllProfilesRequestInput;
 };
 
 
 export type QueryGetAllTaskSolutionsArgs = {
-  taskId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
+  request: GetAllTaskSolutionsRequestInput;
+};
+
+
+export type QueryGetAllTasksArgs = {
+  request: GetAllTaskRequestInput;
 };
 
 
@@ -463,43 +589,43 @@ export type SignUpRequest = {
 
 /**  --------------------------------------------------------------------------------- */
 export type Solution = {
-  authorId: Scalars['String']['output'];
+  author?: Maybe<Profile>;
   id: Scalars['ID']['output'];
   isCorrect: Scalars['Boolean']['output'];
-  taskId: Scalars['String']['output'];
+  task?: Maybe<Task>;
 };
 
 export type SolutionGraph = Solution & {
   __typename?: 'SolutionGraph';
-  authorId: Scalars['String']['output'];
+  author?: Maybe<Profile>;
   graph: Graph;
   id: Scalars['ID']['output'];
   isCorrect: Scalars['Boolean']['output'];
-  pluginResults: Array<Maybe<PluginResult>>;
-  taskId: Scalars['String']['output'];
+  pluginResults?: Maybe<Array<PluginResult>>;
+  task?: Maybe<Task>;
 };
 
 export type SolutionGraphInput = {
-  authorId: Scalars['String']['input'];
+  authorId?: InputMaybe<Scalars['String']['input']>;
   graph: GraphInput;
-  id: Scalars['ID']['input'];
+  id?: InputMaybe<Scalars['ID']['input']>;
   pluginsInput?: InputMaybe<Array<PluginStringInput>>;
   taskId: Scalars['String']['input'];
 };
 
 export type SolutionImplementation = Solution & {
   __typename?: 'SolutionImplementation';
-  authorId: Scalars['String']['output'];
+  author?: Maybe<Profile>;
   id: Scalars['ID']['output'];
-  implementationResult: Array<Maybe<GraphResult>>;
+  implementationResult?: Maybe<Array<GraphResult>>;
   isCorrect: Scalars['Boolean']['output'];
-  taskId: Scalars['String']['output'];
+  task?: Maybe<Task>;
 };
 
 export type SolutionImplementationInput = {
-  authorId: Scalars['String']['input'];
+  authorId?: InputMaybe<Scalars['String']['input']>;
   code: Scalars['String']['input'];
-  id: Scalars['ID']['input'];
+  id?: InputMaybe<Scalars['ID']['input']>;
   taskId: Scalars['String']['input'];
 };
 
@@ -544,7 +670,7 @@ export enum StatisticType {
 
 /**  ------------------------------------------------------------------------- */
 export type Task = {
-  authorId: Scalars['String']['output'];
+  author?: Maybe<Profile>;
   category: Scalars['String']['output'];
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
@@ -553,11 +679,20 @@ export type Task = {
   taskType: TaskType;
 };
 
+export type TaskFilterInput = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
+  category?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  taskType?: InputMaybe<TaskType>;
+};
+
 export type TaskGraph = Task & {
   __typename?: 'TaskGraph';
-  authorId: Scalars['String']['output'];
+  author?: Maybe<Profile>;
   category: Scalars['String']['output'];
-  condition: Array<Maybe<PluginInfo>>;
+  conditions?: Maybe<Array<PluginInfo>>;
   description: Scalars['String']['output'];
   graph?: Maybe<Graph>;
   id: Scalars['ID']['output'];
@@ -569,7 +704,7 @@ export type TaskGraph = Task & {
 };
 
 export type TaskGraphInput = {
-  authorId: Scalars['String']['input'];
+  authorId?: InputMaybe<Scalars['String']['input']>;
   category: Scalars['String']['input'];
   condition: Array<InputMaybe<PluginInfoInput>>;
   description: Scalars['String']['input'];
@@ -584,21 +719,21 @@ export type TaskGraphInput = {
 
 export type TaskImplementation = Task & {
   __typename?: 'TaskImplementation';
-  authorId: Scalars['String']['output'];
+  author?: Maybe<Profile>;
   category: Scalars['String']['output'];
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   isPublic: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
-  pluginId: Scalars['String']['output'];
+  plugin?: Maybe<Plugin>;
   taskType: TaskType;
 };
 
 export type TaskImplementationInput = {
-  authorId: Scalars['String']['input'];
+  authorId?: InputMaybe<Scalars['String']['input']>;
   category: Scalars['String']['input'];
   description: Scalars['String']['input'];
-  id: Scalars['ID']['input'];
+  id?: InputMaybe<Scalars['ID']['input']>;
   isPublic: Scalars['Boolean']['input'];
   name: Scalars['String']['input'];
   pluginId: Scalars['String']['input'];
@@ -607,12 +742,14 @@ export type TaskImplementationInput = {
 
 export enum TaskType {
   Graph = 'GRAPH',
-  Implementation = 'IMPLEMENTATION'
+  Implementation = 'IMPLEMENTATION',
+  Unrecognized = 'UNRECOGNIZED'
 }
 
 export type Token = {
   __typename?: 'Token';
-  token: Scalars['String']['output'];
+  accessToken: Scalars['String']['output'];
+  refreshToken: Scalars['String']['output'];
 };
 
 export type Vertex = {
@@ -633,3 +770,128 @@ export type VertexInput = {
   xCoordinate: Scalars['Int']['input'];
   yCoordinate: Scalars['Int']['input'];
 };
+
+export type SignInMutationVariables = Exact<{
+  signInRequest: SignInRequest;
+}>;
+export type SignInMutation = { __typename?: 'Mutation', signIn: { __typename?: 'Token', accessToken: string, refreshToken: string } };
+export type SignUpMutationVariables = Exact<{
+  signUpRequest: SignUpRequest;
+}>;
+export type SignUpMutation = { __typename?: 'Mutation', signUp: { __typename?: 'Token', accessToken: string, refreshToken: string } };
+export type UpdateProfileMutationVariables = Exact<{
+  profile: ProfileInput;
+}>;
+export type UpdateProfileMutation = { __typename?: 'Mutation', updateProfile: { __typename?: 'Profile', id: string, email: string, profilePassword: string, firstName: string, lastName: string, patronymic?: string | null, profileRole: Role } };
+export type DeleteProfileMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>
+export type DeleteProfileMutation = { __typename?: 'Mutation', deleteProfile: string };
+export type CreateGraphMutationVariables = Exact<{
+  graph: GraphInput;
+}>;
+export type CreateGraphMutation = { __typename?: 'Mutation', createGraph: { __typename?: 'Graph', id: string, vertexCount: number, edgeCount: number, isDirect: boolean, isNamed: boolean, name?: string | null, vertexList: Array<{ __typename?: 'Vertex', id: number, weight: number, label: string, xCoordinate: number, yCoordinate: number, color: Color } | null>, edgeList: Array<{ __typename?: 'Edge', source: number, target: number, weight: number, label: string, color: Color } | null> } };
+export type DeleteGraphMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type DeleteGraphMutation = { __typename?: 'Mutation', deleteGraph: string };
+export type CreateTaskGraphMutationVariables = Exact<{
+  task: TaskGraphInput;
+}>;
+export type CreateTaskGraphMutation = { __typename?: 'Mutation', createTaskGraph: { __typename?: 'TaskGraph', id: string, name: string, description: string, category: string, taskType: TaskType, isPublic: boolean, isHiddenMistake: boolean, rule: { __typename?: 'Rule', isColor: boolean, isEdit: boolean, isMove: boolean, isDelete: boolean }, author?: { __typename?: 'Profile', id: string } | null, conditions?: Array<{ __typename?: 'PluginInfo', value: string, mistakeText?: string | null, sign?: string | null, pluginType: PluginType, plugin?: { __typename?: 'Plugin', id: string } | null }> | null } };
+export type DeleteTaskMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type DeleteTaskMutation = { __typename?: 'Mutation', deleteTask: string };
+export type CreateTaskImplementationMutationVariables = Exact<{
+  task: TaskImplementationInput;
+}>;
+export type CreateTaskImplementationMutation = { __typename?: 'Mutation', createTaskImplementation: { __typename?: 'TaskImplementation', id: string, name: string, description: string, category: string, taskType: TaskType, isPublic: boolean, author?: { __typename?: 'Profile', id: string } | null, plugin?: { __typename?: 'Plugin', id: string } | null } };
+export type CreatePluginMutationVariables = Exact<{
+  plugin: PluginInput;
+}>;
+export type CreatePluginMutation = { __typename?: 'Mutation', createPlugin?: { __typename?: 'Plugin', id: string, name: string, description: string, category: string, graphType: GraphType, isValid: boolean, beanName?: string | null, pluginType: PluginType, isInternal: boolean, author?: { __typename?: 'Profile', id: string } | null } | null };
+export type UpdatePluginMutationVariables = Exact<{
+  plugin: PluginInput;
+}>;
+export type UpdatePluginMutation = { __typename?: 'Mutation', updatePlugin?: { __typename?: 'Plugin', id: string, name: string, description: string, category: string, graphType: GraphType, isValid: boolean, beanName?: string | null, pluginType: PluginType, isInternal: boolean, author?: { __typename?: 'Profile', id: string } | null } | null };
+export type DeletePluginMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type DeletePluginMutation = { __typename?: 'Mutation', deletePlugin: string };
+export type ValidatePluginMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type ValidatePluginMutation = { __typename?: 'Mutation', validatePlugin: string };
+export type SolveTaskGraphMutationVariables = Exact<{
+  solution: SolutionGraphInput;
+}>;
+export type SolveTaskGraphMutation = { __typename?: 'Mutation', solveTaskGraph: { __typename?: 'SolutionGraph', id: string, isCorrect: boolean, task?: { __typename?: 'TaskGraph', id: string } | { __typename?: 'TaskImplementation', id: string } | null, author?: { __typename?: 'Profile', id: string } | null, pluginResults?: Array<{ __typename?: 'PluginResult', isCorrect: boolean, value: string, trueValue: string, plugin?: { __typename?: 'Plugin', id: string } | null }> | null } };
+export type SolveTaskImplementationMutationVariables = Exact<{
+  solution: SolutionImplementationInput;
+}>;
+export type SolveTaskImplementationMutation = { __typename?: 'Mutation', solveTaskImplementation: { __typename?: 'SolutionImplementation', id: string, isCorrect: boolean, task?: { __typename?: 'TaskGraph', id: string } | { __typename?: 'TaskImplementation', id: string } | null, author?: { __typename?: 'Profile', id: string } | null, implementationResult?: Array<{ __typename?: 'GraphResult', id: string, originalTimeResult: number, timeResult: number, originalResult: string, result: string }> | null } };
+export type GetAllProfilesQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetAllProfilesQuery = { __typename?: 'Query', getAllProfiles: { __typename?: 'GetAllProfilesResponse', items?: Array<{ __typename?: 'Profile', id: string, email: string, firstName: string, lastName: string, patronymic?: string | null, profileRole: Role }> | null } };
+export type GetProfileQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type GetProfileQuery = { __typename?: 'Query', getProfile: { __typename?: 'Profile', id: string, email: string, profilePassword: string, firstName: string, lastName: string, patronymic?: string | null, profileRole: Role } };
+export type GetTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type GetTaskQuery = { __typename?: 'Query', getTask: { __typename: 'TaskGraph', isHiddenMistake: boolean, id: string, name: string, description: string, category: string, taskType: TaskType, isPublic: boolean, graph?: { __typename?: 'Graph', id: string, vertexCount: number, edgeCount: number, isDirect: boolean, vertexList: Array<{ __typename?: 'Vertex', id: number, weight: number, label: string, xCoordinate: number, yCoordinate: number, color: Color } | null>, edgeList: Array<{ __typename?: 'Edge', source: number, target: number, weight: number, label: string, color: Color } | null> } | null, conditions?: Array<{ __typename?: 'PluginInfo', mistakeText?: string | null, plugin?: { __typename?: 'Plugin', id: string } | null }> | null, author?: { __typename?: 'Profile', id: string } | null } | { __typename: 'TaskImplementation', id: string, name: string, description: string, category: string, taskType: TaskType, isPublic: boolean, plugin?: { __typename?: 'Plugin', id: string } | null, author?: { __typename?: 'Profile', id: string } | null } };
+export type GetGraphByIdQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+export type GetGraphByIdQuery = { __typename?: 'Query', getGraphById: { __typename?: 'Graph', id: string, isDirect: boolean, isNamed: boolean, name?: string | null, vertexCount: number, edgeCount: number, vertexList: Array<{ __typename?: 'Vertex', id: number, label: string, color: Color, weight: number, xCoordinate: number, yCoordinate: number } | null>, edgeList: Array<{ __typename?: 'Edge', source: number, target: number, label: string, color: Color, weight: number } | null> } };
+export type GetUserSolutionStatisticQueryVariables = Exact<{
+  userId?: InputMaybe<Scalars['String']['input']>;
+}>;
+export type GetUserSolutionStatisticQuery = { __typename?: 'Query', getAllTaskSolutions: { __typename?: 'GetAllTaskSolutionsResponse', items?: Array<{ __typename: 'SolutionGraph', id: string, isCorrect: boolean, task?: { __typename?: 'TaskGraph', id: string } | { __typename?: 'TaskImplementation', id: string } | null, author?: { __typename?: 'Profile', id: string } | null } | { __typename: 'SolutionImplementation', id: string, isCorrect: boolean, task?: { __typename?: 'TaskGraph', id: string } | { __typename?: 'TaskImplementation', id: string } | null, author?: { __typename?: 'Profile', id: string } | null }> | null } };
+export type GetSolutionWithTaskDescriptionQueryVariables = Exact<{
+  taskId: Scalars['ID']['input'];
+  solutionId: Scalars['ID']['input'];
+}>;
+export type GetSolutionWithTaskDescriptionQuery = { __typename?: 'Query', getTaskSolution: { __typename: 'SolutionGraph', id: string, isCorrect: boolean, graph: { __typename?: 'Graph', id: string, vertexCount: number, edgeCount: number, isDirect: boolean, vertexList: Array<{ __typename?: 'Vertex', id: number, weight: number, label: string, xCoordinate: number, yCoordinate: number, color: Color } | null>, edgeList: Array<{ __typename?: 'Edge', source: number, target: number, weight: number, label: string, color: Color } | null> }, pluginResults?: Array<{ __typename?: 'PluginResult', isCorrect: boolean, value: string, trueValue: string, pluginMessage: string, plugin?: { __typename?: 'Plugin', id: string } | null }> | null, task?: { __typename?: 'TaskGraph', id: string } | { __typename?: 'TaskImplementation', id: string } | null, author?: { __typename?: 'Profile', id: string } | null } | { __typename: 'SolutionImplementation', id: string, isCorrect: boolean, task?: { __typename?: 'TaskGraph', id: string } | { __typename?: 'TaskImplementation', id: string } | null, author?: { __typename?: 'Profile', id: string } | null }, getTask: { __typename?: 'TaskGraph', description: string } | { __typename?: 'TaskImplementation', description: string } };
+export type GetGraphLibraryQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetGraphLibraryQuery = { __typename?: 'Query', getAllGraphs: { __typename?: 'GetAllGraphsResponse', items?: Array<{ __typename?: 'Graph', id: string, name?: string | null, isNamed: boolean, vertexList: Array<{ __typename?: 'Vertex', id: number, label: string } | null>, edgeList: Array<{ __typename?: 'Edge', label: string } | null> }> | null } };
+export type GetAllPluginsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetAllPluginsQuery = { __typename?: 'Query', getAllPlugins: { __typename?: 'GetAllPluginsResponse', items?: Array<{ __typename?: 'Plugin', id: string, name: string, description: string, category: string, graphType: GraphType, isValid: boolean, beanName?: string | null, pluginType: PluginType, isInternal: boolean, author?: { __typename?: 'Profile', id: string } | null }> | null } };
+export type GetAllTasksQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetAllTasksQuery = { __typename?: 'Query', getAllTasks: { __typename?: 'GetAllTaskResponse', items?: Array<{ __typename?: 'TaskGraph', id: string, name: string, description: string, category: string, taskType: TaskType, isPublic: boolean, author?: { __typename?: 'Profile', id: string } | null } | { __typename?: 'TaskImplementation', id: string, name: string, description: string, category: string, taskType: TaskType, isPublic: boolean, author?: { __typename?: 'Profile', id: string } | null }> | null } };
+export type GetStatisticQueryVariables = Exact<{
+  request: StatisticRequestInput;
+}>;
+
+export type GetStatisticQuery = { __typename?: 'Query', getStatistic: { __typename?: 'StatisticResponse', scope: StatisticScope, type: StatisticType, updated_at: string, task_id?: string | null, user_id?: string | null, value: number, event_type?: string | null } };
+export type GetMyProfileQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetMyProfileQuery = { __typename?: 'Query', getMyProfile: { __typename?: 'Profile', id: string, email: string, firstName: string, lastName: string, patronymic?: string | null, profileRole: Role } };
+
+
+export const SignInDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"signIn"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"signInRequest"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SignInRequest"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"signIn"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"signInRequest"},"value":{"kind":"Variable","name":{"kind":"Name","value":"signInRequest"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"accessToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}}]}}]}}]} as unknown as DocumentNode<SignInMutation, SignInMutationVariables>;
+export const SignUpDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"signUp"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"signUpRequest"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SignUpRequest"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"signUp"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"signUpRequest"},"value":{"kind":"Variable","name":{"kind":"Name","value":"signUpRequest"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"accessToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}}]}}]}}]} as unknown as DocumentNode<SignUpMutation, SignUpMutationVariables>;
+export const UpdateProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"updateProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"profile"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ProfileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"profile"},"value":{"kind":"Variable","name":{"kind":"Name","value":"profile"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"profilePassword"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"patronymic"}},{"kind":"Field","name":{"kind":"Name","value":"profileRole"}}]}}]}}]} as unknown as DocumentNode<UpdateProfileMutation, UpdateProfileMutationVariables>;
+export const DeleteProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteProfileMutation, DeleteProfileMutationVariables>;
+export const CreateGraphDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"createGraph"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"graph"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GraphInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createGraph"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"graph"},"value":{"kind":"Variable","name":{"kind":"Name","value":"graph"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"vertexCount"}},{"kind":"Field","name":{"kind":"Name","value":"edgeCount"}},{"kind":"Field","name":{"kind":"Name","value":"isDirect"}},{"kind":"Field","name":{"kind":"Name","value":"vertexList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"xCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"yCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edgeList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"target"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isNamed"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<CreateGraphMutation, CreateGraphMutationVariables>;
+export const DeleteGraphDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"deleteGraph"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteGraph"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteGraphMutation, DeleteGraphMutationVariables>;
+export const CreateTaskGraphDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"createTaskGraph"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"task"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TaskGraphInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createTaskGraph"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"task"},"value":{"kind":"Variable","name":{"kind":"Name","value":"task"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"taskType"}},{"kind":"Field","name":{"kind":"Name","value":"isPublic"}},{"kind":"Field","name":{"kind":"Name","value":"isHiddenMistake"}},{"kind":"Field","name":{"kind":"Name","value":"rule"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"isColor"}},{"kind":"Field","name":{"kind":"Name","value":"isEdit"}},{"kind":"Field","name":{"kind":"Name","value":"isMove"}},{"kind":"Field","name":{"kind":"Name","value":"isDelete"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"plugin"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"mistakeText"}},{"kind":"Field","name":{"kind":"Name","value":"sign"}},{"kind":"Field","name":{"kind":"Name","value":"pluginType"}}]}}]}}]}}]} as unknown as DocumentNode<CreateTaskGraphMutation, CreateTaskGraphMutationVariables>;
+export const DeleteTaskDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTask"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTask"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteTaskMutation, DeleteTaskMutationVariables>;
+export const CreateTaskImplementationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"createTaskImplementation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"task"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TaskImplementationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createTaskImplementation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"task"},"value":{"kind":"Variable","name":{"kind":"Name","value":"task"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"taskType"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isPublic"}},{"kind":"Field","name":{"kind":"Name","value":"plugin"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]}}]} as unknown as DocumentNode<CreateTaskImplementationMutation, CreateTaskImplementationMutationVariables>;
+export const CreatePluginDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"createPlugin"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"plugin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PluginInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createPlugin"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"plugin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"plugin"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"graphType"}},{"kind":"Field","name":{"kind":"Name","value":"isValid"}},{"kind":"Field","name":{"kind":"Name","value":"beanName"}},{"kind":"Field","name":{"kind":"Name","value":"pluginType"}},{"kind":"Field","name":{"kind":"Name","value":"isInternal"}}]}}]}}]} as unknown as DocumentNode<CreatePluginMutation, CreatePluginMutationVariables>;
+export const UpdatePluginDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"updatePlugin"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"plugin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PluginInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updatePlugin"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"plugin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"plugin"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"graphType"}},{"kind":"Field","name":{"kind":"Name","value":"isValid"}},{"kind":"Field","name":{"kind":"Name","value":"beanName"}},{"kind":"Field","name":{"kind":"Name","value":"pluginType"}},{"kind":"Field","name":{"kind":"Name","value":"isInternal"}}]}}]}}]} as unknown as DocumentNode<UpdatePluginMutation, UpdatePluginMutationVariables>;
+export const DeletePluginDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"deletePlugin"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deletePlugin"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeletePluginMutation, DeletePluginMutationVariables>;
+export const ValidatePluginDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"validatePlugin"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"validatePlugin"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<ValidatePluginMutation, ValidatePluginMutationVariables>;
+export const SolveTaskGraphDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"solveTaskGraph"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"solution"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SolutionGraphInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"solveTaskGraph"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"solution"},"value":{"kind":"Variable","name":{"kind":"Name","value":"solution"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"task"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCorrect"}},{"kind":"Field","name":{"kind":"Name","value":"pluginResults"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"plugin"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCorrect"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"trueValue"}}]}}]}}]}}]} as unknown as DocumentNode<SolveTaskGraphMutation, SolveTaskGraphMutationVariables>;
+export const SolveTaskImplementationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"solveTaskImplementation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"solution"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SolutionImplementationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"solveTaskImplementation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"solution"},"value":{"kind":"Variable","name":{"kind":"Name","value":"solution"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"task"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCorrect"}},{"kind":"Field","name":{"kind":"Name","value":"implementationResult"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"originalTimeResult"}},{"kind":"Field","name":{"kind":"Name","value":"timeResult"}},{"kind":"Field","name":{"kind":"Name","value":"originalResult"}},{"kind":"Field","name":{"kind":"Name","value":"result"}}]}}]}}]}}]} as unknown as DocumentNode<SolveTaskImplementationMutation, SolveTaskImplementationMutationVariables>;
+export const GetAllProfilesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAllProfiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllProfiles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"request"},"value":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"patronymic"}},{"kind":"Field","name":{"kind":"Name","value":"profileRole"}}]}}]}}]}}]} as unknown as DocumentNode<GetAllProfilesQuery, GetAllProfilesQueryVariables>;
+export const GetProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"getProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"profilePassword"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"patronymic"}},{"kind":"Field","name":{"kind":"Name","value":"profileRole"}}]}}]}}]} as unknown as DocumentNode<GetProfileQuery, GetProfileQueryVariables>;
+export const GetTaskDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"getTask"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getTask"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"taskType"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isPublic"}},{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"TaskGraph"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"isHiddenMistake"}},{"kind":"Field","name":{"kind":"Name","value":"graph"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"vertexCount"}},{"kind":"Field","name":{"kind":"Name","value":"edgeCount"}},{"kind":"Field","name":{"kind":"Name","value":"isDirect"}},{"kind":"Field","name":{"kind":"Name","value":"vertexList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"xCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"yCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edgeList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"target"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"conditions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"plugin"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"mistakeText"}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"TaskImplementation"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"plugin"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetTaskQuery, GetTaskQueryVariables>;
+export const GetGraphByIdDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetGraphById"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getGraphById"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isDirect"}},{"kind":"Field","name":{"kind":"Name","value":"isNamed"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"vertexCount"}},{"kind":"Field","name":{"kind":"Name","value":"edgeCount"}},{"kind":"Field","name":{"kind":"Name","value":"vertexList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"xCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"yCoordinate"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edgeList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"target"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}}]}}]}}]}}]} as unknown as DocumentNode<GetGraphByIdQuery, GetGraphByIdQueryVariables>;
+export const GetUserSolutionStatisticDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserSolutionStatistic"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllTaskSolutions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"request"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"authorId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"task"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCorrect"}},{"kind":"Field","name":{"kind":"Name","value":"__typename"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserSolutionStatisticQuery, GetUserSolutionStatisticQueryVariables>;
+export const GetSolutionWithTaskDescriptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"getSolutionWithTaskDescription"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"taskId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"solutionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getTaskSolution"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"solutionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"task"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCorrect"}},{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"SolutionGraph"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"graph"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"vertexCount"}},{"kind":"Field","name":{"kind":"Name","value":"edgeCount"}},{"kind":"Field","name":{"kind":"Name","value":"isDirect"}},{"kind":"Field","name":{"kind":"Name","value":"vertexList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"xCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"yCoordinate"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edgeList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"source"}},{"kind":"Field","name":{"kind":"Name","value":"target"}},{"kind":"Field","name":{"kind":"Name","value":"weight"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"pluginResults"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"plugin"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isCorrect"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"trueValue"}},{"kind":"Field","name":{"kind":"Name","value":"pluginMessage"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"getTask"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"taskId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<GetSolutionWithTaskDescriptionQuery, GetSolutionWithTaskDescriptionQueryVariables>;
+export const GetGraphLibraryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetGraphLibrary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllGraphs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"request"},"value":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"isNamed"}},{"kind":"Field","name":{"kind":"Name","value":"vertexList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edgeList"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"label"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetGraphLibraryQuery, GetGraphLibraryQueryVariables>;
+export const GetAllPluginsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAllPlugins"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllPlugins"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"request"},"value":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"graphType"}},{"kind":"Field","name":{"kind":"Name","value":"isValid"}},{"kind":"Field","name":{"kind":"Name","value":"beanName"}},{"kind":"Field","name":{"kind":"Name","value":"pluginType"}},{"kind":"Field","name":{"kind":"Name","value":"isInternal"}}]}}]}}]}}]} as unknown as DocumentNode<GetAllPluginsQuery, GetAllPluginsQueryVariables>;
+export const GetAllTasksDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAllTasks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getAllTasks"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"request"},"value":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}},{"kind":"Field","name":{"kind":"Name","value":"taskType"}},{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isPublic"}}]}}]}}]}}]} as unknown as DocumentNode<GetAllTasksQuery, GetAllTasksQueryVariables>;
+export const GetStatisticDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetStatistic"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"request"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"StatisticRequestInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getStatistic"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"request"},"value":{"kind":"Variable","name":{"kind":"Name","value":"request"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"scope"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"task_id"}},{"kind":"Field","name":{"kind":"Name","value":"user_id"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"event_type"}}]}}]}}]} as unknown as DocumentNode<GetStatisticQuery, GetStatisticQueryVariables>;
+export const GetMyProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetMyProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getMyProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"firstName"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"patronymic"}},{"kind":"Field","name":{"kind":"Name","value":"profileRole"}}]}}]}}]} as unknown as DocumentNode<GetMyProfileQuery, GetMyProfileQueryVariables>;

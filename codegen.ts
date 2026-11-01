@@ -1,8 +1,8 @@
 import { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
-  schema: "https://wisetask.ru:82/graphql",
-  documents: ["./graphql/**/*.graphql"],
+  schema: "../wise-task-gateway/src/main/resources/graphql/*.graphqls",
+  documents: ["./src/**/*.{ts,vue,graphql,gql}"],
   generates: {
     "./src/__generated__/": {
       preset: "client",
