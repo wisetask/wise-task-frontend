@@ -1,4 +1,4 @@
-import { Maybe } from "@/__generated__/graphql";
+import { Maybe, Profile } from "@/__generated__/graphql";
 import { defineStore } from "pinia";
 
 export interface GraphFilter {
@@ -45,6 +45,7 @@ export interface Graph {
     id: Maybe<string>,
     name: Maybe<string> | undefined,
     isDirect: boolean,
+    author?: Maybe<Profile>,
     edges: any,
     nodes: any,
     layouts: any

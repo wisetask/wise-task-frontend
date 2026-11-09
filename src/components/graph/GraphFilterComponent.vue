@@ -1,70 +1,61 @@
 <template>
-  <v-card>
-    <v-card-title>Фильтр графов</v-card-title>
-    <v-card-text>
+  <div class="flt-panel">
+    <div class="flt-panel__header">
+      <span class="flt-panel__icon">
+        <v-icon size="20" icon="mdi-filter-variant" />
+      </span>
+      <span class="flt-panel__title">Фильтр графов</span>
+    </div>
+    <div class="flt-panel__body">
       <v-text-field
           label="Название"
           v-model="nameModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-text-field>
       <v-select
           label="Автор"
           :items="authorItems"
           v-model="authorIdModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-select>
       <v-text-field
           label="Количество вершин"
           type="number"
           v-model="vertexCountModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-text-field>
       <v-text-field
           label="Количество рёбер"
           type="number"
           v-model="edgeCountModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-text-field>
       <v-select
           label="Ориентированный"
           :items="isDirectItems"
           v-model="isDirectModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-select>
-      <v-select
-          label="Именованный"
-          :items="isNamedItems"
-          v-model="isNamedModel"
-          variant="outlined"
-          density="compact"
-          hide-details="auto"
-          class="mb-2"
-      ></v-select>
-    </v-card-text>
-    <v-card-actions class="d-flex justify-space-between">
-      <v-btn @click="applyFilter" color="primary" variant="outlined">
+    </div>
+    <div class="flt-panel__actions">
+      <v-btn color="#1976d2" variant="flat" prepend-icon="mdi-magnify" @click="applyFilter">
         Найти
       </v-btn>
-      <v-btn @click="resetFilter" color="primary" variant="outlined">
+      <v-btn color="#5c6470" variant="text" prepend-icon="mdi-filter-remove" @click="resetFilter">
         Сбросить
       </v-btn>
-    </v-card-actions>
-  </v-card>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -93,11 +84,6 @@ export default defineComponent({
     })
 
     const isDirectItems = [
-      { title: 'Все', value: '' },
-      { title: 'Да', value: true },
-      { title: 'Нет', value: false },
-    ]
-    const isNamedItems = [
       { title: 'Все', value: '' },
       { title: 'Да', value: true },
       { title: 'Нет', value: false },
@@ -150,15 +136,6 @@ export default defineComponent({
       },
     })
 
-    const isNamedModel = computed({
-      get() {
-        return graphFilter.value.isNamed
-      },
-      set(value: string | boolean) {
-        graphFilter.value.isNamed = value ?? ''
-      },
-    })
-
     const applyFilter = () => {
       graphFilter.value.isFiltered = true
       graphFilter.value.appliedAt++
@@ -180,16 +157,18 @@ export default defineComponent({
     return {
       authorItems,
       isDirectItems,
-      isNamedItems,
       nameModel,
       authorIdModel,
       vertexCountModel,
       edgeCountModel,
       isDirectModel,
-      isNamedModel,
       applyFilter,
       resetFilter,
     }
   },
 })
 </script>
+
+<style>
+@import "@/components/common/filterStyles.css";
+</style>

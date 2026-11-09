@@ -66,6 +66,7 @@ export function toVGraph(graph: Graph) {
     id: graph.id,
     name: graph.name,
     isDirect: graph.isDirect,
+    author: graph.author,
     edges: edges,
     nodes: nodes,
     layouts: layouts,

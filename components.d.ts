@@ -66,12 +66,14 @@ declare module 'vue' {
     TaskConditionListComponent: typeof import('./src/components/task/constructor/graph/TaskConditionListComponent.vue')['default']
     TaskConstructorComponent: typeof import('./src/components/task/constructor/TaskConstructorComponent.vue')['default']
     TaskConstructorPage: typeof import('./src/components/constructor_v2/TaskConstructorPage.vue')['default']
+    TaskDescriptionComponent: typeof import('./src/components/task/TaskDescriptionComponent.vue')['default']
     TaskFilterComponent: typeof import('./src/components/task/TaskFilterComponent.vue')['default']
     TaskGraphComponent: typeof import('./src/components/task/TaskGraphComponent.vue')['default']
     TaskGraphLibraryComponent: typeof import('./src/components/task/constructor/graph/TaskGraphLibraryComponent.vue')['default']
     TaskGraphPluginTableComponent: typeof import('./src/components/task/constructor/graph/TaskGraphPluginTableComponent.vue')['default']
     TaskImplementationComponent: typeof import('./src/components/task/TaskImplementationComponent.vue')['default']
     TaskImplementationPluginTableComponent: typeof import('./src/components/task/constructor/implementation/TaskImplementationPluginTableComponent.vue')['default']
+    TaskPluginsInfoComponent: typeof import('./src/components/task/TaskPluginsInfoComponent.vue')['default']
     TaskTableComponent: typeof import('./src/components/task/TaskTableComponent.vue')['default']
   }
 }

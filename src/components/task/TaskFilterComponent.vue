@@ -1,59 +1,59 @@
 <template>
-  <v-card>
-    <v-card-title>Фильтр задач</v-card-title>
-    <v-card-text>
+  <div class="flt-panel">
+    <div class="flt-panel__header">
+      <span class="flt-panel__icon">
+        <v-icon size="20" icon="mdi-filter-variant" />
+      </span>
+      <span class="flt-panel__title">Фильтр задач</span>
+    </div>
+    <div class="flt-panel__body">
       <v-text-field
           label="Название"
           v-model="nameModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-text-field>
       <v-text-field
           label="Описание"
           v-model="descriptionModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-text-field>
       <v-text-field
           label="Категория"
           v-model="categoryModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-text-field>
       <v-select
           label="Тип задачи"
           :items="taskTypeItems"
           v-model="taskTypeModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-select>
       <v-select
           label="Автор"
           :items="authorItems"
           v-model="authorIdModel"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           hide-details="auto"
-          class="mb-2"
       ></v-select>
-    </v-card-text>
-    <v-card-actions class="d-flex justify-space-between">
-      <v-btn @click="applyFilter" color="primary" variant="outlined">
+    </div>
+    <div class="flt-panel__actions">
+      <v-btn color="#1976d2" variant="flat" prepend-icon="mdi-magnify" @click="applyFilter">
         Найти
       </v-btn>
-      <v-btn @click="resetFilter" color="primary" variant="outlined">
+      <v-btn color="#5c6470" variant="text" prepend-icon="mdi-filter-remove" @click="resetFilter">
         Сбросить
       </v-btn>
-    </v-card-actions>
-  </v-card>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -61,6 +61,7 @@ import { useTaskStore } from '@/store/task'
 import { useProfileStore } from '@/store/profile'
 import { storeToRefs } from 'pinia'
 import { defineComponent, computed, onMounted } from 'vue'
+import { TaskType } from '@/__generated__/graphql'
 
 export default defineComponent({
   setup() {
@@ -83,8 +84,8 @@ export default defineComponent({
 
     const taskTypeItems = [
       { title: 'Все', value: '' },
-      { title: 'GRAPH', value: 'GRAPH' },
-      { title: 'IMPLEMENTATION', value: 'IMPLEMENTATION' },
+      { title: 'Графовая', value: TaskType.Graph },
+      { title: 'Программная', value: TaskType.Implementation },
     ]
 
     const nameModel = computed({
@@ -160,3 +161,7 @@ export default defineComponent({
   },
 })
 </script>
+
+<style>
+@import "@/components/common/filterStyles.css";
+</style>

@@ -1,11 +1,10 @@
 <template>
   <v-layout>
-    <div style="position: relative; width: 100%; height: 100vh;">
+    <div style="position: relative; width: 100%; height: calc(100vh - 48px);">
       <Graph
           :style="{
           width: '100%',
           height: '100%',
-          border: '1px solid black',
           boxSizing: 'border-box',
         }"
       />
@@ -84,21 +83,25 @@ export default defineComponent({
     const graphStore = useGraphStore();
     graphStore.graphLibrary = [];
 
-    // Поля GraphFilterInput; уходят на бэкенд только после нажатия «Найти»
-    // (isFiltered), незаполненные — как undefined.
+    // Поля GraphFilterInput; до нажатия «Найти» (isFiltered) уходит только
+    // базовый фильтр isNamed, остальные поля — после «Найти».
     const requestVariables = computed(() => {
-      const { name, authorId, vertexCount, edgeCount, isDirect, isNamed, isFiltered } =
+      const { name, authorId, vertexCount, edgeCount, isDirect, isFiltered } =
           graphStore.graphFilter;
       return {
         request: {
           pagination: { page: 0, pageSize: 100 },
-          filter: !isFiltered ? undefined : {
-            name: name.trim() || undefined,
-            authorId: authorId || undefined,
-            vertexCount: vertexCount ?? undefined,
-            edgeCount: edgeCount ?? undefined,
-            isDirect: isDirect === "" ? undefined : isDirect,
-            isNamed: isNamed === "" ? undefined : isNamed,
+          filter: {
+            isNamed: true,
+            ...(isFiltered
+                ? {
+                  name: name.trim() || undefined,
+                  authorId: authorId || undefined,
+                  vertexCount: vertexCount ?? undefined,
+                  edgeCount: edgeCount ?? undefined,
+                  isDirect: isDirect === "" ? undefined : isDirect,
+                }
+                : {}),
           },
         },
       };

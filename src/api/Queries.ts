@@ -99,6 +99,14 @@ export const GET_TASK = gql`
             id
             name
             pluginType
+            author {
+              id
+              email
+              firstName
+              lastName
+              patronymic
+              profileRole
+            }
           }
           value
           mistakeText
@@ -111,6 +119,14 @@ export const GET_TASK = gql`
           id
           name
           pluginType
+          author {
+            id
+            email
+            firstName
+            lastName
+            patronymic
+            profileRole
+          }
         }
       }
     }

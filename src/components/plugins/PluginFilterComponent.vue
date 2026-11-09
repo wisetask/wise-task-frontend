@@ -1,51 +1,53 @@
 <template>
-  <v-card>
-		<v-card-title class="pb-2">Фильтр модулей</v-card-title>
-		<v-card-text class="pt-0">
-			<v-text-field label="Название" v-model="nameModel" variant="outlined" density="compact" hide-details="auto" class="mb-2"></v-text-field>
-			<v-text-field label="Описание" v-model="descriptionModel" variant="outlined" density="compact" hide-details="auto" class="mb-2"></v-text-field>
-			<v-text-field label="Категория" v-model="categoryModel" variant="outlined" density="compact" hide-details="auto" class="mb-2"></v-text-field>
-			<v-select
-				label="Тип графа"
-				:items="graphTypeItems"
-				v-model="graphTypeModel"
-				variant="outlined"
-				density="compact"
-				hide-details="auto"
-			class="mb-2"
-			></v-select>
-			<v-select
-				label="Тип плагина"
-				:items="pluginTypeItems"
-				v-model="pluginTypeModel"
-				variant="outlined"
-				density="compact"
-				hide-details="auto"
-			class="mb-2"
-			></v-select>
-			<v-select
-				label="Автор"
-				:items="authorItems"
-				v-model="authorIdModel"
-				variant="outlined"
-				density="compact"
-				hide-details="auto"
-			class="mb-2"
-			></v-select>
-			<div class="d-flex">
-				<v-checkbox label="Одобрен" v-model="isValidModel" density="compact" hide-details="auto" class="mr-4"></v-checkbox>
-				<v-checkbox label="Внутренний" v-model="isInternalModel" density="compact" hide-details="auto"></v-checkbox>
-			</div>
-		</v-card-text>
-		<v-card-actions class="d-flex justify-space-between">
-			<v-btn @click="applyFilter" color="primary" variant="outlined">
-				Найти
-			</v-btn>
-			<v-btn @click="resetFilter" color="primary" variant="outlined">
-				Сбросить
-			</v-btn>
-		</v-card-actions>
-	</v-card>
+  <div class="flt-panel">
+    <div class="flt-panel__header">
+      <span class="flt-panel__icon">
+        <v-icon size="20" icon="mdi-filter-variant" />
+      </span>
+      <span class="flt-panel__title">Фильтр плагинов</span>
+    </div>
+    <div class="flt-panel__body">
+      <v-text-field label="Название" v-model="nameModel" variant="outlined" density="comfortable" hide-details="auto"></v-text-field>
+      <v-text-field label="Описание" v-model="descriptionModel" variant="outlined" density="comfortable" hide-details="auto"></v-text-field>
+      <v-text-field label="Категория" v-model="categoryModel" variant="outlined" density="comfortable" hide-details="auto"></v-text-field>
+      <v-select
+        label="Тип графа"
+        :items="graphTypeItems"
+        v-model="graphTypeModel"
+        variant="outlined"
+        density="comfortable"
+        hide-details="auto"
+      ></v-select>
+      <v-select
+        label="Тип плагина"
+        :items="pluginTypeItems"
+        v-model="pluginTypeModel"
+        variant="outlined"
+        density="comfortable"
+        hide-details="auto"
+      ></v-select>
+      <v-select
+        label="Автор"
+        :items="authorItems"
+        v-model="authorIdModel"
+        variant="outlined"
+        density="comfortable"
+        hide-details="auto"
+      ></v-select>
+      <div class="flt-panel__checks">
+        <v-checkbox label="Одобрен" v-model="isValidModel" density="compact" hide-details="auto"></v-checkbox>
+        <v-checkbox label="Внутренний" v-model="isInternalModel" density="compact" hide-details="auto"></v-checkbox>
+      </div>
+    </div>
+    <div class="flt-panel__actions">
+      <v-btn color="#1976d2" variant="flat" prepend-icon="mdi-magnify" @click="applyFilter">
+        Найти
+      </v-btn>
+      <v-btn color="#5c6470" variant="text" prepend-icon="mdi-filter-remove" @click="resetFilter">
+        Сбросить
+      </v-btn>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -75,13 +77,25 @@ export default defineComponent({
 			]
 		})
 
+		const GRAPH_TYPE_LABELS: Record<string, string> = {
+			[GraphType.Any]: 'Любой',
+			[GraphType.Direct]: 'Направленный',
+			[GraphType.Undirect]: 'Неориентированный',
+		}
+		const PLUGIN_TYPE_LABELS: Record<string, string> = {
+			[PluginType.GraphCharacteristic]: 'Характеристика графа',
+			[PluginType.GraphProperty]: 'Свойство графа',
+			[PluginType.GraphNewGraph]: 'Новый граф',
+			[PluginType.GraphString]: 'Строковый',
+		}
+
 		const graphTypeItems = [
 			{ title: 'Все', value: '' },
-			...Object.values(GraphType).map((value) => ({ title: value, value })),
+			...Object.values(GraphType).map((value) => ({ title: GRAPH_TYPE_LABELS[value] ?? value, value })),
 		]
 		const pluginTypeItems = [
 			{ title: 'Все', value: '' },
-			...Object.values(PluginType).map((value) => ({ title: value, value })),
+			...Object.values(PluginType).map((value) => ({ title: PLUGIN_TYPE_LABELS[value] ?? value, value })),
 		]
 
 		const nameModel = computed({
@@ -187,3 +201,7 @@ export default defineComponent({
 	},
 })
 </script>
+
+<style>
+@import "@/components/common/filterStyles.css";
+</style>

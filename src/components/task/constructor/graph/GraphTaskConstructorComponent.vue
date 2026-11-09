@@ -15,12 +15,11 @@
   </v-container>
 
   <v-layout v-else>
-    <div style="position: relative; width: 100%; height: 100vh">
+    <div style="position: relative; width: 100%; height: calc(100vh - 48px)">
       <Graph
           :style="{
           width: '100%',
           height: '100%',
-          border: '1px solid black',
           boxSizing: 'border-box',
         }"
           :can-color="taskGraphInput.rule.isColor"

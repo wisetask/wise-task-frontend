@@ -1,0 +1,50 @@
+.flt-panel {
+  border: 1px solid #d6e5f5;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #e8f2fd 0%, #f7fbff 55%, #eef5fd 100%);
+  overflow: hidden;
+}
+
+.flt-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.flt-panel__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  flex-shrink: 0;
+}
+
+.flt-panel__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d47a1;
+}
+
+.flt-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.flt-panel__checks {
+  display: flex;
+  gap: 12px;
+}
+
+.flt-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 14px;
+}

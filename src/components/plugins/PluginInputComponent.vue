@@ -1,72 +1,92 @@
 <template>
-  <div class="pa-4 text-center">
-    <v-dialog v-model="dialogModel" max-width="800">
-      <v-card>
-        <v-card-title>Создание плагина</v-card-title>
-        <v-card-text>
-          <v-text-field
-            label="Название"
-            v-model="nameModel"
-            :maxLength="MAX_INPUT_LENGTH()"
-          ></v-text-field>
-          <v-text-field
-            label="Описание"
-            v-model="descriptionModel"
-            :maxLength="MAX_INPUT_LENGTH()"
-          ></v-text-field>
-          <v-text-field
-            label="Категория"
-            v-model="categoryModel"
-            :maxLength="MAX_INPUT_LENGTH()"
-          ></v-text-field>
-          <v-select
-            label="Тип графа"
-            :items="['DIRECT', 'UNDIRECT', 'ANY']"
-            v-model="graphTypeModel"
-          ></v-select>
-          <v-select
-            label="Тип плагина"
-            :items="[
-              'GRAPH_PROPERTY',
-              'GRAPH_CHARACTERISTIC',
-              'GRAPH_NEW_GRAPH',
-              'GRAPH_STRING',
-            ]"
-            v-model="pluginTypeModel"
-          ></v-select>
-          <v-file-input label="Jar файл" v-model="jarFileModel"></v-file-input>
+  <v-dialog v-model="dialogModel" max-width="640">
+    <v-card class="plugin-dialog">
+      <div class="plugin-dialog__header">
+        <span class="plugin-dialog__icon">
+          <v-icon size="20" icon="mdi-puzzle-outline" />
+        </span>
+        <span class="plugin-dialog__title">{{ dialogTitle }}</span>
+      </div>
 
-          <v-alert
-            v-if="errorMessage"
-            type="error"
-            dense
-            dismissible
-            class="mt-4 plugin-error-alert"
-          >
-            {{ errorMessage }}
-          </v-alert>
+      <div class="plugin-dialog__body">
+        <v-text-field
+          label="Название"
+          v-model="nameModel"
+          :maxLength="MAX_INPUT_LENGTH()"
+          variant="outlined"
+          density="comfortable"
+          hide-details="auto"
+        ></v-text-field>
+        <v-text-field
+          label="Описание"
+          v-model="descriptionModel"
+          :maxLength="MAX_INPUT_LENGTH()"
+          variant="outlined"
+          density="comfortable"
+          hide-details="auto"
+        ></v-text-field>
+        <v-text-field
+          label="Категория"
+          v-model="categoryModel"
+          :maxLength="MAX_INPUT_LENGTH()"
+          variant="outlined"
+          density="comfortable"
+          hide-details="auto"
+        ></v-text-field>
+        <v-select
+          label="Тип графа"
+          :items="graphTypeItems"
+          v-model="graphTypeModel"
+          variant="outlined"
+          density="comfortable"
+          hide-details="auto"
+        ></v-select>
+        <v-select
+          label="Тип плагина"
+          :items="pluginTypeItems"
+          v-model="pluginTypeModel"
+          variant="outlined"
+          density="comfortable"
+          hide-details="auto"
+        ></v-select>
+        <v-file-input
+          label="Jar файл"
+          v-model="jarFileModel"
+          variant="outlined"
+          density="comfortable"
+          hide-details="auto"
+        ></v-file-input>
 
-          <v-card-actions>
-            <v-btn color="primary" variant="outlined" @click="savePlugin"
-              >Сохранить</v-btn
-            >
-            <v-btn
-              color="primary"
-              variant="outlined"
-              @click="closeDialogAndClearError"
-              >Закрыть</v-btn
-            >
-          </v-card-actions>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
-  </div>
+        <v-alert
+          v-if="errorMessage"
+          type="error"
+          variant="tonal"
+          density="comfortable"
+          class="plugin-error-alert"
+        >
+          {{ errorMessage }}
+        </v-alert>
+      </div>
+
+      <v-divider />
+
+      <div class="plugin-dialog__actions">
+        <v-btn color="#1976d2" variant="flat" prepend-icon="mdi-content-save" @click="savePlugin">
+          Сохранить
+        </v-btn>
+        <v-spacer />
+        <v-btn color="#5c6470" variant="text" @click="closeDialogAndClearError">
+          Закрыть
+        </v-btn>
+      </div>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script lang="ts">
 import { usePluginStore } from "@/store/plugin";
 import { storeToRefs } from "pinia";
-import { defineComponent, ref, watch } from "vue"; // Import 'ref' and 'watch'
+import { defineComponent, ref, watch } from "vue";
 import { buildPluginInputModels } from "./helper/inputModel";
 import { useMutation } from "@vue/apollo-composable";
 import { CREATE_PLUGIN, UPDATE_PLUGIN } from "@/api/Mutations";
@@ -74,14 +94,37 @@ import { MAX_INPUT_LENGTH } from "@/shared/config/SIZES";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
 
+const GRAPH_TYPE_ITEMS = [
+  { title: "Направленный", value: "DIRECT" },
+  { title: "Неориентированный", value: "UNDIRECT" },
+  { title: "Любой", value: "ANY" },
+];
+
+const PLUGIN_TYPE_ITEMS = [
+  { title: "Характеристика графа", value: "GRAPH_CHARACTERISTIC" },
+  { title: "Свойство графа", value: "GRAPH_PROPERTY" },
+  { title: "Новый граф", value: "GRAPH_NEW_GRAPH" },
+  { title: "Строковый", value: "GRAPH_STRING" },
+];
+
 export default defineComponent({
+  computed: {
+    dialogTitle(): string {
+      return this.pluginInput.id ? "Редактирование плагина" : "Создание плагина";
+    },
+    graphTypeItems() {
+      return GRAPH_TYPE_ITEMS;
+    },
+    pluginTypeItems() {
+      return PLUGIN_TYPE_ITEMS;
+    },
+  },
   setup() {
     const { pluginInput, plugins, dialog } = storeToRefs(usePluginStore());
-    const MAX_LENGTH = MAX_INPUT_LENGTH;
     const token = localStorage.getItem("token");
-    const userInfo = getUserFromToken(token);          
+    const userInfo = getUserFromToken(token);
     const NULL_UUID = "00000000-0000-0000-0000-000000000000";
-    const authorId = userInfo?.id ?? NULL_UUID;        
+    const authorId = userInfo?.id ?? NULL_UUID;
     const {
       nameModel,
       descriptionModel,
@@ -155,7 +198,7 @@ export default defineComponent({
           graphType: this.pluginInput.graphType,
           pluginType: this.pluginInput.pluginType,
           isInternal: false,
-          authorId: this.authorId, 
+          authorId: this.authorId,
           isValid: false,
           jarName: fileName,
           jarFile: jarFile,
@@ -164,10 +207,6 @@ export default defineComponent({
       mutate(request);
 
       onDone((response) => {
-        console.log(response);
-        const index = this.plugins.findIndex((item) => {
-          return item.id === this.pluginInput.id;
-        });
         this.plugins = [...this.plugins, response.data.createPlugin];
         this.dialog = false;
         this.dialogModel = false;
@@ -258,6 +297,52 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.plugin-dialog {
+  border-radius: 14px !important;
+  border: 1px solid #d6e5f5;
+  overflow: hidden;
+}
+
+.plugin-dialog__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+}
+
+.plugin-dialog__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.plugin-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.plugin-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.plugin-dialog__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
 .plugin-error-alert {
   white-space: pre-wrap;
 }

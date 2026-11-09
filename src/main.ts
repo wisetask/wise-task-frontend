@@ -6,6 +6,7 @@
 
 // Plugins
 import { registerPlugins } from "@/plugins";
+import "@/styles/global.css";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 // Components
