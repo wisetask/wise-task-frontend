@@ -168,7 +168,7 @@ export default defineComponent({
           email: decodedJwtData.email,
         };
       });
-      this.$router.push("/plugins");
+      this.$router.push("/tasks");
 
       onError(({ graphQLErrors }) => {
         this.loading = false;

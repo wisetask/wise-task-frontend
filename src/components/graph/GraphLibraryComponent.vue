@@ -44,7 +44,12 @@
         </v-row>
         <v-row>
           <v-col>
-            <graph-table-component @edited="drawer = false" />
+            <graph-table-component
+                @edited="drawer = false"
+                v-model:page="page"
+                v-model:page-size="pageSize"
+                :total-count="totalCount"
+            />
           </v-col>
         </v-row>
       </v-container>
@@ -83,6 +88,10 @@ export default defineComponent({
     const graphStore = useGraphStore();
     graphStore.graphLibrary = [];
 
+    const page = ref(1);
+    const pageSize = ref(16);
+    const totalCount = ref(0);
+
     // Поля GraphFilterInput; до нажатия «Найти» (isFiltered) уходит только
     // базовый фильтр isNamed, остальные поля — после «Найти».
     const requestVariables = computed(() => {
@@ -90,7 +99,7 @@ export default defineComponent({
           graphStore.graphFilter;
       return {
         request: {
-          pagination: { page: 0, pageSize: 100 },
+          pagination: { page: page.value - 1, pageSize: pageSize.value },
           filter: {
             isNamed: true,
             ...(isFiltered
@@ -112,16 +121,32 @@ export default defineComponent({
       if (response.data) {
         const items = response.data.getAllGraphs.items ?? [];
         graphStore.graphLibrary = items.map((graph: any) => toVGraph(graph));
+        totalCount.value =
+            response.data.getAllGraphs.pagination?.totalCount ?? items.length;
         useProfileStore().addAuthors(items.map((graph: any) => graph.author));
       }
     });
 
+    watch([page, pageSize], () => {
+      refetch(requestVariables.value);
+    });
+
+    watch(pageSize, () => {
+      page.value = 1;
+    });
+
     watch(
         () => graphStore.graphFilter.appliedAt,
-        () => refetch(requestVariables.value),
+        () => {
+          if (page.value !== 1) {
+            page.value = 1;
+          } else {
+            refetch(requestVariables.value);
+          }
+        },
     );
 
-    return { drawer, drawerWidth };
+    return { drawer, drawerWidth, page, pageSize, totalCount };
   },
 });
 </script>

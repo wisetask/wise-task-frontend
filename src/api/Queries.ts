@@ -181,6 +181,9 @@ export const GET_ALL_TASK_SOLUTIONS = gql`
         ... on SolutionGraph {
           graph {
             id
+            vertexCount
+            edgeCount
+            isDirect
           }
           pluginResults {
             plugin {

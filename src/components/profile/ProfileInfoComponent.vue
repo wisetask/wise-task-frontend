@@ -1,27 +1,51 @@
 <template>
-  <v-skeleton-loader
-      v-if="loading"
-      class="mx-auto border"
-      type="card"
-  ></v-skeleton-loader>
-  <v-card v-if="!loading">
-    <v-card-title>Карточка профиля</v-card-title>
-    <v-card-text v-if="profile">
-      <v-list :items="items"></v-list>
-    </v-card-text>
-    <v-card-actions v-if="isUserAdmin">
-      <v-row justify="center" align="center">
-        <v-col cols="auto">
-          <v-btn
-              color="primary"
-              @click="updateProfileClick"
-              variant="outlined"
-          >Редактировать</v-btn
-          >
-        </v-col>
-      </v-row>
-    </v-card-actions>
-  </v-card>
+  <div v-if="loading" class="lv-loading">
+    <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
+    Загрузка...
+  </div>
+
+  <div v-else-if="profile" class="lv-page">
+    <div class="task-hero">
+      <v-avatar size="44" :color="avatarColor" class="text-uppercase text-caption font-weight-bold profile-card__hero-avatar">
+        {{ initials }}
+      </v-avatar>
+      <div class="task-hero__text">
+        <div class="task-hero__label">Профиль</div>
+        <div class="task-hero__name">{{ fullName }}</div>
+      </div>
+    </div>
+
+    <div class="task-panel task-panel--white">
+      <div class="lv-card__row profile-card__row">
+        <v-icon size="16" icon="mdi-email-outline" />
+        <span class="lv-card__row-text">{{ profile.email }}</span>
+      </div>
+      <div class="lv-card__row profile-card__row">
+        <v-icon size="16" icon="mdi-account-outline" />
+        <span class="lv-card__row-text">Имя: {{ profile.firstName || "—" }}</span>
+      </div>
+      <div class="lv-card__row profile-card__row">
+        <v-icon size="16" icon="mdi-account-outline" />
+        <span class="lv-card__row-text">Фамилия: {{ profile.lastName || "—" }}</span>
+      </div>
+      <div class="lv-card__row profile-card__row">
+        <v-icon size="16" icon="mdi-account-outline" />
+        <span class="lv-card__row-text">Отчество: {{ profile.patronymic || "—" }}</span>
+      </div>
+      <div class="lv-card__chips profile-card__chips">
+        <v-chip size="small" variant="tonal" :color="roleColor">{{ roleLabel }}</v-chip>
+      </div>
+    </div>
+
+    <v-btn
+        v-if="isUserAdmin"
+        block
+        color="#1976d2"
+        variant="flat"
+        prepend-icon="mdi-pencil"
+        @click="updateProfileClick"
+    >Редактировать</v-btn>
+  </div>
 
   <profile-dialog-component
       v-if="dialog"
@@ -37,12 +61,21 @@ import ProfileDialogComponent from "@/components/profile/ProfileDialogComponent.
 import {useProfileStore} from "@/store/profile";
 import {UserStorageGetters} from "@/entities/user/storage/getters";
 import {getUserFromToken} from "@/entities/user/lib/getUserFromToken";
+import { Profile } from "@/__generated__/graphql";
+
+const ROLE_LABELS: Record<string, string> = {
+  USER: "Пользователь",
+  AUTHOR: "Автор",
+  ADMIN: "Администратор",
+};
+
+const AVATAR_COLORS = ["#1976d2", "#26a69a", "#ef6c00", "#8e24aa", "#43a047", "#f06292", "#6d4c41", "#1e88e5"];
 
 export default defineComponent({
   components: { ProfileDialogComponent },
   props: {
     profile: {
-      type: Object,
+      type: Object as () => Profile,
       default: null
     },
     loading: {
@@ -54,33 +87,36 @@ export default defineComponent({
     const dialog = ref(false)
     const profileModel = ref({ ...props.profile })
     const profileStore = useProfileStore();
-    const items = computed(() => {
-      if (props.profile) {
-        return [
-          {
-            title: "Имя: " + props.profile.firstName,
-            value: 1,
-          },
-          {
-            title: "Фамилия: " + props.profile.lastName,
-            value: 2,
-          },
-          {
-            title: "Отчество: " + props.profile.patronymic,
-            value: 3,
-          },
-          {
-            title: "Email: " + props.profile.email,
-            value: 4,
-          },
-          {
-            title: "Роль: " + props.profile.profileRole,
-            value: 5,
-          }
-        ]
-      }
-      return []
-    })
+
+    const fullName = computed(() => {
+      if (!props.profile) return "";
+      return [props.profile.lastName, props.profile.firstName, props.profile.patronymic]
+          .filter((part) => part && part.length > 0)
+          .join(" ") || props.profile.email;
+    });
+
+    const initials = computed(() => {
+      const lastName = props.profile?.lastName?.trim();
+      const firstName = props.profile?.firstName?.trim();
+      const result = `${lastName?.[0] ?? ""}${firstName?.[0] ?? ""}`;
+      return result ? result.toUpperCase() : "?";
+    });
+
+    const avatarColor = computed(() => {
+      const source = props.profile?.email || props.profile?.lastName || "profile";
+      const hash = [...source].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+    });
+
+    const roleLabel = computed(() => {
+      const role = props.profile?.profileRole ?? "";
+      return ROLE_LABELS[role] ?? role ?? "—";
+    });
+
+    const roleColor = computed(() => {
+      const role = props.profile?.profileRole ?? "";
+      return role === "ADMIN" ? "blue" : role === "AUTHOR" ? "teal" : "grey";
+    });
 
     onMounted(async () => {
       if (!profileStore.activeUser) {
@@ -101,7 +137,11 @@ export default defineComponent({
     }
 
     return {
-      items,
+      fullName,
+      initials,
+      avatarColor,
+      roleLabel,
+      roleColor,
       dialog,
       profileModel,
       updateProfileClick,
@@ -110,3 +150,23 @@ export default defineComponent({
   }
 })
 </script>
+
+<style>
+@import "@/components/task/taskViewStyles.css";
+@import "@/components/common/listViewStyles.css";
+</style>
+
+<style scoped>
+.profile-card__hero-avatar {
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.profile-card__row {
+  padding: 6px 2px;
+}
+
+.profile-card__chips {
+  margin-top: 8px;
+}
+</style>

@@ -47,7 +47,26 @@
     </v-row>
 
     <div v-if="graphLibrary.length > 0" class="lv-footer">
-      <span class="lv-footer__total">Всего: {{ graphLibrary.length }}</span>
+      <span class="lv-footer__total">Всего: {{ totalCount }}</span>
+      <v-pagination
+          :model-value="page"
+          @update:model-value="$emit('update:page', $event)"
+          :length="pageCount"
+          :total-visible="7"
+          density="comfortable"
+          rounded="circle"
+          class="lv-pagination"
+      />
+      <v-select
+          :model-value="pageSize"
+          @update:model-value="$emit('update:pageSize', $event)"
+          :items="[16, 32, 64, 100]"
+          label="На странице"
+          density="comfortable"
+          variant="outlined"
+          hide-details
+          class="lv-page-size"
+      />
     </div>
   </div>
 </template>
@@ -73,7 +92,21 @@ const formatAuthor = (author?: Profile | null) => {
 }
 
 export default defineComponent({
-	emits: ['edited'],
+	emits: ['edited', 'update:page', 'update:pageSize'],
+	props: {
+		page: {
+			type: Number,
+			default: 1,
+		},
+		pageSize: {
+			type: Number,
+			default: 16,
+		},
+		totalCount: {
+			type: Number,
+			default: 0,
+		},
+	},
 	setup() {
 		const { graphLibrary, activeGraph } = storeToRefs(useGraphStore())
 		return {
@@ -81,6 +114,11 @@ export default defineComponent({
 			activeGraph,
 			formatAuthor
 		}
+	},
+	computed: {
+		pageCount(): number {
+			return Math.max(1, Math.ceil(this.totalCount / this.pageSize))
+		},
 	},
 	methods: {
 		nodesCount(graph: Graph) {
