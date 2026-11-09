@@ -74,6 +74,18 @@ export const useNodeStore = defineStore("nodes", {
       this.regenerateStatistics();
     },
 
+    clearBoard(): void {
+      history.onStateUpdate({
+        type: "graph:clear",
+        properties: {
+          state: this.$state,
+        },
+      });
+      this.nodes = [];
+      this.edges = [];
+      this.regenerateStatistics();
+    },
+
     removeNode(id: string) {
       const removedNode: CustomNode | undefined = this.nodes.find(
         (node) => node.id === id,

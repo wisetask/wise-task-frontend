@@ -1,5 +1,10 @@
 import { createPinia, setActivePinia } from "pinia";
+import { Position } from "@vue-flow/core";
 import { Color } from "@/__generated__/graphql";
+import {
+  ConnectionSourceID,
+  ConnectionTargetID,
+} from "@/features/graph/types/CustomEdge";
 
 import type {
   gqlGraphToEditorState as GqlGraphToEditorState,
@@ -81,6 +86,10 @@ describe("gqlGraphToEditorState", () => {
       weight: 7,
     });
     expect(state.edges[0].type).toBe("special");
+    expect(state.edges[0].sourceHandle).toBe(ConnectionSourceID.Top);
+    expect(state.edges[0].targetHandle).toBe(ConnectionTargetID.Bottom);
+    expect(state.edges[0].sourcePosition).toBe(Position.Top);
+    expect(state.edges[0].targetPosition).toBe(Position.Bottom);
   });
 
   it("places nodes on a grid when coordinates are missing", () => {
@@ -141,5 +150,25 @@ describe("vGraphToEditorState", () => {
     ]);
     expect(state.edges[0].source).toBe("1");
     expect(state.edges[0].target).toBe("2");
+    expect(state.edges[0].sourceHandle).toBe(ConnectionSourceID.Bottom);
+    expect(state.edges[0].targetHandle).toBe(ConnectionTargetID.Top);
+  });
+
+  it("builds self-loop edges with opposite side handles", () => {
+    const state = gqlGraphToEditorState({
+      vertexList: [
+        { id: 1, label: "A", weight: 0, color: Color.Gray, xCoordinate: 0, yCoordinate: 0 },
+      ],
+      edgeList: [
+        { source: 1, target: 1, label: "", weight: 0, color: Color.Gray },
+      ],
+      isDirect: true,
+      name: "",
+    });
+
+    expect(state.edges[0].source).toBe("1");
+    expect(state.edges[0].target).toBe("1");
+    expect(state.edges[0].sourceHandle).toBe(ConnectionSourceID.Right);
+    expect(state.edges[0].targetHandle).toBe(ConnectionTargetID.Left);
   });
 });

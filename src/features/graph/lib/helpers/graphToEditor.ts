@@ -6,6 +6,7 @@ import {
 import { createCustomEdge, CustomEdge } from "@/features/graph/types/CustomEdge";
 import { useNodeStore } from "@/features/graph/stores/nodes";
 import { Graph as StoreGraph } from "@/store/graph";
+import { computePreferredHandles } from "@/features/graph/lib/helpers/resolveConnectionHandles";
 
 const COLOR_TO_HEX: Record<string, string> = {
   [Color.Red]: "#ff0000",
@@ -83,22 +84,35 @@ const buildEdge = (
   label: string,
   color: string,
   weight: number,
-): CustomEdge => ({
-  ...createCustomEdge({
-    id,
-    source: sourceId,
-    target: targetId,
-    sourceNode: nodeById.get(sourceId) as any,
-    targetNode: nodeById.get(targetId) as any,
-    type: "special",
-    label,
-    data: {
-      color,
-      weight,
-    },
-  }),
-  events: {},
-});
+): CustomEdge => {
+  const sourceNode = nodeById.get(sourceId);
+  const targetNode = nodeById.get(targetId);
+  const handles =
+    sourceNode && targetNode
+      ? computePreferredHandles(sourceNode, targetNode)
+      : undefined;
+
+  return {
+    ...createCustomEdge({
+      id,
+      source: sourceId,
+      target: targetId,
+      sourceNode: sourceNode as any,
+      targetNode: targetNode as any,
+      sourceHandle: handles?.sourceHandle,
+      targetHandle: handles?.targetHandle,
+      sourcePosition: handles?.sourcePosition,
+      targetPosition: handles?.targetPosition,
+      type: "special",
+      label,
+      data: {
+        color,
+        weight,
+      },
+    }),
+    events: {},
+  };
+};
 
 export function vGraphToEditorState(
   graph: StoreGraph,
