@@ -1,59 +1,96 @@
 <template>
-  <v-card>
-    <template v-slot:text>
-      <v-row>
-        <v-text-field
-            v-model="vectorQuery"
-            label="Векторный поиск"
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            hide-details
-            single-line
-            clearable
-        ></v-text-field>
-        <v-btn class="ma-2" @click="addPlugin" icon="mdi-plus" />
-      </v-row>
+  <div class="lv-page">
+    <div class="lv-toolbar">
+      <v-text-field
+          v-model="vectorQuery"
+          label="Векторный поиск"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          single-line
+          clearable
+      />
+      <v-btn color="#1976d2" variant="flat" icon="mdi-plus" @click="addPlugin" />
+    </div>
+
+    <div v-if="loading || vectorLoading" class="lv-loading">
+      <v-progress-circular indeterminate size="20" width="2" />
+      Загрузка...
+    </div>
+
+    <div v-else-if="displayItems.length === 0" class="lv-empty">
+      <v-icon icon="mdi-magnify" />
+      Ничего не найдено
+    </div>
+
+    <template v-else>
+      <template v-for="group in groupedItems" :key="group.category">
+        <div class="lv-section-label">{{ group.category }}</div>
+        <v-row dense>
+          <v-col v-for="plugin in group.items" :key="plugin.id" cols="12" sm="6" md="4" xl="3">
+            <div class="lv-card">
+              <div class="lv-card__header">
+                <span class="lv-card__icon">
+                  <v-icon size="20" icon="mdi-puzzle-outline" />
+                </span>
+                <div class="lv-card__title" :title="plugin.name">{{ plugin.name }}</div>
+                <v-chip :color="plugin.isValid ? 'success' : 'warning'" size="x-small" variant="tonal">
+                  {{ plugin.isValid ? 'Одобрен' : 'Не одобрен' }}
+                </v-chip>
+              </div>
+
+              <p class="lv-card__text">{{ plugin.description }}</p>
+
+              <div class="lv-card__chips">
+                <v-chip v-if="plugin.category" size="x-small" variant="tonal" color="blue">
+                  {{ plugin.category }}
+                </v-chip>
+                <v-chip size="x-small" variant="tonal" color="indigo">
+                  {{ graphTypeLabel(plugin.graphType) }}
+                </v-chip>
+              </div>
+
+              <div class="lv-card__row">
+                <v-icon size="14" icon="mdi-account-outline" />
+                <span class="lv-card__row-text">{{ formatAuthor(plugin.author) }}</span>
+              </div>
+
+              <div class="lv-card__footer">
+                <v-btn size="small" variant="text" color="#1976d2" icon="mdi-pencil" @click="editPlugin(plugin)" />
+                <v-btn v-if="isUserAdmin" size="small" variant="text" color="#43a047" icon="mdi-check-decagram"
+                    @click="approvePlugin(plugin)" />
+                <v-spacer />
+                <v-btn v-if="isUserAdmin" size="small" variant="text" color="#e53935" icon="mdi-delete"
+                    @click="deletePlugin(plugin)" />
+              </div>
+            </div>
+          </v-col>
+        </v-row>
+      </template>
     </template>
-    <v-data-table-server
-        :headers="headers"
-        :items="displayItems"
-        :group-by="groupBy"
-        :loading="loading || vectorLoading"
-        :items-length="displayTotal"
-        v-model:page="page"
-        v-model:items-per-page="pageSize"
-        :items-per-page-options="[5, 10, 25, 50, 100]"
-    >
-      <template v-slot:item.isValid="{ item }">
-        <v-chip :color="item.isValid ? 'success' : 'warning'" size="small">
-          {{ item.isValid ? 'Да' : 'Нет' }}
-        </v-chip>
-      </template>
-      <template v-slot:item.author="{ item }">
-        {{ formatAuthor(item.author) }}
-      </template>
-      <template v-slot:item.actions="{ item }">
-        <v-icon class="me-2" size="small" @click="editPlugin(item)">
-          mdi-pencil
-        </v-icon>
-        <v-icon
-            v-if="isUserAdmin"
-            class="me-2"
-            size="small"
-            @click="deletePlugin(item)"
-        >
-          mdi-delete
-        </v-icon>
-        <v-icon
-            v-if="isUserAdmin"
-            class="me-2"
-            size="small"
-            @click="approvePlugin(item)"
-        >
-          mdi-check-decagram
-        </v-icon>
-      </template>
-    </v-data-table-server>
+
+    <div v-if="!vectorResults && !(loading || vectorLoading)" class="lv-footer">
+      <span class="lv-footer__total">Всего: {{ displayTotal }}</span>
+      <v-pagination
+          v-model="page"
+          :length="pageCount"
+          :total-visible="7"
+          density="comfortable"
+          rounded="circle"
+          class="lv-pagination"
+      />
+      <v-select
+          v-model="pageSize"
+          :items="[16, 32, 64, 100]"
+          label="На странице"
+          density="comfortable"
+          variant="outlined"
+          hide-details
+          class="lv-page-size"
+      />
+    </div>
+
     <v-snackbar
         v-model="validateErrorSnackbar"
         multi-line
@@ -63,7 +100,7 @@
     >
       {{ validateErrorMessage }}
     </v-snackbar>
-  </v-card>
+  </div>
 </template>
 
 <script lang="ts">
@@ -75,9 +112,15 @@ import { storeToRefs } from "pinia";
 import { computed, defineComponent, onMounted, ref, watch } from "vue";
 import { useProfileStore } from "@/store/profile";
 import { ensureActiveUser } from "@/entities/user/lib/ensureActiveUser";
-import { Plugin as GraphQLPlugin, Profile } from "@/__generated__/graphql";
+import { GraphType, Plugin as GraphQLPlugin, Profile } from "@/__generated__/graphql";
 import { searchPlugins } from "@/services/semanticSearchApi";
 import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
+
+const GRAPH_TYPE_LABELS: Record<string, string> = {
+  [GraphType.Direct]: "Направленный",
+  [GraphType.Undirect]: "Неориентированный",
+  [GraphType.Any]: "Любой",
+};
 
 export default defineComponent({
   setup() {
@@ -91,27 +134,10 @@ export default defineComponent({
 
     const totalCount = ref(0);
     const page = ref(1);
-    const pageSize = ref(10);
+    const pageSize = ref(16);
 
     const validateErrorSnackbar = ref(false);
     const validateErrorMessage = ref("");
-
-    const headers = [
-      { key: "name", title: "Название" },
-      { key: "description", title: "Описание" },
-      { key: "category", title: "Категория" },
-      { key: "isValid", title: "Одобрен" },
-      { key: "graphType", title: "Тип графа" },
-      { key: "author", title: "Автор", sortable: false },
-      { key: "actions", title: "Действия", sortable: false },
-    ];
-
-    const groupBy = [
-      {
-        key: "category",
-        order: "asc" as const,
-      },
-    ];
 
     const requestVariables = computed(() => {
       // Поля PluginFilterInput; незаполненные уходят как undefined,
@@ -196,6 +222,25 @@ export default defineComponent({
         vectorResults.value ? vectorResults.value.length : totalCount.value,
     );
 
+    const pageCount = computed(() =>
+        Math.max(1, Math.ceil(displayTotal.value / pageSize.value)),
+    );
+
+    const groupedItems = computed(() => {
+      const groups = new Map<string, GraphQLPlugin[]>();
+      for (const plugin of displayItems.value) {
+        const category = plugin.category || "Без категории";
+        if (!groups.has(category)) {
+          groups.set(category, []);
+        }
+        groups.get(category)!.push(plugin);
+      }
+      return Array.from(groups.entries()).map(([category, items]) => ({
+        category,
+        items,
+      }));
+    });
+
     let vectorTimeout: number | undefined;
 
     watch(vectorQuery, (value) => {
@@ -244,6 +289,10 @@ export default defineComponent({
       refetch(requestVariables.value);
     });
 
+    watch(pageSize, () => {
+      page.value = 1;
+    });
+
     const formatAuthor = (author?: Profile | null) => {
       if (!author) return "-";
       const fullName = [author.lastName, author.firstName, author.patronymic]
@@ -252,22 +301,27 @@ export default defineComponent({
       return fullName || author.email;
     };
 
+    const graphTypeLabel = (graphType?: string | null) =>
+      (graphType && GRAPH_TYPE_LABELS[graphType]) || "Любой";
+
     return {
       vectorQuery,
       vectorLoading,
+      vectorResults,
       displayItems,
       displayTotal,
+      pageCount,
+      groupedItems,
       plugins,
       profileStore,
       validateErrorSnackbar,
       validateErrorMessage,
-      headers,
       loading,
       totalCount,
       page,
       pageSize,
       formatAuthor,
-      groupBy,
+      graphTypeLabel,
       dialog,
       pluginInput,
     };
@@ -330,3 +384,7 @@ export default defineComponent({
   },
 });
 </script>
+
+<style>
+@import "@/components/common/listViewStyles.css";
+</style>

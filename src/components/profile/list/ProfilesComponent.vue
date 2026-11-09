@@ -2,9 +2,7 @@
   <v-container fluid>
     <v-row>
       <v-col cols="12" sm="9">
-        <v-card>
-          <profiles-table-component/>
-        </v-card>
+        <profiles-table-component/>
       </v-col>
       <v-col cols="12" sm="3">
         <profile-filter-component/>

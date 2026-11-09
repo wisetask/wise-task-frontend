@@ -1,13 +1,20 @@
 <template>
-  <v-card>
-    <v-card-title>Добавление графа</v-card-title>
-    <v-card-text>
-      <v-text-field label="Название графа" v-model="name"> </v-text-field>
-    </v-card-text>
-    <v-card-actions>
-      <v-btn color="primary" @click="saveGraph">Добавить</v-btn>
-    </v-card-actions>
-  </v-card>
+  <div class="flt-panel">
+    <div class="flt-panel__header">
+      <span class="flt-panel__icon">
+        <v-icon size="20" icon="mdi-plus" />
+      </span>
+      <span class="flt-panel__title">Добавление графа</span>
+    </div>
+    <div class="flt-panel__body">
+      <v-text-field label="Название графа" v-model="name" variant="outlined" density="comfortable" hide-details="auto"></v-text-field>
+    </div>
+    <div class="flt-panel__actions">
+      <v-btn color="#1976d2" variant="flat" prepend-icon="mdi-content-save" @click="saveGraph">
+        Добавить
+      </v-btn>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -43,15 +50,11 @@ export default defineComponent({
         this.graph.$state.id = self.crypto.randomUUID();
       }
       const graph = convertToGqlFormat(this.graph);
-      const { mutate, onDone, onError } = useMutation(CREATE_GRAPH);
+      const { mutate, onError } = useMutation(CREATE_GRAPH);
       const request = {
         graph: graph,
       };
       mutate(request);
-
-      onDone((response) => {
-        console.log(response);
-      });
 
       onError(({ graphQLErrors }) => {
         if (graphQLErrors) {
@@ -64,3 +67,7 @@ export default defineComponent({
   },
 });
 </script>
+
+<style>
+@import "@/components/common/filterStyles.css";
+</style>

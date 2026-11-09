@@ -1,33 +1,53 @@
 <template>
-  <v-skeleton-loader
-      v-if="loading"
-      class="mx-auto border"
-      type="table"
-  />
-  <v-card v-else>
-    <v-card-title>Решения</v-card-title>
-    <v-data-table
-        :headers="headers"
-        :items="solutions"
-        :loading="solutionsLoading"
-    >
-      <template v-slot:item.isCorrect="{ item }">
-        <v-chip :color="item.isCorrect ? 'success' : 'error'" size="small">
-          {{ item.isCorrect ? 'Верно' : 'Неверно' }}
-        </v-chip>
-      </template>
+  <div class="lv-page">
+    <div class="lv-section-label lv-section-label--flush">Решения</div>
 
-      <template v-slot:item.actions="{ item }">
-        <v-icon
-            class="me-2"
-            size="small"
-            @click="showSolution(item)"
-        >
-          mdi-eye
-        </v-icon>
-      </template>
-    </v-data-table>
-  </v-card>
+    <div v-if="loading || solutionsLoading" class="lv-loading">
+      <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
+      Загрузка...
+    </div>
+
+    <div v-else-if="solutions.length === 0" class="lv-empty">
+      <v-icon icon="mdi-check-circle-outline" />
+      Решений нет
+    </div>
+
+    <v-row v-else dense>
+      <v-col v-for="solution in solutions" :key="solution.id" cols="12" sm="6" md="4">
+        <div class="lv-card">
+          <div class="lv-card__header">
+            <span class="lv-card__icon">
+              <v-icon size="20" :icon="solutionIcon(solution)" />
+            </span>
+            <div class="lv-card__title" :title="solutionTitle(solution)">
+              {{ solutionTitle(solution) }}
+            </div>
+            <v-chip :color="solution.isCorrect ? 'success' : 'error'" size="x-small" variant="tonal">
+              {{ solution.isCorrect ? "Верно" : "Неверно" }}
+            </v-chip>
+          </div>
+
+          <div class="lv-card__chips">
+            <v-chip size="x-small" variant="tonal" color="blue">
+              {{ solutionTypeLabel(solution) }}
+            </v-chip>
+          </div>
+
+          <div class="lv-card__row">
+            <v-icon size="14" icon="mdi-compass-outline" />
+            <span class="lv-card__row-text">{{ solutionDetails(solution) }}</span>
+          </div>
+
+          <div class="lv-card__footer">
+            <v-btn size="small" rounded="lg" color="#1976d2" variant="flat" prepend-icon="mdi-eye"
+                @click="showSolution(solution)">
+              Открыть
+            </v-btn>
+          </div>
+        </div>
+      </v-col>
+    </v-row>
+  </div>
 </template>
 
 <script lang="ts">
@@ -40,7 +60,7 @@ import { computed, defineComponent, ref, watchEffect } from 'vue'
 
 import { Profile } from "@/__generated__/graphql";
 
-type SolutionWithTask = Solution & { taskId?: string }
+type SolutionWithTask = Solution & { taskId?: string; __typename?: string }
 
 export default defineComponent({
   name: 'UserSolutions',
@@ -90,16 +110,33 @@ export default defineComponent({
       }
     })
 
-    const headers = [
-      { key: 'id', title: 'Идентификатор задачи' },
-      { key: 'isCorrect', title: 'Результат решения', sortable: true },
-      { key: 'actions', title: 'Действия', sortable: false }
-    ]
+    const isImplementation = (solution: SolutionWithTask) =>
+        solution.__typename === 'SolutionImplementation'
+
+    const solutionIcon = (solution: SolutionWithTask) =>
+        isImplementation(solution) ? 'mdi-language-java' : 'mdi-graph-outline'
+
+    const solutionTypeLabel = (solution: SolutionWithTask) =>
+        isImplementation(solution) ? 'Программная' : 'Графовая'
+
+    const solutionTitle = (solution: SolutionWithTask) =>
+        solution.task?.name || solution.task?.id || solution.id
+
+    const solutionDetails = (solution: SolutionWithTask) => {
+      const s = solution as SolutionGraph
+      if (s.__typename !== 'SolutionGraph' || !s.graph) {
+        return 'Программное решение'
+      }
+      return `Вершин: ${s.graph.vertexCount ?? '—'} · Рёбер: ${s.graph.edgeCount ?? '—'}`
+    }
 
     return {
       solutions,
-      headers,
-      solutionsLoading
+      solutionsLoading,
+      solutionIcon,
+      solutionTypeLabel,
+      solutionTitle,
+      solutionDetails
     }
   },
   methods: {
@@ -120,3 +157,7 @@ export default defineComponent({
   }
 })
 </script>
+
+<style>
+@import "@/components/common/listViewStyles.css";
+</style>

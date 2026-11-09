@@ -41,7 +41,7 @@ const downloadJson = (dataGenerator: () => any) => {
 
 <template>
   <div>
-    <v-btn @click="showDialog = true"> Скачать JSON </v-btn>
+    <v-btn variant="text" color="white" size="small" @click="showDialog = true"> Скачать JSON </v-btn>
 
     <v-dialog
       v-model="showDialog"

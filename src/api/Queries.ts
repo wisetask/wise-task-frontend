@@ -99,6 +99,14 @@ export const GET_TASK = gql`
             id
             name
             pluginType
+            author {
+              id
+              email
+              firstName
+              lastName
+              patronymic
+              profileRole
+            }
           }
           value
           mistakeText
@@ -111,6 +119,14 @@ export const GET_TASK = gql`
           id
           name
           pluginType
+          author {
+            id
+            email
+            firstName
+            lastName
+            patronymic
+            profileRole
+          }
         }
       }
     }
@@ -165,6 +181,9 @@ export const GET_ALL_TASK_SOLUTIONS = gql`
         ... on SolutionGraph {
           graph {
             id
+            vertexCount
+            edgeCount
+            isDirect
           }
           pluginResults {
             plugin {

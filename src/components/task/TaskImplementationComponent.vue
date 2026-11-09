@@ -2,25 +2,55 @@
   <v-container>
     <v-row>
       <v-col>
-        <v-card>
-          <v-card-title>{{ activeTask.name }}</v-card-title>
-          <v-card-text>
+        <div class="task-hero">
+          <span class="task-hero__icon">
+            <v-icon size="22" icon="mdi-language-java" />
+          </span>
+          <div class="task-hero__text">
+            <div class="task-hero__label">Задача</div>
+            <div class="task-hero__name">{{ activeTask.name }}</div>
+          </div>
+        </div>
+
+        <TaskDescriptionComponent class="mt-3" :description="activeTask.description" />
+
+        <div class="task-panel task-panel--white task-panel--compact mt-3">
+          <div v-if="taskStatsLoading" class="d-flex align-center justify-center">
+            <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
+            <span class="text-caption">Загрузка...</span>
+          </div>
+          <v-row v-else no-gutters class="text-center">
             <v-col>
-              {{ activeTask.description }}
+              <div class="text-subtitle-1 font-weight-bold">{{ formatCount(taskStats.submits) }}</div>
+              <div class="text-caption">отправок</div>
             </v-col>
-            <v-file-input
-              label="Jar файл"
-              v-model="jarFileModel"
-            ></v-file-input>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn color="primary" variant="outlined" :loading="isSubmitting"
-              :disabled="isSubmitting" @click="solveTask">
-              Отправить решение
-            </v-btn>
-          </v-card-actions>
-        </v-card>
+            <v-col>
+              <div class="text-subtitle-1 font-weight-bold text-success">{{ formatCount(taskStats.solved) }}</div>
+              <div class="text-caption">решили верно</div>
+            </v-col>
+            <v-col>
+              <div class="text-subtitle-1 font-weight-bold">{{ formatCount(taskStats.opened) }}</div>
+              <div class="text-caption">открытий</div>
+            </v-col>
+          </v-row>
+        </div>
+
+        <div class="task-panel task-panel--white mt-3">
+          <div class="task-section-label task-section-label--flush">Решение</div>
+          <v-file-input
+            label="Jar файл"
+            v-model="jarFileModel"
+            variant="outlined"
+            density="comfortable"
+          ></v-file-input>
+          <v-btn block size="large" rounded="xl" color="#1976d2" :loading="isSubmitting"
+            :disabled="isSubmitting" @click="solveTask">
+            Отправить решение
+          </v-btn>
+        </div>
+
         <v-alert
+          class="mt-3"
           v-model="successAlert"
           text="Задача решена верно"
           title="Успех!"
@@ -29,6 +59,7 @@
           variant="tonal"
         ></v-alert>
         <v-alert
+          class="mt-3"
           v-model="errorAlert"
           text="В решении есть ошибка"
           title="Ошибка!"
@@ -37,6 +68,7 @@
           variant="tonal"
         ></v-alert>
         <v-alert
+          class="mt-3"
           v-model="pluginErrorAlert"
           type="error"
           title="Плагин совершил ошибку выполнения"
@@ -45,62 +77,44 @@
         >
           <span class="text-pre-wrap">{{ pluginErrorReason }}</span>
         </v-alert>
-        <v-card v-if="successAlert || errorAlert">
-          <v-card-title>Результаты тестов</v-card-title>
-          <v-card-text>
-            <v-list lines="one">
-              <v-list-item v-for="(item, i) in result" :key="i" :value="item">
-                <template v-slot:prepend>
-                  <v-chip
-                    class="ma-2"
-                    v-if="item.originalResult === item.result"
-                    color="success"
-                  >
-                    {{ i + 1 }}
-                  </v-chip>
-                  <v-chip class="ma-2" v-else color="error">
-                    {{ i + 1 }}
-                  </v-chip>
-                </template>
-                <v-list-item-title
-                  v-text="
-                    'Результат = ' +
-                    item.result +
-                    ', время = ' +
-                    item.timeResult +
-                    'ns, результат эталона = ' +
-                    item.originalResult +
-                    ', время эталона = ' +
-                    item.originalTimeResult +
-                    'ns'
-                  "
-                ></v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
-        </v-card>
-        <v-card class="mt-4">
-          <v-card-text class="py-3">
-            <div v-if="taskStatsLoading" class="d-flex align-center justify-center">
-              <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
-              <span class="text-caption">Загрузка...</span>
-            </div>
-            <v-row v-else no-gutters class="text-center">
-              <v-col>
-                <div class="text-h6 font-weight-bold">{{ formatCount(taskStats.submits) }}</div>
-                <div class="text-caption">отправок</div>
-              </v-col>
-              <v-col>
-                <div class="text-h6 font-weight-bold text-success">{{ formatCount(taskStats.solved) }}</div>
-                <div class="text-caption">решили верно</div>
-              </v-col>
-              <v-col>
-                <div class="text-h6 font-weight-bold">{{ formatCount(taskStats.opened) }}</div>
-                <div class="text-caption">открытий</div>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
+        <div v-if="successAlert || errorAlert" class="task-panel task-panel--white mt-3">
+          <div class="task-section-label task-section-label--flush">Результаты тестов</div>
+          <v-list lines="one">
+            <v-list-item v-for="(item, i) in result" :key="i" :value="item">
+              <template v-slot:prepend>
+                <v-chip
+                  class="ma-2"
+                  v-if="item.originalResult === item.result"
+                  color="success"
+                >
+                  {{ i + 1 }}
+                </v-chip>
+                <v-chip class="ma-2" v-else color="error">
+                  {{ i + 1 }}
+                </v-chip>
+              </template>
+              <v-list-item-title
+                v-text="
+                  'Результат = ' +
+                  item.result +
+                  ', время = ' +
+                  item.timeResult +
+                  'ns, результат эталона = ' +
+                  item.originalResult +
+                  ', время эталона = ' +
+                  item.originalTimeResult +
+                  'ns'
+                "
+              ></v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </div>
+
+        <TaskPluginsInfoComponent
+          class="mt-3"
+          :task-author="activeTask.author ?? null"
+          :plugins="taskPlugins"
+        />
       </v-col>
     </v-row>
   </v-container>
@@ -112,7 +126,9 @@ import { GET_TASK, GET_STATISTIC } from "@/api/Queries";
 import { useTaskStore } from "@/store/task";
 import { useMutation, useQuery, useApolloClient } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, computed } from "vue";
+import TaskPluginsInfoComponent from "@/components/task/TaskPluginsInfoComponent.vue";
+import TaskDescriptionComponent from "@/components/task/TaskDescriptionComponent.vue";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
 import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
 import { useEventsApi } from "@/api/rest/Events";
@@ -124,6 +140,7 @@ interface TaskStats {
 }
 
 export default defineComponent({
+  components: { TaskPluginsInfoComponent, TaskDescriptionComponent },
   props: {
     id: String,
     onCorrectSolution: {
@@ -219,6 +236,11 @@ export default defineComponent({
     const formatCount = (value: number | null) =>
       value == null ? "—" : String(Math.round(value));
 
+    const taskPlugins = computed(() => {
+      const plugin = (activeTask.value as any)?.plugin;
+      return plugin?.id ? [plugin] : [];
+    });
+
     return {
       activeTask,
       authorId,
@@ -227,6 +249,7 @@ export default defineComponent({
       taskStatsLoading,
       loadTaskStats,
       formatCount,
+      taskPlugins,
     };
   },
   data() {
@@ -324,6 +347,9 @@ export default defineComponent({
 });
 </script>
 
+<style>
+@import "./taskViewStyles.css";
+</style>
 <style scoped>
 .text-pre-wrap {
   white-space: pre-wrap;

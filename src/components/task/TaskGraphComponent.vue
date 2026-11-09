@@ -1,10 +1,9 @@
 <template>
     <v-layout>
-        <div style="position: relative; width: 100%; height: 100vh">
+        <div style="position: relative; width: 100%; height: calc(100vh - 48px)">
             <Graph :style="{
                 width: '100%',
                 height: '100%',
-                border: '1px solid black',
                 boxSizing: 'border-box',
             }" />
 
@@ -23,98 +22,106 @@
             <v-container>
                 <v-row>
                     <v-col>
-                        <v-card>
-                            <v-card-title>{{ activeTask.name }}</v-card-title>
-                            <v-card-text class="text-pre-wrap" v-html="formatDescription(activeTask.description)" />
-                            <v-card-actions>
-                                <v-btn color="primary" variant="outlined" :loading="isSubmitting"
-                                    :disabled="isSubmitting" @click="solveTask">
-                                    Отправить решение
-                                </v-btn>
-                            </v-card-actions>
+                        <div class="task-hero">
+                            <span class="task-hero__icon">
+                                <v-icon size="22" icon="mdi-graph-outline" />
+                            </span>
+                            <div class="task-hero__text">
+                                <div class="task-hero__label">Задача</div>
+                                <div class="task-hero__name">{{ activeTask.name }}</div>
+                            </div>
+                        </div>
 
-                            <v-card v-if="extraGraph && extraGraph.vertexList.length !== 0" class="mt-4">
-                                <v-card-text>
-                                    <v-network-graph :style="{
-                                        width: '100%',
-                                        height: '500px',
-                                        border: '1px solid #000',
-                                    }" :nodes="graphData.nodes" :edges="graphData.edges" :layouts="graphData.layouts"
-                                        :configs="graphConfigs">
-                                        <template #override-node="{ nodeId, ...props }">
-                                            <circle :r="20" :fill="getColorCode(props.config.color)" stroke="#000"
-                                                stroke-width="1" />
-                                            <text v-if="graphData.nodes[nodeId].weight !== undefined" font-size="12"
-                                                text-anchor="middle" fill="#000000" y="45">
-                                                Вес: {{ graphData.nodes[nodeId].weight }}
-                                            </text>
-                                            <text font-size="12" text-anchor="middle" fill="#000000" y="30">
-                                                {{ graphData.nodes[nodeId].label }}
-                                            </text>
-                                            <text font-size="12" text-anchor="middle" fill="#000000" y="60">
-                                                Координаты: ({{ graphData.nodes[nodeId].xCoordinate }},
-                                                {{ graphData.nodes[nodeId].yCoordinate }})
-                                            </text>
-                                        </template>
-                                        <template #edge-label="{ edgeId, ...slotProps }">
-                                            <v-edge-label :text="`${graphData.edges[edgeId].weight}`" align="center"
-                                                vertical-align="below" v-bind="slotProps" />
-                                            <v-edge-label :text="`${graphData.edges[edgeId].label}`" align="center"
-                                                vertical-align="above" v-bind="slotProps" />
-                                        </template>
-                                    </v-network-graph>
-                                </v-card-text>
-                            </v-card>
-                        </v-card>
+                        <TaskDescriptionComponent class="mt-3" :description="activeTask.description" />
 
-                        <v-alert v-model="successAlert" text="Задача решена верно" title="Успех!" type="success"
-                            closable variant="tonal" />
-                        <v-alert v-model="errorAlert" text="В решении есть ошибка" title="Ошибка!" type="error" closable
-                            variant="tonal" />
-                        <v-alert v-model="pluginErrorAlert" type="error" title="Плагин совершил ошибку выполнения"
-                            closable variant="tonal">
+                        <div class="task-panel task-panel--white task-panel--compact mt-3">
+                            <div v-if="taskStatsLoading || statisticLoading"
+                                class="d-flex align-center justify-center">
+                                <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
+                                <span class="text-caption">Загрузка...</span>
+                            </div>
+                            <v-row v-else no-gutters class="text-center">
+                                <v-col>
+                                    <div class="text-subtitle-1 font-weight-bold">{{ formatCount(taskStats.submits) }}</div>
+                                    <div class="text-caption">отправок</div>
+                                </v-col>
+                                <v-col>
+                                    <div class="text-subtitle-1 font-weight-bold text-success">
+                                        {{ formatCount(taskStats.solved) }}
+                                    </div>
+                                    <div class="text-caption">решили верно</div>
+                                </v-col>
+                                <v-col>
+                                    <div class="text-subtitle-1 font-weight-bold">{{ formatCount(taskStats.opened) }}</div>
+                                    <div class="text-caption">открытий</div>
+                                </v-col>
+                                <v-col>
+                                    <div class="text-subtitle-1 font-weight-bold text-primary">{{ successRateText }}</div>
+                                    <div class="text-caption">успешность</div>
+                                </v-col>
+                            </v-row>
+                        </div>
+
+                        <template v-if="extraGraph && extraGraph.vertexList.length !== 0">
+                            <div class="task-section-label">Граф задачи</div>
+                            <div class="task-graph-preview">
+                                <v-network-graph :style="{
+                                    width: '100%',
+                                    height: '460px',
+                                }" :nodes="graphData.nodes" :edges="graphData.edges" :layouts="graphData.layouts"
+                                    :configs="graphConfigs">
+                                    <template #override-node="{ nodeId, ...props }">
+                                        <circle :r="20" :fill="getColorCode(props.config.color)" stroke="#000"
+                                            stroke-width="1" />
+                                        <text v-if="graphData.nodes[nodeId].weight !== undefined" font-size="12"
+                                            text-anchor="middle" fill="#000000" y="45">
+                                            Вес: {{ graphData.nodes[nodeId].weight }}
+                                        </text>
+                                        <text font-size="12" text-anchor="middle" fill="#000000" y="30">
+                                            {{ graphData.nodes[nodeId].label }}
+                                        </text>
+                                        <text font-size="12" text-anchor="middle" fill="#000000" y="60">
+                                            Координаты: ({{ graphData.nodes[nodeId].xCoordinate }},
+                                            {{ graphData.nodes[nodeId].yCoordinate }})
+                                        </text>
+                                    </template>
+                                    <template #edge-label="{ edgeId, ...slotProps }">
+                                        <v-edge-label :text="`${graphData.edges[edgeId].weight}`" align="center"
+                                            vertical-align="below" v-bind="slotProps" />
+                                        <v-edge-label :text="`${graphData.edges[edgeId].label}`" align="center"
+                                            vertical-align="above" v-bind="slotProps" />
+                                    </template>
+                                </v-network-graph>
+                            </div>
+                        </template>
+
+                        <v-btn class="mt-3" block size="large" rounded="xl" color="#1976d2" :loading="isSubmitting"
+                            :disabled="isSubmitting" @click="solveTask">
+                            Отправить решение
+                        </v-btn>
+
+                        <v-alert class="mt-3" v-model="successAlert" text="Задача решена верно" title="Успех!"
+                            type="success" closable variant="tonal" />
+                        <v-alert class="mt-3" v-model="errorAlert" text="В решении есть ошибка" title="Ошибка!"
+                            type="error" closable variant="tonal" />
+                        <v-alert class="mt-3" v-model="pluginErrorAlert" type="error"
+                            title="Плагин совершил ошибку выполнения" closable variant="tonal">
                             <span class="text-pre-wrap">{{ pluginErrorReason }}</span>
                         </v-alert>
 
-                        <v-card v-if="errorAlert">
-                            <v-card-title>Ошибки в модулях</v-card-title>
-                            <v-card-text>
-                                <v-list lines="one">
-                                    <v-list-item v-for="(item, i) in result" :key="i"
-                                        :title="`${i + 1}. ${item.mistakeText} = ${item.value}`" />
-                                </v-list>
-                            </v-card-text>
-                        </v-card>
+                        <div v-if="errorAlert" class="task-panel task-panel--white mt-3">
+                            <div class="task-section-label task-section-label--flush">Ошибки в модулях</div>
+                            <v-list lines="one">
+                                <v-list-item v-for="(item, i) in result" :key="i"
+                                    :title="`${i + 1}. ${item.mistakeText} = ${item.value}`" />
+                            </v-list>
+                        </div>
 
-                        <v-card class="mt-4">
-                            <v-card-text class="py-3">
-                                <div v-if="taskStatsLoading || statisticLoading"
-                                    class="d-flex align-center justify-center">
-                                    <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
-                                    <span class="text-caption">Загрузка...</span>
-                                </div>
-                                <v-row v-else no-gutters class="text-center">
-                                    <v-col>
-                                        <div class="text-h6 font-weight-bold">{{ formatCount(taskStats.submits) }}</div>
-                                        <div class="text-caption">отправок</div>
-                                    </v-col>
-                                    <v-col>
-                                        <div class="text-h6 font-weight-bold text-success">
-                                            {{ formatCount(taskStats.solved) }}
-                                        </div>
-                                        <div class="text-caption">решили верно</div>
-                                    </v-col>
-                                    <v-col>
-                                        <div class="text-h6 font-weight-bold">{{ formatCount(taskStats.opened) }}</div>
-                                        <div class="text-caption">открытий</div>
-                                    </v-col>
-                                    <v-col>
-                                        <div class="text-h6 font-weight-bold text-primary">{{ successRateText }}</div>
-                                        <div class="text-caption">успешность</div>
-                                    </v-col>
-                                </v-row>
-                            </v-card-text>
-                        </v-card>
+                        <TaskPluginsInfoComponent
+                            class="mt-3"
+                            :task-author="activeTask.author ?? null"
+                            :plugins="taskPlugins"
+                        />
                     </v-col>
                 </v-row>
             </v-container>
@@ -131,6 +138,8 @@ import { useMutation, useQuery, useApolloClient } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
 import { PluginResult, Graph as GraphType } from "@/__generated__/graphql";
 import Graph from "@/features/graph/ui/graph/Graph.vue";
+import TaskPluginsInfoComponent from "@/components/task/TaskPluginsInfoComponent.vue";
+import TaskDescriptionComponent from "@/components/task/TaskDescriptionComponent.vue";
 import { useNodeStore } from "@/features/graph/stores/nodes";
 import { convertToGqlFormat } from "@/features/graph/lib/helpers/GqlFormatter";
 import * as vNG from "v-network-graph";
@@ -158,6 +167,19 @@ const emit = defineEmits(["isCorrect"]);
 const taskStore = useTaskStore();
 const nodeStore = useNodeStore();
 const { activeTask } = storeToRefs(taskStore);
+
+const taskPlugins = computed(() => {
+  const conditions = (activeTask.value as any)?.conditions ?? [];
+  const plugins: any[] = [];
+  const seen = new Set<string>();
+  for (const condition of conditions) {
+    const plugin = condition?.plugin;
+    if (!plugin?.id || seen.has(plugin.id)) continue;
+    seen.add(plugin.id);
+    plugins.push(plugin);
+  }
+  return plugins;
+});
 
 
 const eventsApi = useEventsApi();
@@ -307,21 +329,6 @@ const getColorCode = (color: string) => {
     default:
       return "#808080";
   }
-};
-
-const formatDescription = (description: string) => {
-  if (!description) return "";
-
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-  return description.replace(urlRegex, (url) => {
-    const escapedUrl = url
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-    return `<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer">${escapedUrl}</a>`;
-  });
 };
 
 const formatPercentage = (value: number) => {
@@ -578,6 +585,9 @@ const solveTask = async () => {
   }
 };
 </script>
+<style>
+@import "./taskViewStyles.css";
+</style>
 <style scoped>
 .drawer-toggle-btn {
     position: absolute;

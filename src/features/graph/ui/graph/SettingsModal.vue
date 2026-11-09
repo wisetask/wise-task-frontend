@@ -146,7 +146,7 @@ const preventManualInput = (event: KeyboardEvent) => {
 
 <template>
   <div>
-    <v-btn @click="open">Настройки графа</v-btn>
+    <v-btn variant="text" color="white" size="small" @click="open">Настройки графа</v-btn>
 
     <v-dialog v-model="isOpen" max-width="360px">
       <v-card class="settings-card">
