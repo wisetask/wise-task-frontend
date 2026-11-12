@@ -41,7 +41,7 @@
             type="error"
             dense
             dismissible
-            class="mt-4"
+            class="mt-4 plugin-error-alert"
           >
             {{ errorMessage }}
           </v-alert>
@@ -71,8 +71,8 @@ import { buildPluginInputModels } from "./helper/inputModel";
 import { useMutation } from "@vue/apollo-composable";
 import { CREATE_PLUGIN, UPDATE_PLUGIN } from "@/api/Mutations";
 import { MAX_INPUT_LENGTH } from "@/shared/config/SIZES";
-import { bulkIndexPlugins } from "@/services/semanticSearchApi";
 import { getUserFromToken } from "@/entities/user/lib/getUserFromToken";
+import { extractPluginExecutionError } from "@/shared/lib/pluginExecutionError";
 
 export default defineComponent({
   setup() {
@@ -172,11 +172,14 @@ export default defineComponent({
         this.dialog = false;
         this.dialogModel = false;
         this.errorMessage = null;
-        this.indexPluginForSemantic(response.data.createPlugin);
       });
 
-      onError(({ graphQLErrors }) => {
-        if (graphQLErrors && graphQLErrors.length > 0) {
+      onError((error) => {
+        const { graphQLErrors } = error;
+        const pluginError = extractPluginExecutionError(error);
+        if (pluginError) {
+          this.errorMessage = `Ошибка при выгрузке плагина: плагин совершил ошибку выполнения:\n${pluginError.reason}`;
+        } else if (graphQLErrors && graphQLErrors.length > 0) {
           this.errorMessage = `Ошибка при выгрузке плагина: ${graphQLErrors[0].message}`;
         } else {
           this.errorMessage =
@@ -230,11 +233,14 @@ export default defineComponent({
         this.dialog = false;
         this.dialogModel = false;
         this.errorMessage = null;
-        this.indexPluginForSemantic(response.data.updatePlugin);
       });
 
-      onError(({ graphQLErrors }) => {
-        if (graphQLErrors && graphQLErrors.length > 0) {
+      onError((error) => {
+        const { graphQLErrors } = error;
+        const pluginError = extractPluginExecutionError(error);
+        if (pluginError) {
+          this.errorMessage = `Ошибка при обновлении плагина: плагин совершил ошибку выполнения:\n${pluginError.reason}`;
+        } else if (graphQLErrors && graphQLErrors.length > 0) {
           this.errorMessage = `Ошибка при обновлении плагина: ${graphQLErrors[0].message}`;
         } else {
           this.errorMessage =
@@ -247,29 +253,12 @@ export default defineComponent({
       this.dialogModel = false;
       this.errorMessage = null;
     },
-    async indexPluginForSemantic(plugin: {
-      id: string;
-      name: string;
-      description?: string | null;
-      category?: string | null;
-      graphType?: string | null;
-      pluginType?: string | null;
-    }) {
-      try {
-        await bulkIndexPlugins([
-          {
-            id: plugin.id,
-            name: plugin.name,
-            description: plugin.description ?? "",
-            category: plugin.category ?? "",
-            graphType: plugin.graphType ?? "",
-            pluginType: plugin.pluginType ?? "",
-          },
-        ]);
-      } catch (error) {
-        console.error("Failed to sync plugin with semantic search", error);
-      }
-    },
   },
 });
 </script>
+
+<style scoped>
+.plugin-error-alert {
+  white-space: pre-wrap;
+}
+</style>

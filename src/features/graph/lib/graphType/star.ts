@@ -8,8 +8,8 @@ export const isGraphStar = (component: ConnectedComponent): boolean => {
   const degreeCount = new Map<string, number>();
 
   for (const edge of component.edges) {
-    const a = edge.sourceNode.id;
-    const b = edge.targetNode.id;
+    const a = edge.source;
+    const b = edge.target;
 
     degreeCount.set(a, (degreeCount.get(a) || 0) + 1);
     degreeCount.set(b, (degreeCount.get(b) || 0) + 1);

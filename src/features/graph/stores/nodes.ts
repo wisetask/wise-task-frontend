@@ -74,6 +74,18 @@ export const useNodeStore = defineStore("nodes", {
       this.regenerateStatistics();
     },
 
+    clearBoard(): void {
+      history.onStateUpdate({
+        type: "graph:clear",
+        properties: {
+          state: this.$state,
+        },
+      });
+      this.nodes = [];
+      this.edges = [];
+      this.regenerateStatistics();
+    },
+
     removeNode(id: string) {
       const removedNode: CustomNode | undefined = this.nodes.find(
         (node) => node.id === id,
@@ -84,8 +96,8 @@ export const useNodeStore = defineStore("nodes", {
       this.nodes = this.nodes.filter((node) => node.id !== removedNode.id);
       const edges: CustomEdge[] = this.edges.filter(
         (edge: CustomEdge) =>
-          edge.sourceNode.id === removedNode.id ||
-          edge.targetNode.id === removedNode.id,
+          edge.source === removedNode.id ||
+          edge.target === removedNode.id,
       );
       history.onStateUpdate({
         type: "node:remove",
@@ -337,8 +349,8 @@ export const useNodeStore = defineStore("nodes", {
       const edges: Set<CustomEdge> = new Set<CustomEdge>(
         this.edges.filter(
           (edge) =>
-            nodeIds.includes(edge.sourceNode.id) ||
-            nodeIds.includes(edge.targetNode.id),
+            nodeIds.includes(edge.source) ||
+            nodeIds.includes(edge.target),
         ),
       );
       history.onStateUpdate({

@@ -19,7 +19,7 @@ const headers = [
 const { onResult } = useQuery(GET_ALL_TASKS)
 onResult((response) => {
   if (response.data) {
-    tasks.value = response.data.getAllTasks
+    tasks.value = response.data.getAllTasks.items ?? []
   }
 })
 

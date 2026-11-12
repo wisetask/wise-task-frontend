@@ -190,6 +190,10 @@ const undo = () => {
   setTimeout(fitView, 200);
 };
 
+const clearBoard = () => {
+  nodeStore.clearBoard();
+};
+
 const addNodeToCenter = () => {
   const { width, height } = document
     .querySelector(".pinia-flow")!
@@ -237,19 +241,20 @@ const isGraphTypeLocked = computed(
 </script>
 
 <template>
-  <div :style="props.style">
+  <div class="graph-editor" :style="props.style">
     <div class="buttons-container">
-      <v-btn @click="addNodeToCenter">Добавить вершину</v-btn>
-      <v-btn @click="undo">UNDO</v-btn>
+      <v-btn variant="text" color="white" size="small" @click="addNodeToCenter">Добавить вершину</v-btn>
+      <v-btn variant="text" color="white" size="small" @click="undo">UNDO</v-btn>
+      <v-btn variant="text" color="white" size="small" @click="clearBoard">Очистить доску</v-btn>
       <DownloadGraphButton />
-      <v-btn @click="toggleMoveMode"> 
+      <v-btn variant="text" color="white" size="small" @click="toggleMoveMode">
         {{ graphSettingsStore.isMoveMode ? "Режим связей" : "Режим передвижения" }}
       </v-btn>
-      <v-btn @click="nodeStore.toggleIsDirected" :disabled="isGraphTypeLocked">
+      <v-btn variant="text" color="white" size="small" @click="nodeStore.toggleIsDirected" :disabled="isGraphTypeLocked">
         Сменить направленность
       </v-btn>
-      <v-btn @click="normalize">Нормализовать граф</v-btn>
-      <v-btn>
+      <v-btn variant="text" color="white" size="small" @click="normalize">Нормализовать граф</v-btn>
+      <v-btn variant="text" color="white" size="small">
         <label for="upload-json" style="cursor: pointer">Загрузить JSON</label>
         <input
           id="upload-json"
@@ -259,7 +264,7 @@ const isGraphTypeLocked = computed(
           @change="uploadJson"
         />
       </v-btn>
-      <v-btn @click="openHelpModal">Как работать с графом?</v-btn>
+      <v-btn variant="text" color="white" size="small" @click="openHelpModal">Как работать с графом?</v-btn>
       <SettingsDropDown />
     </div>
     <VueFlow
@@ -301,21 +306,37 @@ const isGraphTypeLocked = computed(
 @import "../../../../../node_modules/@vue-flow/core/dist/style.css";
 @import "../../../../../node_modules/@vue-flow/core/dist/theme-default.css";
 
-.buttons-container {
-  background-color: blue;
-  padding: 5px 10px;
-  width: 100%;
+.graph-editor {
   display: flex;
-  flex-wrap: wrap;
-  column-gap: 10px;
-  row-gap: 10px;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.buttons-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  width: 100%;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+}
+
+.buttons-container::-webkit-scrollbar {
+  display: none;
 }
 
 .pinia-flow {
   position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 500px;
-  height: calc(100% - 45px);
+  height: auto;
+  min-height: 400px;
   overflow: hidden;
 }
 </style>

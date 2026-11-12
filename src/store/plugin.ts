@@ -1,4 +1,4 @@
-import { Maybe, Plugin } from "@/__generated__/graphql";
+import { Plugin } from "@/__generated__/graphql";
 import { defineStore } from "pinia";
 
 export const usePluginStore = defineStore('plugin', {
@@ -14,18 +14,37 @@ export const usePluginStore = defineStore('plugin', {
             } as PluginInput,
             dialog: false,
             pluginFilter: {
+                name: "",
+                description: "",
                 category: "",
+                graphType: "",
+                pluginType: "",
+                isInternal: false,
+                authorId: "",
                 isValid: false,
-                isFiltered: false
+                isFiltered: false,
+                appliedAt: 0
             } as PluginFilter,
             persist: true
         }
     },
     getters: {
         getFilteredPlugins(state) {
-            const { category, isValid, isFiltered }: PluginFilter = state.pluginFilter
+            const {
+                name, description, category, graphType, pluginType,
+                isInternal, authorId, isValid, isFiltered
+            }: PluginFilter = state.pluginFilter
             return state.plugins.filter((item) => {
-                return !isFiltered || ((category === "" || item.category === category) && (item.isValid === isValid))
+                return !isFiltered || (
+                    (name === "" || item.name === name) &&
+                    (description === "" || item.description === description) &&
+                    (category === "" || item.category === category) &&
+                    (graphType === "" || item.graphType === graphType) &&
+                    (pluginType === "" || item.pluginType === pluginType) &&
+                    (authorId === "" || item.author?.id === authorId) &&
+                    item.isValid === isValid &&
+                    item.isInternal === isInternal
+                )
             })
         }
     }
@@ -42,7 +61,14 @@ interface PluginInput {
 }
 
 interface PluginFilter {
+    name: string,
+    description: string,
     category: string,
+    graphType: string,
+    pluginType: string,
+    isInternal: boolean,
+    authorId: string,
     isValid: boolean,
-    isFiltered: boolean
+    isFiltered: boolean,
+    appliedAt: number
 }

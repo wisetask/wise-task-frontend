@@ -17,7 +17,6 @@ export const generateEdgesList = (
 
   for (let edge of edges) {
     const color: Color = (() => {
-      console.log(edge.data);
       if (!edge.data || !edge.data.color) {
         return Color.Gray;
       }
@@ -33,8 +32,8 @@ export const generateEdgesList = (
       return Color.Gray;
     })();
 
-    const sourceId = nodeIdMap.get(edge.targetNode.id);
-    const targetId = nodeIdMap.get(edge.sourceNode.id);
+    const sourceId = nodeIdMap.get(edge.source);
+    const targetId = nodeIdMap.get(edge.target);
 
     if (sourceId !== undefined && targetId !== undefined) {
       edgeList.push({

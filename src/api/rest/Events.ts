@@ -65,7 +65,6 @@ export function useEventsApi(config: Partial<ApiConfig> = {}): EventsApiMethods 
   const createEvent = async (eventData: EventData): Promise<number | ApiError> => {
     loading.value = true
     error.value = null
-    console.log("creating event: " + JSON.stringify(eventData))
     try {
       
       const response = await fetch(`${baseURL}/events/create`, {
@@ -104,7 +103,6 @@ export function useEventsApi(config: Partial<ApiConfig> = {}): EventsApiMethods 
         return 0;
       }
     } catch (err) {
-      console.log("error creating event: " + err)
       if (err instanceof SyntaxError) {
         return 0;
       }
