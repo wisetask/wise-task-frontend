@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
-/// <reference types="unplugin-vue-router/client" />
-/// <reference types="vite-plugin-vue-layouts/client" />
 
-declare module '*.vue' {
-  import type { DefineComponent } from 'vue'
-  const component: DefineComponent<{}, {}, any>
-  export default component
+interface ImportMetaEnv {
+  readonly VITE_GRAPHQL_URL: string;
+  readonly VITE_API_URL: string;
+  readonly VITE_EVENTS_URL: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }
