@@ -110,3 +110,26 @@ export function removeEdge(graph: Graph, edgeId: string): Graph {
   const edges = graph.edges.filter((edge) => edge.id !== edgeId);
   return withParts(graph, graph.vertices, edges);
 }
+
+export function setDirected(graph: Graph, isDirected: boolean): Graph {
+  const edges: Edge[] = [];
+  for (const edge of graph.edges) {
+    let isReverseOfKept = false;
+    if (!isDirected) {
+      for (const kept of edges) {
+        if (kept.source === edge.target && kept.target === edge.source) {
+          isReverseOfKept = true;
+        }
+      }
+    }
+    if (!isReverseOfKept) {
+      edges.push(edge);
+    }
+  }
+  return {
+    name: graph.name,
+    isDirected: isDirected,
+    vertices: graph.vertices,
+    edges: edges,
+  };
+}
