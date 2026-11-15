@@ -1,3 +1,18 @@
+:root {
+  --color-text: #1f2328;
+  --color-text-muted: #59636e;
+  --color-border: #d1d9e0;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f8fa;
+  --color-accent: #0969da;
+
+  --graph-canvas-bg: #fbfbfb;
+  --graph-edge: #59636e;
+  --graph-vertex-fill: #e6e6e6;
+  --graph-vertex-stroke: #59636e;
+  --graph-vertex-text: #1f2328;
+}
+
 *,
 *::before,
 *::after {
@@ -14,8 +29,8 @@ body {
     "Segoe UI",
     Roboto,
     sans-serif;
-  color: #1f2328;
-  background: #ffffff;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 #app {

@@ -9,4 +9,5 @@ export {
   nextVertexLabel,
   removeEdge,
   removeVertex,
+  setDirected,
 } from "./model/operations";

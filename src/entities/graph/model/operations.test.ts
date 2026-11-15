@@ -8,6 +8,7 @@ import {
   nextVertexLabel,
   removeEdge,
   removeVertex,
+  setDirected,
 } from "./operations";
 
 describe("graph operations", () => {
@@ -97,5 +98,32 @@ describe("graph operations", () => {
     graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
     graph = removeEdge(graph, graph.edges[0].id);
     expect(graph.edges.length).toBe(0);
+  });
+
+  it("keeps both directions when the graph becomes directed", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 10, 10);
+    graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
+    graph = setDirected(graph, true);
+    expect(graph.isDirected).toBe(true);
+    expect(graph.edges.length).toBe(1);
+  });
+
+  it("drops a reverse duplicate when the graph becomes undirected", () => {
+    let graph = createEmptyGraph(true);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 10, 10);
+    const a = graph.vertices[0].id;
+    const b = graph.vertices[1].id;
+    graph = addEdge(graph, a, b);
+    graph = addEdge(graph, b, a);
+    graph = addEdge(graph, a, a);
+    graph = setDirected(graph, false);
+    expect(graph.isDirected).toBe(false);
+    expect(graph.edges.length).toBe(2);
+    expect(graph.edges[0].source).toBe(a);
+    expect(graph.edges[1].source).toBe(a);
+    expect(graph.edges[1].target).toBe(a);
   });
 });
