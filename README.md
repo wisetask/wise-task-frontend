@@ -46,10 +46,10 @@ src/
 ## Правила работы
 
 - Ветки фич — `feat/<что-делаем>` от `v2`, PR обратно в `v2`.
-- Коммиты по Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`.
+- PR мержим через squash, название PR — по Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`.
 - Только `<script setup lang="ts">`, без Options API.
 
-## Линтер, форматирование и коммиты
+## Линтер и форматирование
 
 | Команда                | Что делает                            |
 | ---------------------- | ------------------------------------- |
@@ -59,7 +59,7 @@ src/
 
 ESLint следит за слоями FSD: слой импортирует только из слоёв ниже, а в чужой модуль заходим через его `index.ts` (`@/entities/graph`, а не `@/entities/graph/model/...`). Правила — в `eslint.config.js`.
 
-Перед каждым коммитом husky запускает `npm run lint`, а сообщение коммита проверяет commitlint: формат `тип: описание`, где тип — `feat`, `fix`, `refactor`, `test`, `docs` или `chore`.
+Перед каждым коммитом husky запускает `npm run lint`.
 
 ## CI и тестовый сайт
 
