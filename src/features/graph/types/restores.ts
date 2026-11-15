@@ -70,6 +70,13 @@ export interface NormalizingRestore extends BaseRestore {
   };
 }
 
+export interface ClearBoardRestore extends BaseRestore {
+  type: "graph:clear";
+  properties: {
+    state: NodesStoreState;
+  };
+}
+
 export interface NodeMassMovementRestore extends BaseRestore {
   type: "node:mass_movement";
   properties: Map<string, { x: number; y: number }>;
@@ -108,6 +115,7 @@ export type Restore =
   | EdgeAddRestore
   | EdgeDataRestore
   | NormalizingRestore
+  | ClearBoardRestore
   | NodeMassMovementRestore
   | NodeMassDeleteRestore
   | EdgeMassDeleteRestore

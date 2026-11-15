@@ -7,6 +7,7 @@ import {
 import { computed, inject } from "vue";
 import { graphSettingsStore } from "@/features/graph/stores/graphSettings";
 import { graphNodeDraggingActiveKey } from "@/features/graph/ui/graph/graphConstructorPolicy";
+import { isValidSelfLoopConnection } from "@/features/graph/lib/helpers/resolveConnectionHandles";
 
 const props = defineProps<{
   isEditing: boolean;
@@ -36,28 +37,15 @@ const targetHandles = [
 ];
 
 const checkValidConnection = (connection: any) => {
-  if (isOneHandle.value) {
-    if (isNodeDraggingActive.value) {
-      return false;
-    }
-    return !props.isEditing;
-  }
-
-  const isValidConnection =
-    (connection.sourceHandle === "target-d" &&
-      connection.targetHandle === "target-c") ||
-    (connection.sourceHandle === "target-c" &&
-      connection.targetHandle === "target-d") ||
-    (connection.sourceHandle === "target-a" &&
-      connection.targetHandle === "target-b") ||
-    (connection.sourceHandle === "target-b" &&
-      connection.targetHandle === "target-a");
-
-  if (!isValidConnection && connection.source === connection.target) {
+  if (props.isEditing || isNodeDraggingActive.value) {
     return false;
   }
 
-  return !props.isEditing;
+  if (!isOneHandle.value && connection.source === connection.target) {
+    return isValidSelfLoopConnection(connection);
+  }
+
+  return true;
 };
 
 const isConnectionOverlayActive = computed(
@@ -162,5 +150,13 @@ const isConnectionOverlayActive = computed(
   position: absolute;
   padding: 2px;
   pointer-events: auto;
+}
+
+.full-node-handle.source {
+  z-index: 3;
+}
+
+.full-node-handle.target {
+  z-index: 2;
 }
 </style>

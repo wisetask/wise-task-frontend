@@ -40,7 +40,12 @@
         </v-row>
         <v-row>
           <v-col>
-            <graph-table-component />
+            <graph-filter-component />
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
+            <graph-table-component @edited="drawer = false" />
           </v-col>
         </v-row>
       </v-container>
@@ -49,10 +54,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onUnmounted } from "vue";
+import { defineComponent, ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@vue/apollo-composable";
-import { GET_GRAPH_LIBRARY } from "@/api/Queries";
+import { GET_ALL_GRAPHS } from "@/api/Queries";
 import { useGraphStore } from "@/store/graph";
+import { useProfileStore } from "@/store/profile";
 import { toVGraph } from "./network/helper/graph";
 import Graph from "@/features/graph/ui/graph/Graph.vue";
 
@@ -75,15 +81,42 @@ export default defineComponent({
       window.removeEventListener("resize", updateDrawerWidth);
     });
 
-    useGraphStore().graphLibrary = [];
-    const { onResult } = useQuery(GET_GRAPH_LIBRARY);
+    const graphStore = useGraphStore();
+    graphStore.graphLibrary = [];
+
+    // Поля GraphFilterInput; уходят на бэкенд только после нажатия «Найти»
+    // (isFiltered), незаполненные — как undefined.
+    const requestVariables = computed(() => {
+      const { name, authorId, vertexCount, edgeCount, isDirect, isNamed, isFiltered } =
+          graphStore.graphFilter;
+      return {
+        request: {
+          pagination: { page: 0, pageSize: 100 },
+          filter: !isFiltered ? undefined : {
+            name: name.trim() || undefined,
+            authorId: authorId || undefined,
+            vertexCount: vertexCount ?? undefined,
+            edgeCount: edgeCount ?? undefined,
+            isDirect: isDirect === "" ? undefined : isDirect,
+            isNamed: isNamed === "" ? undefined : isNamed,
+          },
+        },
+      };
+    });
+
+    const { onResult, refetch } = useQuery(GET_ALL_GRAPHS, requestVariables);
     onResult((response) => {
       if (response.data) {
-        response.data.getGraphLibrary.forEach((graph: any) => {
-          useGraphStore().graphLibrary.push(toVGraph(graph));
-        });
+        const items = response.data.getAllGraphs.items ?? [];
+        graphStore.graphLibrary = items.map((graph: any) => toVGraph(graph));
+        useProfileStore().addAuthors(items.map((graph: any) => graph.author));
       }
     });
+
+    watch(
+        () => graphStore.graphFilter.appliedAt,
+        () => refetch(requestVariables.value),
+    );
 
     return { drawer, drawerWidth };
   },

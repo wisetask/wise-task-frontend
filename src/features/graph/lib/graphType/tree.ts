@@ -7,8 +7,8 @@ export const isGraphTree = (component: ConnectedComponent): boolean => {
   const adj = new Map<string, string[]>();
   component.nodes.forEach((node) => adj.set(node.id, []));
   component.edges.forEach((edge) => {
-    adj.get(edge.sourceNode.id)!.push(edge.targetNode.id);
-    adj.get(edge.targetNode.id)!.push(edge.sourceNode.id);
+    adj.get(edge.source)!.push(edge.target);
+    adj.get(edge.target)!.push(edge.source);
   });
 
   const visited = new Set<string>();

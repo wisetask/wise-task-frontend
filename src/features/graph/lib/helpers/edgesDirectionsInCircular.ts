@@ -29,10 +29,10 @@ export const changeDirectionsInCircularGraph = (
   nodes.forEach((node: CustomNode) => nodesMap.set(node.id, node));
 
   edges.forEach((edge: CustomEdge) => {
-    if (!edgesMap.has(edge.sourceNode.id)) {
-      edgesMap.set(edge.sourceNode.id, []);
+    if (!edgesMap.has(edge.source)) {
+      edgesMap.set(edge.source, []);
     }
-    edgesMap.get(edge.sourceNode.id)!.push(edge.targetNode.id);
+    edgesMap.get(edge.source)!.push(edge.target);
   });
 
   edgesMap.forEach((targetIds, sourceId) => {
@@ -46,7 +46,7 @@ export const changeDirectionsInCircularGraph = (
       }
 
       const edge: undefined | CustomEdge = edges.find(
-        (e) => e.sourceNode.id === sourceId && e.targetNode.id === targetId,
+        (e) => e.source === sourceId && e.target === targetId,
       );
 
       if (!edge) {

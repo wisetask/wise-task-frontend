@@ -49,8 +49,7 @@ export const getConnectedComponents = (
         nodes: nodes.filter((n) => componentNodeIds.has(n.id)),
         edges: edges.filter(
           (e) =>
-            componentNodeIds.has(e.sourceNode.id) &&
-            componentNodeIds.has(e.targetNode.id),
+            componentNodeIds.has(e.source) && componentNodeIds.has(e.target),
         ),
       });
     }
