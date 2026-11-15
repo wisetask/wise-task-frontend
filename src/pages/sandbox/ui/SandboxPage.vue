@@ -67,8 +67,8 @@ function clearGraph() {
       <button class="sandbox__button" type="button" @click="clearGraph">Очистить</button>
     </header>
     <p class="sandbox__hint">
-      Клик по пустому месту — вершина. Клик по двум вершинам — ребро.
-      Правый клик по вершине — удалить.
+      Клик по пустому месту — вершина. Клик по двум вершинам — ребро. Правый клик по вершине —
+      удалить.
     </p>
     <svg class="sandbox__canvas" @click.self="onCanvasClick">
       <line
