@@ -9,6 +9,16 @@ interface ToolButton {
   hotkey: string;
 }
 
+const props = defineProps<{
+  canUndo: boolean;
+  canRedo: boolean;
+}>();
+
+const emit = defineEmits<{
+  undo: [];
+  redo: [];
+}>();
+
 const tool = defineModel<EditorTool>("tool", { required: true });
 
 const tools: ToolButton[] = [
@@ -18,11 +28,41 @@ const tools: ToolButton[] = [
   { id: "delete", title: "Удаление", hotkey: "4" },
 ];
 
+function isUndoKey(event: KeyboardEvent): boolean {
+  return event.code === "KeyZ" && !event.shiftKey;
+}
+
+function isRedoKey(event: KeyboardEvent): boolean {
+  return (event.code === "KeyZ" && event.shiftKey) || event.code === "KeyY";
+}
+
+function undo() {
+  if (props.canUndo) {
+    emit("undo");
+  }
+}
+
+function redo() {
+  if (props.canRedo) {
+    emit("redo");
+  }
+}
+
 function onKeyDown(event: KeyboardEvent) {
   if (isTyping(event)) {
     return;
   }
-  if (event.ctrlKey || event.metaKey || event.altKey) {
+  if (event.ctrlKey || event.metaKey) {
+    if (isUndoKey(event)) {
+      event.preventDefault();
+      undo();
+    } else if (isRedoKey(event)) {
+      event.preventDefault();
+      redo();
+    }
+    return;
+  }
+  if (event.altKey) {
     return;
   }
   for (const button of tools) {
@@ -71,6 +111,35 @@ onBeforeUnmount(() => {
       </svg>
       <span class="graph-toolbar__label">{{ button.title }}</span>
     </button>
+
+    <hr class="graph-toolbar__divider" />
+
+    <button
+      type="button"
+      class="graph-toolbar__button"
+      title="Отменить (Ctrl+Z)"
+      :disabled="!canUndo"
+      @click="undo"
+    >
+      <svg class="graph-toolbar__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 14 L4 9 L9 4" />
+        <path d="M4 9 H14 A6 6 0 0 1 14 21 H10" />
+      </svg>
+      <span class="graph-toolbar__label">Отменить</span>
+    </button>
+    <button
+      type="button"
+      class="graph-toolbar__button"
+      title="Повторить (Ctrl+Shift+Z)"
+      :disabled="!canRedo"
+      @click="redo"
+    >
+      <svg class="graph-toolbar__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 14 L20 9 L15 4" />
+        <path d="M20 9 H10 A6 6 0 0 0 10 21 H14" />
+      </svg>
+      <span class="graph-toolbar__label">Повторить</span>
+    </button>
   </nav>
 </template>
 
@@ -96,8 +165,21 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.graph-toolbar__button:hover {
+.graph-toolbar__button:hover:not(:disabled) {
   background: var(--color-surface-hover);
+}
+
+.graph-toolbar__button:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.graph-toolbar__divider {
+  width: 100%;
+  margin: var(--space-1) 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
 }
 
 .graph-toolbar__button:focus-visible {
