@@ -17,6 +17,12 @@ export const router = createRouter({
       name: "ui-kit",
       component: () => import("@/pages/ui-kit"),
     },
+    // заглушка пока не сделаю Т08
+    {
+      path: "/sign-in",
+      name: "sign-in",
+      component: () => import("@/pages/not-found"),
+    },
     {
       path: "/:pathMatch(.*)*",
       name: "not-found",

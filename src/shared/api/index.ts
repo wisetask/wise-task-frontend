@@ -1,4 +1,2 @@
-// TODO (этап 6): отдать наружу всё, чем пользуются другие слои:
-// createApolloClient, getToken, setToken, removeToken, graphql (из ./generated).
-
-export {};
+export { apolloClient, setUnauthorizedHandler } from "./client";
+export { getToken, setToken, removeToken } from "./token";

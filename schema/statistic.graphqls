@@ -1,0 +1,30 @@
+enum StatisticScope {
+  USER
+  TASK
+  SESSION
+  GLOBAL
+}
+
+enum StatisticType {
+  SUCCESS_RATE
+  SUM
+  MEAN
+}
+
+input StatisticRequestInput {
+  type: StatisticType!
+  scope: StatisticScope!
+  event_type: String
+  task_id: ID
+  user_id: ID
+}
+
+type StatisticResponse {
+  scope: StatisticScope!
+  type: StatisticType!
+  updated_at: String!
+  task_id: String
+  user_id: String
+  value: Float!
+  event_type: String
+}

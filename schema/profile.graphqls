@@ -1,0 +1,62 @@
+input ProfileFilterInput {
+  email: String
+  firstName: String
+  lastName: String
+  patronymic: String
+  profileRole: [String!]
+}
+
+input GetAllProfilesRequestInput {
+  pagination: PaginationRequestInput
+  filter: ProfileFilterInput
+}
+
+type GetAllProfilesResponse {
+  items: [Profile!]
+  pagination: PaginationResponse
+}
+
+input SignInRequest {
+  email: String!
+  password: String!
+}
+
+input SignUpRequest {
+  profile: ProfileInput!
+}
+
+input ResetPasswordRequest {
+  recoveryToken: String!
+  newPassword: String!
+}
+
+input ProfileInput {
+  id: ID
+  email: String!
+  profilePassword: String!
+  firstName: String!
+  lastName: String!
+  patronymic: String
+  profileRole: Role
+}
+
+type Token {
+  accessToken: String!
+  refreshToken: String!
+}
+
+type Profile {
+  id: ID!
+  email: String!
+  profilePassword: String!
+  firstName: String!
+  lastName: String!
+  patronymic: String
+  profileRole: Role!
+}
+
+enum Role {
+  USER
+  AUTHOR
+  ADMIN
+}

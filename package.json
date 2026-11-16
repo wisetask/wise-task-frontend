@@ -24,7 +24,6 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
-
     "@graphql-codegen/cli": "^7.4.6",
     "@graphql-codegen/client-preset": "^6.2.3",
     "@eslint/js": "^10.0.1",

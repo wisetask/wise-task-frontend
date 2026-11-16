@@ -1,0 +1,59 @@
+type Query {
+  #profile
+  getAllProfiles(request: GetAllProfilesRequestInput!): GetAllProfilesResponse!
+  getProfile(id: ID!): Profile!
+  getMyProfile: Profile!
+
+  #graph
+  getGraphById(id: ID!): Graph!
+  getAllGraphs(request: GetAllGraphsRequestInput!): GetAllGraphsResponse!
+
+  #plugin
+  getAllPlugins(request: GetAllPluginRequestInput!): GetAllPluginsResponse!
+  getPlugin(id: ID!): Plugin!
+
+  #task
+  getTask(id: ID!): Task!
+  getAllTasks(request: GetAllTaskRequestInput!): GetAllTaskResponse!
+
+  #solution
+  getTaskSolution(id: ID!): Solution!
+  getAllTaskSolutions(request: GetAllTaskSolutionsRequestInput!): GetAllTaskSolutionsResponse!
+
+  #event
+  getStatistic(request: StatisticRequestInput!): StatisticResponse!
+}
+
+type Mutation {
+  #profile
+  signUp(signUpRequest: SignUpRequest!): Token!
+  signIn(signInRequest: SignInRequest!): Token!
+  refreshToken(refreshToken: String!): Token!
+  sendResetPasswordEmail(email: String!): String!
+  resetPassword(resetPasswordRequest: ResetPasswordRequest!): Token!
+  changePassword(id: ID!, oldPassword: String!, newPassword: String!): String!
+  updateProfile(profile: ProfileInput): Profile!
+  deleteProfile(id: ID!): String!
+
+  #graph
+  createGraph(graph: GraphInput!): Graph!
+  generateGraph(generateGraphRequest: GenerateGraphRequest!): Graph
+  deleteGraph(id: ID!): String!
+
+  #plugin
+  createPlugin(plugin: PluginInput!): Plugin
+  updatePlugin(plugin: PluginInput!): Plugin
+  deletePlugin(id: ID!): String!
+  checkPluginSolution(solution: SolutionInput!): String!
+  checkPluginImplementation(id: ID!, file: String!): ImplementationResult!
+  validatePlugin(id: ID!): String!
+
+  #task
+  deleteTask(id: ID!): String!
+  createTaskGraph(task: TaskGraphInput!): TaskGraph!
+  createTaskImplementation(task: TaskImplementationInput!): TaskImplementation!
+  updateTaskGraph(task: TaskGraphInput!): TaskGraph!
+  updateTaskImplementation(task: TaskImplementationInput!): TaskImplementation!
+  solveTaskGraph(solution: SolutionGraphInput!): SolutionGraph!
+  solveTaskImplementation(solution: SolutionImplementationInput!): SolutionImplementation!
+}
