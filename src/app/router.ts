@@ -13,6 +13,11 @@ export const router = createRouter({
       component: () => import("@/pages/sandbox"),
     },
     {
+      path: "/ui-kit",
+      name: "ui-kit",
+      component: () => import("@/pages/ui-kit"),
+    },
+    {
       path: "/:pathMatch(.*)*",
       name: "not-found",
       component: () => import("@/pages/not-found"),

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
+import { UiButton, UiCheckbox } from "@/shared/ui";
 import { GraphCanvas } from "@/widgets/graph-canvas";
 
 const graph = ref<Graph>(createEmptyGraph(false));
 
-function onDirectedChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  graph.value = setDirected(graph.value, input.checked);
+function onDirectedChange(isDirected: boolean) {
+  graph.value = setDirected(graph.value, isDirected);
 }
 
 function clearGraph() {
@@ -22,11 +22,13 @@ function clearGraph() {
       <span class="sandbox__stats">
         Вершин: {{ graph.vertices.length }} · Рёбер: {{ graph.edges.length }}
       </span>
-      <label class="sandbox__toggle">
-        <input type="checkbox" :checked="graph.isDirected" @change="onDirectedChange" />
-        Ориентированный
-      </label>
-      <button class="sandbox__button" type="button" @click="clearGraph">Очистить</button>
+      <UiCheckbox
+        class="sandbox__toggle"
+        :model-value="graph.isDirected"
+        label="Ориентированный"
+        @update:model-value="onDirectedChange"
+      />
+      <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
     </header>
     <p class="sandbox__hint">
       Клик по пустому месту — вершина. Клик по вершине, потом по другой — ребро, дважды по одной —
@@ -64,20 +66,7 @@ function clearGraph() {
 }
 
 .sandbox__toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   margin-left: auto;
-  cursor: pointer;
-}
-
-.sandbox__button {
-  padding: 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface-muted);
-  color: var(--color-text);
-  cursor: pointer;
 }
 
 .sandbox__hint {
