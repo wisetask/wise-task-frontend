@@ -1,4 +1,4 @@
-import type {Graph} from "@/entities/graph"
+import type { Graph } from "@/entities/graph";
 
 const HISTORY_LIMIT = 100;
 
@@ -7,12 +7,12 @@ export class GraphHistory {
   private readonly future: Graph[] = [];
 
   record(graph: Graph): void {
-      this.past.push(graph);
-      if (this.past.length > HISTORY_LIMIT) {
-        this.past.shift();
-      }
-      this.future.length = 0;
+    this.past.push(graph);
+    if (this.past.length > HISTORY_LIMIT) {
+      this.past.shift();
     }
+    this.future.length = 0;
+  }
 
   undo(current: Graph): Graph {
     const previous = this.past.pop();
