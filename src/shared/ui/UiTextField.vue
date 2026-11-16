@@ -5,6 +5,7 @@ const props = withDefaults(
   defineProps<{
     label: string;
     type?: "text" | "email" | "password";
+    inputmode?: "text" | "decimal" | "numeric" | "email";
     placeholder?: string;
     hint?: string;
     error?: string;
@@ -20,6 +21,7 @@ const props = withDefaults(
     disabled: false,
     required: false,
     autocomplete: "off",
+    inputmode: "text",
   },
 );
 
@@ -53,6 +55,7 @@ const message = computed(() => {
       :disabled="disabled"
       :required="required"
       :autocomplete="autocomplete"
+      :inputmode="inputmode"
       :aria-invalid="hasError"
       :aria-describedby="message !== '' ? messageId : undefined"
     />

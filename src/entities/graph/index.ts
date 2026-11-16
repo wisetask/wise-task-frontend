@@ -1,8 +1,9 @@
-export type { Edge, Graph, GraphColor, Vertex } from "./model/types";
+export type { Edge, EdgeChanges, Graph, GraphColor, Vertex, VertexChanges } from "./model/types";
 export {
   addEdge,
   addVertex,
   createEmptyGraph,
+  findEdge,
   findVertex,
   hasEdge,
   moveVertex,
@@ -10,4 +11,6 @@ export {
   removeEdge,
   removeVertex,
   setDirected,
+  updateEdge,
+  updateVertex,
 } from "./model/operations";

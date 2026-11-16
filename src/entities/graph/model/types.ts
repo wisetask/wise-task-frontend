@@ -24,3 +24,15 @@ export interface Graph {
   vertices: Vertex[];
   edges: Edge[];
 }
+
+export interface VertexChanges {
+  label?: string;
+  color?: GraphColor;
+  weight?: number;
+}
+
+export interface EdgeChanges {
+  label?: string;
+  color?: GraphColor;
+  weight?: number;
+}

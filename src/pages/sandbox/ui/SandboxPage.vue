@@ -1,10 +1,27 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
 import { UiButton, UiCheckbox } from "@/shared/ui";
-import { GraphCanvas } from "@/widgets/graph-canvas";
+import {
+  GraphCanvas,
+  GraphPropertiesPanel,
+  GraphToolbar,
+  type EditorTool,
+  type GraphSelection,
+} from "@/widgets/graph-editor";
 
 const graph = ref<Graph>(createEmptyGraph(false));
+const tool = ref<EditorTool>("vertex");
+const selection = ref<GraphSelection | null>(null);
+
+const hints = {
+  select: "Кликните по вершине или ребру, чтобы изменить его справа. Delete — удалить выделенное.",
+  vertex: "Кликайте по пустому месту, чтобы добавить вершины. Их можно перетаскивать.",
+  edge: "Кликните по первой вершине, потом по второй. Дважды по одной — петля. Esc — отмена.",
+  delete: "Кликните по вершине или ребру, чтобы удалить.",
+};
+
+const hint = computed(() => hints[tool.value]);
 
 function onDirectedChange(isDirected: boolean) {
   graph.value = setDirected(graph.value, isDirected);
@@ -12,6 +29,7 @@ function onDirectedChange(isDirected: boolean) {
 
 function clearGraph() {
   graph.value = createEmptyGraph(graph.value.isDirected);
+  selection.value = null;
 }
 </script>
 
@@ -19,9 +37,7 @@ function clearGraph() {
   <main class="sandbox">
     <header class="sandbox__header">
       <h1 class="sandbox__title">Песочница редактора</h1>
-      <span class="sandbox__stats">
-        Вершин: {{ graph.vertices.length }} · Рёбер: {{ graph.edges.length }}
-      </span>
+      <span class="sandbox__hint">{{ hint }}</span>
       <UiCheckbox
         class="sandbox__toggle"
         :model-value="graph.isDirected"
@@ -30,13 +46,16 @@ function clearGraph() {
       />
       <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
     </header>
-    <p class="sandbox__hint">
-      Клик по пустому месту — вершина. Клик по вершине, потом по другой — ребро, дважды по одной —
-      петля. Вершины можно перетаскивать. Правый клик по вершине или ребру — удалить. Esc — снять
-      выделение.
-    </p>
-    <div class="sandbox__canvas">
-      <GraphCanvas v-model:graph="graph" />
+    <div class="sandbox__workspace">
+      <GraphToolbar v-model:tool="tool" class="sandbox__toolbar" />
+      <div class="sandbox__canvas">
+        <GraphCanvas v-model:graph="graph" v-model:selection="selection" :tool="tool" />
+      </div>
+      <GraphPropertiesPanel
+        v-model:graph="graph"
+        v-model:selection="selection"
+        class="sandbox__properties"
+      />
     </div>
   </main>
 </template>
@@ -46,40 +65,56 @@ function clearGraph() {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 16px;
-  gap: 8px;
 }
 
 .sandbox__header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sandbox__title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--font-size-lg);
+  white-space: nowrap;
 }
 
-.sandbox__stats {
+.sandbox__hint {
+  overflow: hidden;
   color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sandbox__toggle {
   margin-left: auto;
+  white-space: nowrap;
 }
 
-.sandbox__hint {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 14px;
+.sandbox__workspace {
+  display: grid;
+  flex: 1;
+  grid-template-columns: auto 1fr 280px;
+  min-height: 0;
+}
+
+.sandbox__toolbar {
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .sandbox__canvas {
-  flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+}
+
+.sandbox__properties {
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 </style>

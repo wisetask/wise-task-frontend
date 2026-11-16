@@ -31,7 +31,7 @@ Vue 3 + TypeScript, Vite, Pinia, Vue Router, Vitest. Apollo, линтеры и C
 src/
   app/        точка входа, роутер, глобальные стили
   pages/      страницы, по папке на страницу
-  widgets/    крупные блоки интерфейса (graph-canvas, шапка)
+  widgets/    крупные блоки интерфейса (graph-editor, шапка)
   features/   действия пользователя (инструменты графа, undo/redo, вход)
   entities/   сущности предметной области (graph, user, task)
   shared/     общий код без бизнес-логики (config, lib, ui, api)
