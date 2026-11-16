@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: "/",
@@ -11,6 +11,11 @@ export const router = createRouter({
       path: "/sandbox",
       name: "sandbox",
       component: () => import("@/pages/sandbox"),
+    },
+    {
+      path: "/ui-kit",
+      name: "ui-kit",
+      component: () => import("@/pages/ui-kit"),
     },
     {
       path: "/:pathMatch(.*)*",

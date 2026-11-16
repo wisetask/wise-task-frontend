@@ -1,5 +1,5 @@
 import { createId } from "@/shared/lib/createId";
-import type { Edge, Graph, Vertex } from "./types";
+import type { Edge, EdgeChanges, Graph, Vertex, VertexChanges } from "./types";
 
 export function createEmptyGraph(isDirected: boolean): Graph {
   return {
@@ -108,5 +108,75 @@ export function addEdge(graph: Graph, sourceId: string, targetId: string): Graph
 
 export function removeEdge(graph: Graph, edgeId: string): Graph {
   const edges = graph.edges.filter((edge) => edge.id !== edgeId);
+  return withParts(graph, graph.vertices, edges);
+}
+
+export function setDirected(graph: Graph, isDirected: boolean): Graph {
+  const edges: Edge[] = [];
+  for (const edge of graph.edges) {
+    let isReverseOfKept = false;
+    if (!isDirected) {
+      for (const kept of edges) {
+        if (kept.source === edge.target && kept.target === edge.source) {
+          isReverseOfKept = true;
+        }
+      }
+    }
+    if (!isReverseOfKept) {
+      edges.push(edge);
+    }
+  }
+  return {
+    name: graph.name,
+    isDirected: isDirected,
+    vertices: graph.vertices,
+    edges: edges,
+  };
+}
+
+export function findEdge(graph: Graph, edgeId: string): Edge | undefined {
+  for (const edge of graph.edges) {
+    if (edge.id === edgeId) {
+      return edge;
+    }
+  }
+  return undefined;
+}
+
+export function updateVertex(graph: Graph, vertexId: string, changes: VertexChanges): Graph {
+  const vertices: Vertex[] = [];
+  for (const vertex of graph.vertices) {
+    if (vertex.id === vertexId) {
+      vertices.push({
+        id: vertex.id,
+        label: changes.label !== undefined ? changes.label : vertex.label,
+        x: vertex.x,
+        y: vertex.y,
+        color: changes.color !== undefined ? changes.color : vertex.color,
+        weight: changes.weight !== undefined ? changes.weight : vertex.weight,
+      });
+    } else {
+      vertices.push(vertex);
+    }
+  }
+  return withParts(graph, vertices, graph.edges);
+}
+
+export function updateEdge(graph: Graph, edgeId: string, changes: EdgeChanges): Graph {
+  const edges: Edge[] = [];
+  for (const edge of graph.edges) {
+    if (edge.id === edgeId) {
+      edges.push({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: changes.label !== undefined ? changes.label : edge.label,
+        color: changes.color !== undefined ? changes.color : edge.color,
+        weight: changes.weight !== undefined ? changes.weight : edge.weight,
+      });
+    } else {
+      edges.push(edge);
+    }
+  }
   return withParts(graph, graph.vertices, edges);
 }

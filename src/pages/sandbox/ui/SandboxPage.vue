@@ -1,73 +1,35 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useQuery } from "@vue/apollo-composable";
-import { graphql } from "@/shared/api/generated";
+import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
+import { UiButton, UiCheckbox } from "@/shared/ui";
 import {
-  addEdge,
-  addVertex,
-  createEmptyGraph,
-  findVertex,
-  removeVertex,
-  type Graph,
-} from "@/entities/graph";
-
-
-const PluginsCountQuery = graphql(`
-  query SandboxPluginsCount {
-    getAllPlugins(request: { pagination: { page: 0, pageSize: 1 } }) {
-      pagination {
-        totalCount
-      }
-    }
-  }
-`);
-const { result, loading, error } = useQuery(PluginsCountQuery);
+  GraphCanvas,
+  GraphPropertiesPanel,
+  GraphToolbar,
+  type EditorTool,
+  type GraphSelection,
+} from "@/widgets/graph-editor";
 
 const graph = ref<Graph>(createEmptyGraph(false));
-const selectedVertexId = ref<string | null>(null);
+const tool = ref<EditorTool>("vertex");
+const selection = ref<GraphSelection | null>(null);
 
-interface EdgeLine {
-  id: string;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
+const hints = {
+  select: "Кликните по вершине или ребру, чтобы изменить его справа. Delete — удалить выделенное.",
+  vertex: "Кликайте по пустому месту, чтобы добавить вершины. Их можно перетаскивать.",
+  edge: "Кликните по первой вершине, потом по второй. Дважды по одной — петля. Esc — отмена.",
+  delete: "Кликните по вершине или ребру, чтобы удалить.",
+};
 
-const edgeLines = computed(() => {
-  const lines: EdgeLine[] = [];
-  for (const edge of graph.value.edges) {
-    const source = findVertex(graph.value, edge.source);
-    const target = findVertex(graph.value, edge.target);
-    if (source && target) {
-      lines.push({ id: edge.id, x1: source.x, y1: source.y, x2: target.x, y2: target.y });
-    }
-  }
-  return lines;
-});
+const hint = computed(() => hints[tool.value]);
 
-function onCanvasClick(event: MouseEvent) {
-  graph.value = addVertex(graph.value, event.offsetX, event.offsetY);
-  selectedVertexId.value = null;
-}
-
-function onVertexClick(vertexId: string) {
-  if (selectedVertexId.value === null) {
-    selectedVertexId.value = vertexId;
-    return;
-  }
-  graph.value = addEdge(graph.value, selectedVertexId.value, vertexId);
-  selectedVertexId.value = null;
-}
-
-function onVertexRightClick(vertexId: string) {
-  graph.value = removeVertex(graph.value, vertexId);
-  selectedVertexId.value = null;
+function onDirectedChange(isDirected: boolean) {
+  graph.value = setDirected(graph.value, isDirected);
 }
 
 function clearGraph() {
-  graph.value = createEmptyGraph(false);
-  selectedVertexId.value = null;
+  graph.value = createEmptyGraph(graph.value.isDirected);
+  selection.value = null;
 }
 </script>
 
@@ -75,38 +37,26 @@ function clearGraph() {
   <main class="sandbox">
     <header class="sandbox__header">
       <h1 class="sandbox__title">Песочница редактора</h1>
-      <span class="sandbox__stats">
-        Вершин: {{ graph.vertices.length }} · Рёбер: {{ graph.edges.length }}
-      </span>
-      <button class="sandbox__button" type="button" @click="clearGraph">Очистить</button>
-    </header>
-    <p> Количество плагинов: {{result?.getAllPlugins.pagination?.totalCount}}. Ошибки: {{error}}</p>
-    <p class="sandbox__hint">
-      Клик по пустому месту — вершина. Клик по двум вершинам — ребро.
-      Правый клик по вершине — удалить.
-    </p>
-    <svg class="sandbox__canvas" @click.self="onCanvasClick">
-      <line
-        v-for="line in edgeLines"
-        :key="line.id"
-        :x1="line.x1"
-        :y1="line.y1"
-        :x2="line.x2"
-        :y2="line.y2"
-        class="sandbox__edge"
+      <span class="sandbox__hint">{{ hint }}</span>
+      <UiCheckbox
+        class="sandbox__toggle"
+        :model-value="graph.isDirected"
+        label="Ориентированный"
+        @update:model-value="onDirectedChange"
       />
-      <g
-        v-for="vertex in graph.vertices"
-        :key="vertex.id"
-        class="sandbox__vertex"
-        :class="{ 'sandbox__vertex--selected': vertex.id === selectedVertexId }"
-        @click.stop="onVertexClick(vertex.id)"
-        @contextmenu.prevent="onVertexRightClick(vertex.id)"
-      >
-        <circle :cx="vertex.x" :cy="vertex.y" r="18" />
-        <text :x="vertex.x" :y="vertex.y + 5" text-anchor="middle">{{ vertex.label }}</text>
-      </g>
-    </svg>
+      <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
+    </header>
+    <div class="sandbox__workspace">
+      <GraphToolbar v-model:tool="tool" class="sandbox__toolbar" />
+      <div class="sandbox__canvas">
+        <GraphCanvas v-model:graph="graph" v-model:selection="selection" :tool="tool" />
+      </div>
+      <GraphPropertiesPanel
+        v-model:graph="graph"
+        v-model:selection="selection"
+        class="sandbox__properties"
+      />
+    </div>
   </main>
 </template>
 
@@ -115,71 +65,56 @@ function clearGraph() {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 16px;
-  gap: 8px;
 }
 
 .sandbox__header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sandbox__title {
   margin: 0;
-  font-size: 20px;
-}
-
-.sandbox__stats {
-  color: #59636e;
-}
-
-.sandbox__button {
-  margin-left: auto;
-  padding: 6px 12px;
-  border: 1px solid #d1d9e0;
-  border-radius: 6px;
-  background: #f6f8fa;
-  cursor: pointer;
+  font-size: var(--font-size-lg);
+  white-space: nowrap;
 }
 
 .sandbox__hint {
-  margin: 0;
-  color: #59636e;
-  font-size: 14px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sandbox__toggle {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.sandbox__workspace {
+  display: grid;
+  flex: 1;
+  grid-template-columns: auto 1fr 280px;
+  min-height: 0;
+}
+
+.sandbox__toolbar {
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .sandbox__canvas {
-  flex: 1;
-  width: 100%;
-  border: 1px solid #d1d9e0;
-  border-radius: 8px;
-  background: #fbfbfb;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.sandbox__edge {
-  stroke: #59636e;
-  stroke-width: 2;
-}
-
-.sandbox__vertex {
-  cursor: pointer;
-}
-
-.sandbox__vertex circle {
-  fill: #e6e6e6;
-  stroke: #59636e;
-  stroke-width: 2;
-}
-
-.sandbox__vertex--selected circle {
-  stroke: #0969da;
-  stroke-width: 3;
-}
-
-.sandbox__vertex text {
-  font-size: 14px;
-  pointer-events: none;
-  user-select: none;
+.sandbox__properties {
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 </style>

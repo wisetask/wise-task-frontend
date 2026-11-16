@@ -1,3 +1,50 @@
+:root {
+  --color-text: #1f2328;
+  --color-text-muted: #59636e;
+  --color-border: #d1d9e0;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f8fa;
+  --color-surface-hover: #eef1f4;
+  --color-accent: #0969da;
+  --color-accent-hover: #0757b5;
+  --color-accent-muted: #ddf4ff;
+  --color-on-accent: #ffffff;
+  --color-danger: #cf222e;
+  --color-danger-hover: #a40e26;
+  --color-focus: #0969da;
+
+  --graph-canvas-bg: #fbfbfb;
+  --graph-edge: #59636e;
+  --graph-vertex-fill: #e6e6e6;
+  --graph-vertex-stroke: #59636e;
+  --graph-vertex-text: #1f2328;
+  --graph-red-fill: #ffd8d3;
+  --graph-red-stroke: #cf222e;
+  --graph-green-fill: #d2f4d9;
+  --graph-green-stroke: #1a7f37;
+  --graph-blue-fill: #d6e8ff;
+  --graph-blue-stroke: #0550ae;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+
+  --control-height-sm: 28px;
+  --control-height-md: 36px;
+}
+
 *,
 *::before,
 *::after {
@@ -8,9 +55,15 @@ html,
 body {
   margin: 0;
   height: 100%;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  color: #1f2328;
-  background: #ffffff;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 #app {
