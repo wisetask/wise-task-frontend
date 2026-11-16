@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { addEdge, addVertex, createEmptyGraph } from "@/entities/graph";
-import { buildEdgeShapes, curvedEdgePath, loopPath, straightEdgePath } from "./geometry";
+import {
+  buildEdgeShapes,
+  curvedEdgePath,
+  curvedLabelPoint,
+  loopLabelPoint,
+  loopPath,
+  straightEdgePath,
+  straightLabelPoint,
+} from "./geometry";
 
 describe("graph canvas geometry", () => {
   it("draws a straight edge from circle border to circle border", () => {
@@ -49,5 +57,11 @@ describe("graph canvas geometry", () => {
     graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
     const shapes = buildEdgeShapes(graph, 10);
     expect(shapes[0].path).toContain("L");
+  });
+
+  it("puts edge labels in the middle of the line, the curve and above the loop", () => {
+    expect(straightLabelPoint({ x: 0, y: 0 }, { x: 100, y: 40 })).toEqual({ x: 50, y: 20 });
+    expect(curvedLabelPoint({ x: 0, y: 0 }, { x: 100, y: 0 }, 20)).toEqual({ x: 50, y: 10 });
+    expect(loopLabelPoint({ x: 100, y: 100 }, 20)).toEqual({ x: 100, y: 40 });
   });
 });

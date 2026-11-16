@@ -7,6 +7,7 @@
   --color-surface-hover: #eef1f4;
   --color-accent: #0969da;
   --color-accent-hover: #0757b5;
+  --color-accent-muted: #ddf4ff;
   --color-on-accent: #ffffff;
   --color-danger: #cf222e;
   --color-danger-hover: #a40e26;
@@ -17,6 +18,12 @@
   --graph-vertex-fill: #e6e6e6;
   --graph-vertex-stroke: #59636e;
   --graph-vertex-text: #1f2328;
+  --graph-red-fill: #ffd8d3;
+  --graph-red-stroke: #cf222e;
+  --graph-green-fill: #d2f4d9;
+  --graph-green-stroke: #1a7f37;
+  --graph-blue-fill: #d6e8ff;
+  --graph-blue-stroke: #0550ae;
 
   --space-1: 4px;
   --space-2: 8px;
