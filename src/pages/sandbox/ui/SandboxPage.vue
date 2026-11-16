@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useQuery } from "@vue/apollo-composable";
+import { graphql } from "@/shared/api/generated";
 import {
   addEdge,
   addVertex,
@@ -8,6 +10,18 @@ import {
   removeVertex,
   type Graph,
 } from "@/entities/graph";
+
+
+const PluginsCountQuery = graphql(`
+  query SandboxPluginsCount {
+    getAllPlugins(request: { pagination: { page: 0, pageSize: 1 } }) {
+      pagination {
+        totalCount
+      }
+    }
+  }
+`);
+const { result, loading, error } = useQuery(PluginsCountQuery);
 
 const graph = ref<Graph>(createEmptyGraph(false));
 const selectedVertexId = ref<string | null>(null);
@@ -66,6 +80,7 @@ function clearGraph() {
       </span>
       <button class="sandbox__button" type="button" @click="clearGraph">Очистить</button>
     </header>
+    <p> Количество плагинов: {{result?.getAllPlugins.pagination?.totalCount}}. Ошибки: {{error}}</p>
     <p class="sandbox__hint">
       Клик по пустому месту — вершина. Клик по двум вершинам — ребро.
       Правый клик по вершине — удалить.

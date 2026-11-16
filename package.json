@@ -8,14 +8,20 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "codegen": "graphql-codegen"
   },
   "dependencies": {
+    "@apollo/client": "^3.14.1",
+    "@vue/apollo-composable": "^4.2.2",
+    "graphql": "^16.15.0",
     "pinia": "^3.0.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^7.4.6",
+    "@graphql-codegen/client-preset": "^6.2.3",
     "@types/node": "^22.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/tsconfig": "^0.7.0",
