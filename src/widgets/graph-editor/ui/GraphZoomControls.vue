@@ -11,6 +11,7 @@ const emit = defineEmits<{
   zoomIn: [];
   zoomOut: [];
   setPercent: [percent: number];
+  fit: [];
 }>();
 
 const inputElement = ref<HTMLInputElement | null>(null);
@@ -62,7 +63,14 @@ function onKeyDown(event: KeyboardEvent) {
 
 <template>
   <div class="graph-zoom" role="group" aria-label="Масштаб">
-    <UiButton size="sm" title="Уменьшить" @click="emit('zoomOut')">−</UiButton>
+    <UiButton size="sm" title="Показать весь граф (Shift+1)" @click="emit('fit')">
+      <svg class="graph-zoom__icon" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M2 6 V2 H6 M10 2 H14 V6 M14 10 V14 H10 M6 14 H2 V10" />
+      </svg>
+      <span class="graph-zoom__label">Показать весь граф</span>
+    </UiButton>
+    <span class="graph-zoom__divider" />
+    <UiButton size="sm" title="Уменьшить (−)" @click="emit('zoomOut')">−</UiButton>
     <input
       ref="inputElement"
       v-model="draft"
@@ -70,12 +78,12 @@ function onKeyDown(event: KeyboardEvent) {
       type="text"
       inputmode="decimal"
       aria-label="Масштаб в процентах"
-      title="Впишите масштаб от 25 до 400% и нажмите Enter"
+      title="Впишите масштаб от 25 до 400% и нажмите Enter. Клавиша 0 — 100%"
       @focus="onFocus"
       @blur="onBlur"
       @keydown="onKeyDown"
     />
-    <UiButton size="sm" title="Увеличить" @click="emit('zoomIn')">+</UiButton>
+    <UiButton size="sm" title="Увеличить (+)" @click="emit('zoomIn')">+</UiButton>
   </div>
 </template>
 
@@ -91,6 +99,32 @@ function onKeyDown(event: KeyboardEvent) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+}
+
+.graph-zoom__icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.graph-zoom__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.graph-zoom__divider {
+  align-self: stretch;
+  width: 1px;
+  margin: var(--space-1) 0;
+  background: var(--color-border);
 }
 
 .graph-zoom__input {

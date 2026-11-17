@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   createViewport,
+  fitArea,
   keepInArea,
   MAX_SCALE,
   MIN_SCALE,
   panBy,
   parseZoomPercent,
+  pointsArea,
   screenToWorld,
   visibleArea,
   wheelFactor,
@@ -82,5 +84,36 @@ describe("canvas viewport", () => {
     expect(screenToWorld(zoomed, center)).toEqual(screenToWorld(createViewport(), center));
     expect(zoomToPercent(createViewport(), center, 1000).scale).toBe(MAX_SCALE);
     expect(zoomToPercent(createViewport(), center, 5).scale).toBe(MIN_SCALE);
+  });
+
+  it("finds the area taken by the vertices", () => {
+    expect(pointsArea([])).toBeNull();
+    const points = [
+      { x: 10, y: 50 },
+      { x: -20, y: 30 },
+      { x: 40, y: 90 },
+    ];
+    expect(pointsArea(points)).toEqual({ left: -20, top: 30, right: 40, bottom: 90 });
+  });
+
+  it("puts the whole graph in the middle of the canvas", () => {
+    const area = { left: 100, top: 100, right: 300, bottom: 200 };
+    const viewport = fitArea(area, 800, 600, 0);
+    expect(viewport.scale).toBe(1);
+    expect(screenToWorld(viewport, { x: 400, y: 300 })).toEqual({ x: 200, y: 150 });
+  });
+
+  it("zooms out when the graph does not fit", () => {
+    const area = { left: 0, top: 0, right: 1500, bottom: 100 };
+    const viewport = fitArea(area, 800, 600, 50);
+    expect(viewport.scale).toBe(0.5);
+    const shown = visibleArea(viewport, 800, 600);
+    expect(shown.left).toBeLessThanOrEqual(0);
+    expect(shown.right).toBeGreaterThanOrEqual(1500);
+  });
+
+  it("does not zoom out too far to fit a huge graph", () => {
+    const area = { left: 0, top: 0, right: 100000, bottom: 100 };
+    expect(fitArea(area, 800, 600, 0).scale).toBe(MIN_SCALE);
   });
 });

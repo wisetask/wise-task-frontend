@@ -25,6 +25,7 @@ import { useCanvasMenu } from "../lib/useCanvasMenu";
 import { useCanvasPan } from "../lib/useCanvasPan";
 import { useVertexDrag } from "../lib/useVertexDrag";
 import { useViewport } from "../lib/useViewport";
+import { zoomKeyAction, type ZoomKeyAction } from "../lib/zoomKeys";
 import GraphArrowMarkers from "./GraphArrowMarkers.vue";
 import GraphContextMenu from "./GraphContextMenu.vue";
 import GraphEdgeItem from "./GraphEdgeItem.vue";
@@ -57,6 +58,7 @@ const {
   zoomByWheel,
   pan: panViewport,
   reset: resetViewport,
+  fitTo,
 } = useViewport(svgElement);
 
 const { draggedVertexId, startDrag, consumeClick } = useVertexDrag({
@@ -145,6 +147,23 @@ function onSetPercent(percent: number) {
 function resetZoom() {
   closeMenu();
   resetViewport();
+}
+
+function fitView() {
+  closeMenu();
+  fitTo(props.graph.vertices);
+}
+
+function runZoomKey(action: ZoomKeyAction) {
+  if (action === "zoom-in") {
+    onZoomIn();
+  } else if (action === "zoom-out") {
+    onZoomOut();
+  } else if (action === "reset") {
+    resetZoom();
+  } else {
+    fitView();
+  }
 }
 
 function onWheel(event: WheelEvent) {
@@ -273,6 +292,8 @@ function onMenuChoose(action: MenuAction) {
   }
   if (action === "reset-zoom") {
     resetZoom();
+  } else if (action === "fit-view") {
+    fitView();
   } else if (action === "add-vertex" && target.kind === "canvas") {
     addVertexAt({ x: target.x, y: target.y });
   } else if (action === "add-loop" && target.kind === "vertex") {
@@ -317,7 +338,18 @@ function onKeyDown(event: KeyboardEvent) {
     select(null);
     return;
   }
-  if ((event.key === "Delete" || event.key === "Backspace") && !isTyping(event)) {
+  if (isTyping(event)) {
+    return;
+  }
+  if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+    const zoomAction = zoomKeyAction(event.code, event.shiftKey);
+    if (zoomAction !== null) {
+      event.preventDefault();
+      runZoomKey(zoomAction);
+      return;
+    }
+  }
+  if (event.key === "Delete" || event.key === "Backspace") {
     if (props.selection !== null) {
       event.preventDefault();
       deleteSelected();
@@ -398,6 +430,7 @@ onBeforeUnmount(() => {
       @zoom-in="onZoomIn"
       @zoom-out="onZoomOut"
       @set-percent="onSetPercent"
+      @fit="fitView"
     />
 
     <GraphContextMenu
