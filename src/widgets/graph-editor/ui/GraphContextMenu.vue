@@ -28,8 +28,16 @@ function onWindowPointerDown(event: PointerEvent) {
   emit("close");
 }
 
+function onWindowKeyDown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    event.stopPropagation();
+    emit("close");
+  }
+}
+
 onMounted(() => {
   window.addEventListener("pointerdown", onWindowPointerDown, true);
+  window.addEventListener("keydown", onWindowKeyDown, true);
   nextTick(() => {
     if (menuElement.value === null) {
       return;
@@ -43,6 +51,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("pointerdown", onWindowPointerDown, true);
+  window.removeEventListener("keydown", onWindowKeyDown, true);
 });
 </script>
 

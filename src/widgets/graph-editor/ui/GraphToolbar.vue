@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from "vue";
-import { isTyping } from "../lib/pointer";
+import { DEFAULT_HOTKEYS, toolAction, withHotkey } from "../lib/hotkeys";
 import type { EditorTool } from "../lib/selection";
 
 interface ToolButton {
   id: EditorTool;
   title: string;
-  hotkey: string;
-  code: string;
 }
 
 const props = defineProps<{
@@ -23,19 +20,18 @@ const emit = defineEmits<{
 const tool = defineModel<EditorTool>("tool", { required: true });
 
 const tools: ToolButton[] = [
-  { id: "select", title: "Выбор и перемещение", hotkey: "1", code: "Digit1" },
-  { id: "pan", title: "Рука — двигать холст", hotkey: "H", code: "KeyH" },
-  { id: "vertex", title: "Вершина", hotkey: "2", code: "Digit2" },
-  { id: "edge", title: "Ребро", hotkey: "3", code: "Digit3" },
-  { id: "delete", title: "Удаление", hotkey: "4", code: "Digit4" },
+  { id: "select", title: "Выбор и перемещение" },
+  { id: "pan", title: "Рука — двигать холст" },
+  { id: "vertex", title: "Вершина" },
+  { id: "edge", title: "Ребро" },
+  { id: "delete", title: "Удаление" },
 ];
 
-function isUndoKey(event: KeyboardEvent): boolean {
-  return event.code === "KeyZ" && !event.shiftKey;
-}
+const undoTitle = withHotkey("Отменить", "undo", DEFAULT_HOTKEYS);
+const redoTitle = withHotkey("Повторить", "redo", DEFAULT_HOTKEYS);
 
-function isRedoKey(event: KeyboardEvent): boolean {
-  return (event.code === "KeyZ" && event.shiftKey) || event.code === "KeyY";
+function toolTitle(button: ToolButton): string {
+  return withHotkey(button.title, toolAction(button.id), DEFAULT_HOTKEYS);
 }
 
 function undo() {
@@ -49,38 +45,6 @@ function redo() {
     emit("redo");
   }
 }
-
-function onKeyDown(event: KeyboardEvent) {
-  if (isTyping(event)) {
-    return;
-  }
-  if (event.ctrlKey || event.metaKey) {
-    if (isUndoKey(event)) {
-      event.preventDefault();
-      undo();
-    } else if (isRedoKey(event)) {
-      event.preventDefault();
-      redo();
-    }
-    return;
-  }
-  if (event.altKey || event.shiftKey) {
-    return;
-  }
-  for (const button of tools) {
-    if (event.key === button.hotkey || event.code === button.code) {
-      tool.value = button.id;
-    }
-  }
-}
-
-onMounted(() => {
-  window.addEventListener("keydown", onKeyDown);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("keydown", onKeyDown);
-});
 </script>
 
 <template>
@@ -92,7 +56,7 @@ onBeforeUnmount(() => {
       class="graph-toolbar__button"
       :class="{ 'graph-toolbar__button--active': tool === button.id }"
       :aria-pressed="tool === button.id"
-      :title="button.title + ' (' + button.hotkey + ')'"
+      :title="toolTitle(button)"
       @click="tool = button.id"
     >
       <svg class="graph-toolbar__icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -127,7 +91,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="graph-toolbar__button"
-      title="Отменить (Ctrl+Z)"
+      :title="undoTitle"
       :disabled="!canUndo"
       @click="undo"
     >
@@ -140,7 +104,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="graph-toolbar__button"
-      title="Повторить (Ctrl+Shift+Z)"
+      :title="redoTitle"
       :disabled="!canRedo"
       @click="redo"
     >
