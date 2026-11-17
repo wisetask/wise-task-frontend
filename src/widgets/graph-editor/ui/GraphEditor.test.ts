@@ -130,7 +130,9 @@ describe("graph editor", () => {
   it("lays the graph out from the context menu and undoes it in one step", async () => {
     const wrapper = mountEditor(threeVertices(), "select");
     const before = graphOf(wrapper);
-    await wrapper.find("svg.graph-canvas__svg").trigger("contextmenu", { clientX: 10, clientY: 10 });
+    await wrapper
+      .find("svg.graph-canvas__svg")
+      .trigger("contextmenu", { clientX: 10, clientY: 10 });
     await flushPromises();
     await wrapper.find(".graph-menu__group").trigger("mouseenter");
     const circle = wrapper
