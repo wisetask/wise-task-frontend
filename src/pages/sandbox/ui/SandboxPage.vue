@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
+import { useGraphHistory } from "@/features/graph-history";
 import { UiButton, UiCheckbox } from "@/shared/ui";
 import {
   GraphCanvas,
   GraphPropertiesPanel,
   GraphToolbar,
+  isSelectionValid,
   type EditorTool,
   type GraphSelection,
 } from "@/widgets/graph-editor";
@@ -13,6 +15,9 @@ import {
 const graph = ref<Graph>(createEmptyGraph(false));
 const tool = ref<EditorTool>("vertex");
 const selection = ref<GraphSelection | null>(null);
+const history = useGraphHistory(graph);
+const canUndo = history.canUndo;
+const canRedo = history.canRedo;
 
 const hints = {
   select: "Кликните по вершине или ребру, чтобы изменить его справа. Delete — удалить выделенное.",
@@ -23,11 +28,36 @@ const hints = {
 
 const hint = computed(() => hints[tool.value]);
 
+function forgetMissingSelection() {
+  if (selection.value !== null && !isSelectionValid(graph.value, selection.value)) {
+    selection.value = null;
+  }
+}
+
+function onBeforeChange(snapshot: Graph) {
+  history.record(snapshot);
+}
+
+function onUndo() {
+  history.undo();
+  forgetMissingSelection();
+}
+
+function onRedo() {
+  history.redo();
+  forgetMissingSelection();
+}
+
 function onDirectedChange(isDirected: boolean) {
+  history.record(graph.value);
   graph.value = setDirected(graph.value, isDirected);
 }
 
 function clearGraph() {
+  if (graph.value.vertices.length === 0) {
+    return;
+  }
+  history.record(graph.value);
   graph.value = createEmptyGraph(graph.value.isDirected);
   selection.value = null;
 }
@@ -47,14 +77,27 @@ function clearGraph() {
       <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
     </header>
     <div class="sandbox__workspace">
-      <GraphToolbar v-model:tool="tool" class="sandbox__toolbar" />
+      <GraphToolbar
+        v-model:tool="tool"
+        class="sandbox__toolbar"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        @undo="onUndo"
+        @redo="onRedo"
+      />
       <div class="sandbox__canvas">
-        <GraphCanvas v-model:graph="graph" v-model:selection="selection" :tool="tool" />
+        <GraphCanvas
+          v-model:graph="graph"
+          v-model:selection="selection"
+          :tool="tool"
+          @before-change="onBeforeChange"
+        />
       </div>
       <GraphPropertiesPanel
         v-model:graph="graph"
         v-model:selection="selection"
         class="sandbox__properties"
+        @before-change="onBeforeChange"
       />
     </div>
   </main>

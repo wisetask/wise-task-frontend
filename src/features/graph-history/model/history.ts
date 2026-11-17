@@ -16,14 +16,18 @@ export class GraphHistory {
 
   undo(current: Graph): Graph {
     const previous = this.past.pop();
-    if (previous === undefined) return current;
+    if (previous === undefined) {
+      return current;
+    }
     this.future.push(current);
     return previous;
   }
 
   redo(current: Graph): Graph {
     const next = this.future.pop();
-    if (next === undefined) return current;
+    if (next === undefined) {
+      return current;
+    }
     this.past.push(current);
     return next;
   }
