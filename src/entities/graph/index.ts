@@ -14,3 +14,14 @@ export {
   updateEdge,
   updateVertex,
 } from "./model/operations";
+export type { GraphStatistics } from "./model/statistics";
+export {
+  countComponents,
+  countEdges,
+  countIsolated,
+  countLeaves,
+  countLoops,
+  countVertices,
+  graphStatistics,
+  vertexDegree,
+} from "./model/statistics";
