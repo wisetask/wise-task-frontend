@@ -6,6 +6,7 @@ import { UiButton, UiCheckbox } from "@/shared/ui";
 import {
   GraphCanvas,
   GraphPropertiesPanel,
+  GraphStatsBar,
   GraphToolbar,
   isSelectionValid,
   type EditorTool,
@@ -85,13 +86,16 @@ function clearGraph() {
         @undo="onUndo"
         @redo="onRedo"
       />
-      <div class="sandbox__canvas">
-        <GraphCanvas
-          v-model:graph="graph"
-          v-model:selection="selection"
-          :tool="tool"
-          @before-change="onBeforeChange"
-        />
+      <div class="sandbox__center">
+        <div class="sandbox__canvas">
+          <GraphCanvas
+            v-model:graph="graph"
+            v-model:selection="selection"
+            :tool="tool"
+            @before-change="onBeforeChange"
+          />
+        </div>
+        <GraphStatsBar :graph="graph" />
       </div>
       <GraphPropertiesPanel
         v-model:graph="graph"
@@ -149,8 +153,15 @@ function clearGraph() {
   background: var(--color-surface);
 }
 
-.sandbox__canvas {
+.sandbox__center {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+}
+
+.sandbox__canvas {
+  flex: 1;
   min-height: 0;
   overflow: hidden;
 }
