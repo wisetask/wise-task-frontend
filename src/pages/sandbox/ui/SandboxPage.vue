@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
 import { useGraphHistory } from "@/features/graph-history";
 import { UiButton, UiCheckbox } from "@/shared/ui";
@@ -12,8 +12,11 @@ import {
   type EditorTool,
   type GraphSelection,
 } from "@/widgets/graph-editor";
+import { browserStorage, loadGraph, saveGraph } from "../lib/savedGraph";
 
-const graph = ref<Graph>(createEmptyGraph(false));
+const storage = browserStorage();
+const savedGraph = loadGraph(storage);
+const graph = ref<Graph>(savedGraph === null ? createEmptyGraph(false) : savedGraph);
 const tool = ref<EditorTool>("vertex");
 const selection = ref<GraphSelection | null>(null);
 const history = useGraphHistory(graph);
@@ -28,6 +31,10 @@ const hints = {
 };
 
 const hint = computed(() => hints[tool.value]);
+
+watch(graph, (value) => {
+  saveGraph(storage, value);
+});
 
 function forgetMissingSelection() {
   if (selection.value !== null && !isSelectionValid(graph.value, selection.value)) {

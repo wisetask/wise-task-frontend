@@ -4,6 +4,8 @@ import { clamp } from "./pointer";
 export const MIN_SCALE = 0.25;
 export const MAX_SCALE = 4;
 export const ZOOM_STEP = 1.25;
+export const FIT_PADDING = 60;
+const FIT_MAX_SCALE = 1;
 
 export interface Viewport {
   x: number;
@@ -95,5 +97,37 @@ export function keepInArea(point: Point, area: Area, margin: number): Point {
   return {
     x: clamp(point.x, area.left + margin, area.right - margin),
     y: clamp(point.y, area.top + margin, area.bottom - margin),
+  };
+}
+
+export function pointsArea(points: Point[]): Area | null {
+  if (points.length === 0) {
+    return null;
+  }
+  const area = {
+    left: points[0].x,
+    top: points[0].y,
+    right: points[0].x,
+    bottom: points[0].y,
+  };
+  for (const point of points) {
+    area.left = Math.min(area.left, point.x);
+    area.top = Math.min(area.top, point.y);
+    area.right = Math.max(area.right, point.x);
+    area.bottom = Math.max(area.bottom, point.y);
+  }
+  return area;
+}
+
+export function fitArea(area: Area, width: number, height: number, padding: number): Viewport {
+  const areaWidth = area.right - area.left + padding * 2;
+  const areaHeight = area.bottom - area.top + padding * 2;
+  const scale = clamp(Math.min(width / areaWidth, height / areaHeight), MIN_SCALE, FIT_MAX_SCALE);
+  const centerX = (area.left + area.right) / 2;
+  const centerY = (area.top + area.bottom) / 2;
+  return {
+    x: width / 2 - centerX * scale,
+    y: height / 2 - centerY * scale,
+    scale: scale,
   };
 }

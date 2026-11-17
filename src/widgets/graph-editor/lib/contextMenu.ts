@@ -5,7 +5,7 @@ export type MenuTarget =
   | { kind: "edge"; id: string }
   | { kind: "canvas"; x: number; y: number };
 
-export type MenuAction = "add-vertex" | "add-loop" | "delete" | "reset-zoom";
+export type MenuAction = "add-vertex" | "add-loop" | "delete" | "fit-view" | "reset-zoom";
 
 export interface MenuItem {
   action: MenuAction;
@@ -30,10 +30,14 @@ export function buildMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
   if (target.kind === "edge") {
     return [{ action: "delete", label: "Удалить ребро", danger: true }];
   }
-  return [
+  const items: MenuItem[] = [
     { action: "add-vertex", label: "Добавить вершину здесь", danger: false },
-    { action: "reset-zoom", label: "Масштаб 100%", danger: false },
   ];
+  if (graph.vertices.length > 0) {
+    items.push({ action: "fit-view", label: "Показать весь граф", danger: false });
+  }
+  items.push({ action: "reset-zoom", label: "Масштаб 100%", danger: false });
+  return items;
 }
 
 export function hasColorChoice(target: MenuTarget): boolean {

@@ -42,6 +42,12 @@ describe("editor context menu", () => {
     expect(hasColorChoice({ kind: "edge", id: "e1" })).toBe(true);
   });
 
+  it("offers to show the whole graph when there are vertices", () => {
+    const graph = addVertex(createEmptyGraph(false), 0, 0);
+    const items = buildMenuItems(graph, { kind: "canvas", x: 5, y: 5 });
+    expect(actionsOf(items)).toEqual(["add-vertex", "fit-view", "reset-zoom"]);
+  });
+
   it("opens the menu to the left and up near the edges of the canvas", () => {
     expect(menuPosition(10, 10, 100, 800, 600)).toEqual({ left: 10, top: 10 });
     expect(menuPosition(790, 590, 100, 800, 600)).toEqual({ left: 790 - MENU_WIDTH, top: 490 });

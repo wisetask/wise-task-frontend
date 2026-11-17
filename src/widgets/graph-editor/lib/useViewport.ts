@@ -3,8 +3,11 @@ import { VERTEX_RADIUS, type Point } from "./geometry";
 import { toCanvasPoint } from "./pointer";
 import {
   createViewport,
+  FIT_PADDING,
+  fitArea,
   keepInArea,
   panBy,
+  pointsArea,
   screenToWorld,
   viewportTransform,
   visibleArea,
@@ -69,6 +72,16 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
     viewport.value = createViewport();
   }
 
+  function fitTo(points: Point[]) {
+    const area = pointsArea(points);
+    if (area === null || svgElement.value === null) {
+      reset();
+      return;
+    }
+    const box = svgElement.value.getBoundingClientRect();
+    viewport.value = fitArea(area, box.width, box.height, FIT_PADDING);
+  }
+
   return {
     transform: transform,
     percent: percent,
@@ -80,5 +93,6 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
     zoomByWheel: zoomByWheel,
     pan: pan,
     reset: reset,
+    fitTo: fitTo,
   };
 }
