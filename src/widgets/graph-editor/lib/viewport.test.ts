@@ -5,11 +5,13 @@ import {
   MAX_SCALE,
   MIN_SCALE,
   panBy,
+  parseZoomPercent,
   screenToWorld,
   visibleArea,
   wheelFactor,
   zoomAt,
   zoomPercent,
+  zoomToPercent,
 } from "./viewport";
 
 describe("canvas viewport", () => {
@@ -60,5 +62,25 @@ describe("canvas viewport", () => {
 
   it("treats wheel lines like pixels, as Firefox reports them", () => {
     expect(wheelFactor(3, 1)).toBeCloseTo(wheelFactor(120, 0));
+  });
+
+  it("reads a zoom value typed by the user", () => {
+    expect(parseZoomPercent("150")).toBe(150);
+    expect(parseZoomPercent("150%")).toBe(150);
+    expect(parseZoomPercent(" 75 % ")).toBe(75);
+    expect(parseZoomPercent("62,5")).toBe(62.5);
+    expect(parseZoomPercent("")).toBeNull();
+    expect(parseZoomPercent("abc")).toBeNull();
+    expect(parseZoomPercent("-50")).toBeNull();
+    expect(parseZoomPercent("0")).toBeNull();
+  });
+
+  it("zooms to a typed percent and keeps it within the limits", () => {
+    const center = { x: 200, y: 100 };
+    const zoomed = zoomToPercent(createViewport(), center, 150);
+    expect(zoomed.scale).toBe(1.5);
+    expect(screenToWorld(zoomed, center)).toEqual(screenToWorld(createViewport(), center));
+    expect(zoomToPercent(createViewport(), center, 1000).scale).toBe(MAX_SCALE);
+    expect(zoomToPercent(createViewport(), center, 5).scale).toBe(MIN_SCALE);
   });
 });

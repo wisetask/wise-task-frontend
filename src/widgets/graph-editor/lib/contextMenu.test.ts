@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { addEdge, addVertex, createEmptyGraph } from "@/entities/graph";
-import { buildMenuItems, hasColorChoice, MENU_WIDTH, menuPosition } from "./contextMenu";
+import { addEdge, addVertex, createEmptyGraph, updateVertex } from "@/entities/graph";
+import {
+  buildMenuItems,
+  hasColorChoice,
+  MENU_WIDTH,
+  menuPosition,
+  targetColor,
+} from "./contextMenu";
 
 function actionsOf(items: { action: string }[]): string[] {
   const actions: string[] = [];
@@ -39,5 +45,15 @@ describe("editor context menu", () => {
   it("opens the menu to the left and up near the edges of the canvas", () => {
     expect(menuPosition(10, 10, 100, 800, 600)).toEqual({ left: 10, top: 10 });
     expect(menuPosition(790, 590, 100, 800, 600)).toEqual({ left: 790 - MENU_WIDTH, top: 490 });
+  });
+
+  it("knows the color of the vertex or edge under the menu", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    const id = graph.vertices[0].id;
+    graph = updateVertex(graph, id, { color: "BLUE" });
+    expect(targetColor(graph, { kind: "vertex", id: id })).toBe("BLUE");
+    expect(targetColor(graph, { kind: "vertex", id: "missing" })).toBeNull();
+    expect(targetColor(graph, { kind: "canvas", x: 0, y: 0 })).toBeNull();
   });
 });
