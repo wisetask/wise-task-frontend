@@ -9,6 +9,7 @@ import {
   type GraphColor,
 } from "@/entities/graph";
 import type { MenuTarget } from "./contextMenu";
+import { layoutGraph, type LayoutKind } from "./layout";
 import type { Point } from "./geometry";
 import {
   isSelectionValid,
@@ -77,6 +78,15 @@ export function useGraphEdits(options: GraphEditsOptions) {
     options.onSelect(null);
   }
 
+  function arrange(kind: LayoutKind) {
+    const selection = options.getSelection();
+    let rootId: string | null = null;
+    if (selection !== null && selection.kind === "vertex") {
+      rootId = selection.id;
+    }
+    apply(layoutGraph(options.getGraph(), kind, rootId));
+  }
+
   function selectEverything() {
     options.onSelect(selectAll(options.getGraph()));
   }
@@ -100,6 +110,7 @@ export function useGraphEdits(options: GraphEditsOptions) {
     deleteVertex: deleteVertex,
     deleteEdge: deleteEdge,
     deleteSelected: deleteSelected,
+    arrange: arrange,
     selectEverything: selectEverything,
     paint: paint,
   };

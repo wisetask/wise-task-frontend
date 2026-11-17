@@ -5,6 +5,7 @@ import {
   hasColorChoice,
   menuHeight,
   menuPosition,
+  submenuOnLeft,
   targetColor,
   type MenuTarget,
 } from "./contextMenu";
@@ -15,6 +16,7 @@ interface OpenMenu {
   target: MenuTarget;
   left: number;
   top: number;
+  submenuOnLeft: boolean;
 }
 
 export function useCanvasMenu(getGraph: () => Graph, getSelection: () => GraphSelection | null) {
@@ -40,7 +42,12 @@ export function useCanvasMenu(getGraph: () => Graph, getSelection: () => GraphSe
     const count = buildMenuItems(getGraph(), target).length;
     const height = menuHeight(count, hasColorChoice(target));
     const position = menuPosition(point.x, point.y, height, boxWidth, boxHeight);
-    menu.value = { target: target, left: position.left, top: position.top };
+    menu.value = {
+      target: target,
+      left: position.left,
+      top: position.top,
+      submenuOnLeft: submenuOnLeft(position.left, boxWidth),
+    };
   }
 
   function close() {
