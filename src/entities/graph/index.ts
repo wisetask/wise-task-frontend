@@ -15,6 +15,14 @@ export {
   updateEdge,
   updateVertex,
 } from "./model/operations";
+export type {
+  BackendEdge,
+  BackendGraph,
+  BackendVertex,
+  GraphInput,
+  ImportedGraph,
+} from "./model/backendFormat";
+export { fromBackendGraph, hasFractionalWeights, toGraphInput } from "./model/backendFormat";
 export type { GraphStatistics } from "./model/statistics";
 export {
   countComponents,
