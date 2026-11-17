@@ -10,6 +10,8 @@
 - `toGraphInput(graph, id)` — наш граф для мутаций (`CreateGraphRequest`, `TaskGraphInput.graph`, `SolutionGraphInput.graph`). Вершины нумеруются с 1 в порядке списка, координаты и веса округляются до целых: бэк хранит только `Int`. `id` — id графа на бэке, если он уже сохранён, иначе `null`.
 - `hasFractionalWeights(graph)` — есть ли дробные веса, которые потеряются при сохранении.
 
+`model/graphFile.ts` — граф в файл и из файла: `graphToFileText` пишет JSON в формате `GraphInput`, `graphFromFileText` читает его обратно и возвращает `{ ok: true, graph, skippedEdges }` или `{ ok: false, error }` с понятным текстом ошибки, `graphFileName` придумывает имя файла по названию графа.
+
 Типы бэка (`BackendGraph`, `GraphInput`) пока описаны вручную по схеме. Когда в `shared/api` появятся сгенерированные типы, их можно будет подставить вместо этих.
 
 Можно импортировать только из `shared`.

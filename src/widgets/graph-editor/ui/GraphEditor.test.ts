@@ -169,4 +169,14 @@ describe("graph editor", () => {
     expect(wrapper.emitted("update:graph")).toBeUndefined();
     expect(wrapper.emitted("update:tool")).toBeUndefined();
   });
+
+  it("hides and shows the properties panel", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await wrapper.find(".graph-editor__collapse").trigger("click");
+    expect(wrapper.find(".graph-properties").exists()).toBe(false);
+    await clickVertex(wrapper, 0, false);
+    await wrapper.find(".graph-editor__collapse").trigger("click");
+    expect(wrapper.find(".graph-properties").exists()).toBe(true);
+    expect(panelTitle(wrapper)).not.toBe("Свойства");
+  });
 });

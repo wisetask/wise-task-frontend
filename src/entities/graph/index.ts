@@ -23,6 +23,8 @@ export type {
   ImportedGraph,
 } from "./model/backendFormat";
 export { fromBackendGraph, hasFractionalWeights, toGraphInput } from "./model/backendFormat";
+export type { GraphFileResult } from "./model/graphFile";
+export { graphFileName, graphFromFileText, graphToFileText } from "./model/graphFile";
 export type { GraphStatistics } from "./model/statistics";
 export {
   countComponents,
