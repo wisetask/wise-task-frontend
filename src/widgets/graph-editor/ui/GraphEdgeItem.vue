@@ -11,7 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   pick: [];
-  remove: [];
+  menu: [event: MouseEvent];
 }>();
 
 const arrow = computed(() => {
@@ -27,7 +27,7 @@ const arrow = computed(() => {
     class="graph-edge"
     :class="['graph-edge--' + colorClass(shape.color), { 'graph-edge--selected': selected }]"
     @click.stop="emit('pick')"
-    @contextmenu.prevent="emit('remove')"
+    @contextmenu.prevent="emit('menu', $event)"
   >
     <path :d="shape.path" class="graph-edge__hit" />
     <path :d="shape.path" class="graph-edge__line" :marker-end="arrow" />
