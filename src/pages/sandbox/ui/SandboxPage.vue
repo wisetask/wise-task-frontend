@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
+import { computed, nextTick, ref, watch } from "vue";
+import {
+  createEmptyGraph,
+  graphFileName,
+  graphFromFileText,
+  graphToFileText,
+  setDirected,
+  type Graph,
+} from "@/entities/graph";
+import { downloadText } from "@/shared/lib/downloadText";
 import { UiButton, UiCheckbox } from "@/shared/ui";
 import { GraphEditor, toolHint, type EditorTool } from "@/widgets/graph-editor";
 import { browserStorage, loadGraph, saveGraph } from "../lib/savedGraph";
@@ -11,6 +19,9 @@ const graph = ref<Graph>(savedGraph === null ? createEmptyGraph(false) : savedGr
 const tool = ref<EditorTool>("vertex");
 const viewOnly = ref(false);
 const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const notice = ref("");
+const noticeIsError = ref(false);
 
 const hint = computed(() => toolHint(tool.value, viewOnly.value));
 
@@ -24,6 +35,49 @@ function onDirectedChange(isDirected: boolean) {
   }
 }
 
+function showNotice(text: string, isError: boolean) {
+  notice.value = text;
+  noticeIsError.value = isError;
+}
+
+function downloadGraph() {
+  downloadText(graphFileName(graph.value), graphToFileText(graph.value), "application/json");
+  showNotice("Граф сохранён в файл " + graphFileName(graph.value) + ".", false);
+}
+
+function chooseFile() {
+  if (fileInput.value !== null) {
+    fileInput.value.click();
+  }
+}
+
+async function onFileChosen(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files !== null ? input.files[0] : undefined;
+  input.value = "";
+  if (file === undefined || editor.value === null) {
+    return;
+  }
+  const result = graphFromFileText(await file.text());
+  if (!result.ok) {
+    showNotice(result.error, true);
+    return;
+  }
+  editor.value.replaceGraph(result.graph);
+  await nextTick();
+  editor.value.fitView();
+  if (result.skippedEdges > 0) {
+    const text = "Граф открыт, но пропущено рёбер: " + result.skippedEdges + ".";
+    showNotice(text + " Это повторы или рёбра к несуществующим вершинам.", true);
+  } else {
+    showNotice("Открыт граф из файла " + file.name + ". Ctrl+Z вернёт прежний.", false);
+  }
+}
+
+watch(tool, () => {
+  notice.value = "";
+});
+
 function clearGraph() {
   if (editor.value !== null && graph.value.vertices.length > 0) {
     editor.value.replaceGraph(createEmptyGraph(graph.value.isDirected));
@@ -35,7 +89,15 @@ function clearGraph() {
   <main class="sandbox">
     <header class="sandbox__header">
       <h1 class="sandbox__title">Песочница редактора</h1>
-      <span class="sandbox__hint">{{ hint }}</span>
+      <span
+        v-if="notice !== ''"
+        class="sandbox__hint"
+        :class="{ 'sandbox__hint--error': noticeIsError }"
+        role="status"
+      >
+        {{ notice }}
+      </span>
+      <span v-else class="sandbox__hint">{{ hint }}</span>
       <UiCheckbox v-model="viewOnly" class="sandbox__toggle" label="Только просмотр" />
       <template v-if="!viewOnly">
         <UiCheckbox
@@ -45,7 +107,16 @@ function clearGraph() {
           @update:model-value="onDirectedChange"
         />
         <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
+        <UiButton size="sm" @click="chooseFile">Открыть</UiButton>
       </template>
+      <UiButton size="sm" @click="downloadGraph">Скачать</UiButton>
+      <input
+        ref="fileInput"
+        class="sandbox__file"
+        type="file"
+        accept=".json,application/json"
+        @change="onFileChosen"
+      />
     </header>
     <GraphEditor
       ref="editor"
@@ -84,6 +155,14 @@ function clearGraph() {
   font-size: var(--font-size-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sandbox__hint--error {
+  color: var(--color-danger);
+}
+
+.sandbox__file {
+  display: none;
 }
 
 .sandbox__toggle {

@@ -23,6 +23,7 @@ const graph = defineModel<Graph>("graph", { required: true });
 const tool = defineModel<EditorTool>("tool", { default: "vertex" });
 
 const selection = ref<GraphSelection | null>(null);
+const panelOpen = ref(true);
 const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 const history = useGraphHistory(graph);
 const canUndo = history.canUndo;
@@ -112,9 +113,16 @@ watch(
   },
 );
 
+function fitView() {
+  if (canvas.value !== null) {
+    canvas.value.fitView();
+  }
+}
+
 defineExpose({
   replaceGraph: replaceGraph,
   startOver: startOver,
+  fitView: fitView,
 });
 </script>
 
@@ -143,20 +151,35 @@ defineExpose({
       </div>
       <GraphStatsBar :graph="graph" />
     </div>
-    <GraphPropertiesPanel
+    <div
       v-if="!readonly"
-      v-model:graph="graph"
-      v-model:selection="selection"
-      class="graph-editor__properties"
-      @before-change="onBeforeChange"
-    />
+      class="graph-editor__side"
+      :class="{ 'graph-editor__side--collapsed': !panelOpen }"
+    >
+      <button
+        type="button"
+        class="graph-editor__collapse"
+        :title="panelOpen ? 'Свернуть панель свойств' : 'Показать панель свойств'"
+        :aria-expanded="panelOpen"
+        @click="panelOpen = !panelOpen"
+      >
+        {{ panelOpen ? "›" : "‹" }}
+      </button>
+      <GraphPropertiesPanel
+        v-if="panelOpen"
+        v-model:graph="graph"
+        v-model:selection="selection"
+        class="graph-editor__properties"
+        @before-change="onBeforeChange"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
 .graph-editor {
   display: grid;
-  grid-template-columns: auto 1fr 280px;
+  grid-template-columns: auto 1fr auto;
   height: 100%;
   min-height: 0;
 }
@@ -183,9 +206,48 @@ defineExpose({
   overflow: hidden;
 }
 
-.graph-editor__properties {
-  overflow-y: auto;
+.graph-editor__side {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  min-height: 0;
   border-left: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.graph-editor__side--collapsed {
+  width: auto;
+}
+
+.graph-editor__collapse {
+  align-self: flex-start;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  margin: var(--space-2) var(--space-2) 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.graph-editor__collapse:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.graph-editor__collapse:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.graph-editor__properties {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 </style>
