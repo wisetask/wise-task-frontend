@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   findEdge,
   findVertex,
@@ -19,7 +19,7 @@ import {
   selectedIds,
   type GraphSelection,
 } from "../lib/selection";
-import { parseWeight } from "../lib/weight";
+import { parseWeight, weightError } from "../lib/weight";
 import GraphColorPicker from "./GraphColorPicker.vue";
 
 const props = defineProps<{
@@ -88,12 +88,15 @@ const deleteText = computed(() => {
   return "Удалить выбранное";
 });
 
+const weightProblem = ref("");
+
 const labelPlaceholder = computed(() => (edge.value ? "Например, a" : ""));
 
 watch(
   () => props.selection,
   () => {
     editSession.finish();
+    weightProblem.value = "";
   },
 );
 
@@ -118,6 +121,7 @@ function onLabelInput(text: string) {
 }
 
 function onWeightInput(text: string) {
+  weightProblem.value = weightError(text);
   const weight = parseWeight(text);
   if (weight === null) {
     return;
@@ -161,8 +165,8 @@ function onDeleteClick() {
         :key="'weight-' + selected.id"
         :model-value="String(selected.weight)"
         label="Вес"
-        inputmode="decimal"
-        hint="Целое или дробное число, можно отрицательное"
+        hint="Целое число, можно отрицательное"
+        :error="weightProblem"
         @update:model-value="onWeightInput"
       />
       <UiButton variant="danger" size="sm" @click="onDeleteClick">{{ deleteText }}</UiButton>
@@ -171,7 +175,7 @@ function onDeleteClick() {
     <template v-else-if="group">
       <GraphColorPicker :model-value="groupColor" @update:model-value="onGroupColorChange" />
       <p class="graph-properties__empty">
-        Потяните любую из выбранных вершин, чтобы сдвинуть всю группу. Shift+клик добавляет или
+        Потяните любую из выбранных вершин, чтобы сдвинуть всю группу. Ctrl+клик добавляет или
         убирает вершину из выбора.
       </p>
       <UiButton variant="danger" size="sm" @click="onDeleteClick">{{ deleteText }}</UiButton>

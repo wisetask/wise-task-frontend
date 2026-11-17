@@ -8,6 +8,7 @@ defineProps<{
   left: number;
   top: number;
   items: MenuItem[];
+  submenuOnLeft: boolean;
   showColors: boolean;
   currentColor: GraphColor | null;
 }>();
@@ -19,6 +20,11 @@ const emit = defineEmits<{
 }>();
 
 const menuElement = ref<HTMLElement | null>(null);
+const openSubmenu = ref<MenuAction | null>(null);
+
+function toggleSubmenu(action: MenuAction) {
+  openSubmenu.value = openSubmenu.value === action ? null : action;
+}
 
 function onWindowPointerDown(event: PointerEvent) {
   const target = event.target;
@@ -70,17 +76,54 @@ onBeforeUnmount(() => {
       :model-value="currentColor"
       @update:model-value="emit('color', $event)"
     />
-    <button
-      v-for="item in items"
-      :key="item.action"
-      type="button"
-      role="menuitem"
-      class="graph-menu__item"
-      :class="{ 'graph-menu__item--danger': item.danger }"
-      @click="emit('choose', item.action)"
-    >
-      {{ item.label }}
-    </button>
+    <template v-for="item in items" :key="item.action">
+      <div
+        v-if="item.submenu.length > 0"
+        class="graph-menu__group"
+        @mouseenter="openSubmenu = item.action"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          aria-haspopup="menu"
+          :aria-expanded="openSubmenu === item.action"
+          class="graph-menu__item graph-menu__item--parent"
+          @click="toggleSubmenu(item.action)"
+        >
+          {{ item.label }}
+          <span class="graph-menu__arrow" aria-hidden="true">›</span>
+        </button>
+        <div
+          v-if="openSubmenu === item.action"
+          class="graph-menu graph-menu__submenu"
+          :class="{ 'graph-menu__submenu--left': submenuOnLeft }"
+          role="menu"
+          :style="{ width: MENU_WIDTH + 'px' }"
+        >
+          <button
+            v-for="child in item.submenu"
+            :key="child.action"
+            type="button"
+            role="menuitem"
+            class="graph-menu__item"
+            @click="emit('choose', child.action)"
+          >
+            {{ child.label }}
+          </button>
+        </div>
+      </div>
+      <button
+        v-else
+        type="button"
+        role="menuitem"
+        class="graph-menu__item"
+        :class="{ 'graph-menu__item--danger': item.danger }"
+        @mouseenter="openSubmenu = null"
+        @click="emit('choose', item.action)"
+      >
+        {{ item.label }}
+      </button>
+    </template>
   </div>
 </template>
 
@@ -117,6 +160,36 @@ onBeforeUnmount(() => {
 
 .graph-menu__item:hover {
   background: var(--color-surface-hover);
+}
+
+.graph-menu__group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-menu__item--parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.graph-menu__group:hover > .graph-menu__item--parent {
+  background: var(--color-surface-hover);
+}
+
+.graph-menu__arrow {
+  color: var(--color-text-muted);
+}
+
+.graph-menu__submenu {
+  top: calc(-1 * var(--space-1) - 1px);
+  left: calc(100% + var(--space-1));
+}
+
+.graph-menu__submenu--left {
+  right: calc(100% + var(--space-1));
+  left: auto;
 }
 
 .graph-menu__item--danger {

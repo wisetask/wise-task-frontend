@@ -18,6 +18,16 @@ export function toCanvasPoint(svg: SVGSVGElement | null, event: MouseEvent): Poi
   return { x: event.clientX - box.left, y: event.clientY - box.top };
 }
 
+export interface ClickKeys {
+  shiftKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}
+
+export function wantsToggle(event: ClickKeys): boolean {
+  return event.shiftKey || event.ctrlKey || event.metaKey;
+}
+
 export function isTyping(event: KeyboardEvent): boolean {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {

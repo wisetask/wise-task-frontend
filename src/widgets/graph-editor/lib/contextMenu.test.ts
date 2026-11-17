@@ -4,8 +4,10 @@ import { makeSelection } from "./selection";
 import {
   buildMenuItems,
   hasColorChoice,
+  layoutOfAction,
   MENU_WIDTH,
   menuPosition,
+  submenuOnLeft,
   targetColor,
 } from "./contextMenu";
 
@@ -78,5 +80,44 @@ describe("editor context menu", () => {
     const graph = addVertex(createEmptyGraph(false), 0, 0);
     expect(actionsOf(buildMenuItems(graph, { kind: "view" }))).toEqual(["fit-view", "reset-zoom"]);
     expect(hasColorChoice({ kind: "view" })).toBe(false);
+  });
+
+  it("puts the layouts that fit the graph into a submenu", () => {
+    let graph = createEmptyGraph(false);
+    for (let i = 0; i < 4; i++) {
+      graph = addVertex(graph, i * 10, 0);
+    }
+    const ids = graph.vertices.map((vertex) => vertex.id);
+    graph = addEdge(graph, ids[0], ids[1]);
+    graph = addEdge(graph, ids[1], ids[2]);
+    const square = addEdge(addEdge(graph, ids[2], ids[3]), ids[3], ids[0]);
+    const items = buildMenuItems(square, { kind: "canvas", x: 0, y: 0 });
+    expect(actionsOf(items)).toEqual(["add-vertex", "layout", "fit-view", "reset-zoom"]);
+    expect(actionsOf(items[1].submenu)).toEqual([
+      "layout-circle",
+      "layout-grid",
+      "layout-levels",
+      "layout-bipartite",
+    ]);
+    expect(items[0].submenu).toEqual([]);
+    const triangle = addEdge(graph, ids[2], ids[0]);
+    const triangleItems = buildMenuItems(triangle, { kind: "canvas", x: 0, y: 0 });
+    expect(actionsOf(triangleItems[1].submenu).includes("layout-bipartite")).toBe(false);
+  });
+
+  it("has no layout submenu for a single vertex", () => {
+    const graph = addVertex(createEmptyGraph(false), 0, 0);
+    const items = buildMenuItems(graph, { kind: "canvas", x: 0, y: 0 });
+    expect(actionsOf(items).includes("layout")).toBe(false);
+  });
+
+  it("opens the submenu to the left near the right edge", () => {
+    expect(submenuOnLeft(100, 800)).toBe(false);
+    expect(submenuOnLeft(500, 800)).toBe(true);
+  });
+
+  it("knows which layout each menu item means", () => {
+    expect(layoutOfAction("layout-levels")).toBe("levels");
+    expect(layoutOfAction("fit-view")).toBeNull();
   });
 });

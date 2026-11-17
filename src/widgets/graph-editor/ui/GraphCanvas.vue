@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { findVertex, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
-import type { MenuAction, MenuTarget } from "../lib/contextMenu";
+import { layoutOfAction, type MenuAction, type MenuTarget } from "../lib/contextMenu";
 import { buildEdgeShapes, VERTEX_RADIUS, type Point } from "../lib/geometry";
-import { toCanvasPoint } from "../lib/pointer";
+import { toCanvasPoint, wantsToggle } from "../lib/pointer";
 import {
   isSelected,
   selectInArea,
@@ -270,7 +270,7 @@ function onVertexClick(event: MouseEvent, vertexId: string) {
     deleteVertex(vertexId);
   } else if (props.tool === "edge") {
     connectTo(vertexId);
-  } else if (event.shiftKey) {
+  } else if (wantsToggle(event)) {
     select(toggleSelected(props.selection, "vertex", vertexId));
   } else {
     select({ kind: "vertex", id: vertexId });
@@ -296,7 +296,7 @@ function onEdgeClick(event: MouseEvent, edgeId: string) {
     return;
   }
   cancelEdge();
-  if (event.shiftKey) {
+  if (wantsToggle(event)) {
     select(toggleSelected(props.selection, "edge", edgeId));
   } else {
     select({ kind: "edge", id: edgeId });
@@ -340,12 +340,25 @@ function onBackgroundMenu(event: MouseEvent) {
   openMenu(event, { kind: "canvas", x: point.x, y: point.y });
 }
 
+function arrange(action: MenuAction) {
+  const kind = layoutOfAction(action);
+  if (kind === null) {
+    return;
+  }
+  edits.arrange(kind);
+  nextTick(() => {
+    fitView();
+  });
+}
+
 function onMenuChoose(action: MenuAction) {
   const target = takeMenuTarget();
   if (target === null) {
     return;
   }
-  if (action === "reset-zoom") {
+  if (layoutOfAction(action) !== null) {
+    arrange(action);
+  } else if (action === "reset-zoom") {
     resetZoom();
   } else if (action === "fit-view") {
     fitView();
@@ -478,6 +491,7 @@ defineExpose({
       :left="menu.left"
       :top="menu.top"
       :items="menuItems"
+      :submenu-on-left="menu.submenuOnLeft"
       :show-colors="menuShowsColors"
       :current-color="menuColor"
       @choose="onMenuChoose"
