@@ -17,10 +17,7 @@ interface OpenMenu {
   top: number;
 }
 
-export function useCanvasMenu(
-  getGraph: () => Graph,
-  getSelection: () => GraphSelection | null,
-) {
+export function useCanvasMenu(getGraph: () => Graph, getSelection: () => GraphSelection | null) {
   const menu = ref<OpenMenu | null>(null);
 
   const items = computed(() => {
