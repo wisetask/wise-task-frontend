@@ -60,16 +60,45 @@
                   ></v-btn>
                 </v-col>
               </v-row>
-              <v-divider class="my-4">или</v-divider>
-              <v-btn
-                block
-                color="primary"
-                variant="outlined"
-                type="button"
-                @click="signInWithGoogle"
+              <v-divider class="my-2">или</v-divider>
+              <div
+                style="
+                  position: relative;
+                  width: 100%;
+                  height: 40px;
+                  overflow: hidden;
+                  margin-top: 16px;"
               >
-                Войти через Google
-              </v-btn>
+                <v-btn
+                  block
+                  color="primary"
+                  variant="outlined"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  :ripple="false"
+                  style="
+                    position: absolute;
+                    inset: 0;
+                    width: 100%;
+                    height: 40px;
+                    pointer-events: none;
+                    text-transform: none;"
+                >
+                  <v-icon start>mdi-google</v-icon>
+                  Войти через Google
+                </v-btn>
+                <div
+                  ref="googleButton"
+                  style="
+                    position: absolute;
+                    inset: 0;
+                    z-index: 2;
+                    width: 100%;
+                    height: 40px;
+                    opacity: 0;
+                    cursor: pointer;"
+                ></div>
+              </div>
             </v-form>
           </v-card-text>
         </v-card>
@@ -84,7 +113,7 @@ import { SIGN_IN } from "@/api/Mutations";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { defineComponent } from "vue";
 import { UserStorageSetters } from "@/entities/user/storage/setters";
-import { redirectToGoogleOAuth } from "@/entities/user/lib/googleOAuth";
+import { initializeGoogleButton } from "@/entities/user/lib/googleOAuth";
 
 export default defineComponent({
   data() {
@@ -132,9 +161,19 @@ export default defineComponent({
     signUp() {
       this.$router.push("/auth/signup");
     },
-    async signInWithGoogle() {
-      await redirectToGoogleOAuth();
-    },
+  },
+  async mounted() {
+    const element = this.$refs.googleButton as HTMLElement | undefined;
+    if (!element) {
+      console.error("[Google Auth] Button element not found");
+      return;
+    }
+    try {
+      await initializeGoogleButton(element);
+      console.log("[Google Auth] Google button initialized");
+    } catch (error) {
+      console.error("[Google Auth] Initialization failed:", error);
+    }
   },
 });
 </script>

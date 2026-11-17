@@ -1,44 +1,109 @@
 export const GOOGLE_CLIENT_ID =
   "1004800199568-8lg34q8u9j80euf1trktripv04981p8e.apps.googleusercontent.com";
-const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
-function base64UrlEncode(bytes: Uint8Array): string {
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          renderButton: (
+            element: HTMLElement,
+            options: {
+              theme?: string;
+              size?: string;
+              width?: number;
+              text?: string;
+              shape?: string;
+              logo_alignment?: string;
+              locale?: string;
+            }
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
+export const loadGoogleIdentity = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (window.google?.accounts?.id) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    );
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => {
+        window.google?.accounts?.id
+          ? resolve()
+          : reject(new Error("Google Identity Services не загрузился."));
+      }, { once: true });
+
+      existingScript.addEventListener("error", () => {
+        reject(new Error("Не удалось загрузить Google Identity Services."));
+      }, { once: true });
+
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      window.google?.accounts?.id
+        ? resolve()
+        : reject(new Error("Google Identity Services не загрузился."));
+    };
+
+    script.onerror = () => {
+      reject(new Error("Не удалось загрузить Google Identity Services."));
+    };
+
+    document.head.appendChild(script);
   });
+};
 
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
+export const initializeGoogleButton = async (
+  element: HTMLElement
+): Promise<void> => {
+  await loadGoogleIdentity();
 
-async function createCodeChallenge(verifier: string): Promise<string> {
-  const data = new TextEncoder().encode(verifier);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return base64UrlEncode(new Uint8Array(digest));
-}
+  if (!window.google?.accounts?.id) {
+    throw new Error("Google Identity Services не загрузился.");
+  }
 
-export async function redirectToGoogleOAuth(): Promise<void> {
-  const redirectUri = `${window.location.origin}/auth/google`;
-  const state = crypto.randomUUID();
-  const randomBytes = crypto.getRandomValues(new Uint8Array(32));
-  const codeVerifier = base64UrlEncode(randomBytes);
-  const codeChallenge = await createCodeChallenge(codeVerifier);
-  sessionStorage.setItem("google_oauth_state", state);
-  sessionStorage.setItem("google_oauth_code_verifier", codeVerifier);
+  element.innerHTML = "";
 
-  const params = new URLSearchParams({
+  window.google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: redirectUri,
-    response_type: "code",
-    scope: "openid email profile",
-    state,
-    prompt: "select_account",
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
+
+    callback: (response) => {
+      if (!response.credential) {
+        console.error("[Google Auth] Google не вернул ID token.");
+        return;
+      }
+
+      sessionStorage.setItem("google_id_token", response.credential);
+      window.location.href = "/auth/google";
+    },
   });
 
-  window.location.assign(`${GOOGLE_AUTH_URL}?${params.toString()}`);
-}
+  window.google.accounts.id.renderButton(element, {
+    theme: "outline",
+    size: "large",
+    width: 320,
+    text: "signin_with",
+    shape: "rectangular",
+    logo_alignment: "left",
+    locale: "ru",
+  });
+};

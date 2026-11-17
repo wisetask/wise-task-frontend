@@ -233,3 +233,12 @@ export const GET_STATISTIC = gql`
     }
   }
 `
+
+export const GET_MY_PROFILE = gql`
+  query GetMyProfile {
+    getMyProfile {
+      id
+      email
+    }
+  }
+`;

@@ -32,10 +32,23 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { GOOGLE_CLIENT_ID } from "@/entities/user/lib/googleOAuth";
+import { eventsApi } from "@/api/rest";
+import { UserStorageKeys } from "@/entities/user/storage/config";
+import { useProfileStore } from "@/store/profile";
+import { useApolloClient } from "@vue/apollo-composable";
+import { GET_MY_PROFILE } from "@/api/Queries";
+import { useRouter } from "vue-router";
 
 export default defineComponent({
   name: "GoogleAuthCallback",
+  setup() {
+    const { resolveClient } = useApolloClient();
+    return {
+      client: resolveClient(),
+      profileStore: useProfileStore(),
+      router: useRouter(),
+    };
+  },
   data() {
     return {
       loading: true,
@@ -45,84 +58,73 @@ export default defineComponent({
   },
 
   async mounted() {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const state = params.get("state");
-    const googleError = params.get("error");
-    const savedState = sessionStorage.getItem("google_oauth_state");
-    const codeVerifier = sessionStorage.getItem(
-      "google_oauth_code_verifier",
-    );
+    const idToken = sessionStorage.getItem("google_id_token");
+    sessionStorage.removeItem("google_id_token");
 
-    sessionStorage.removeItem("google_oauth_state");
-    sessionStorage.removeItem("google_oauth_code_verifier");
-
-    if (googleError) {
+    if (!idToken) {
       this.loading = false;
-      this.error = `Google не завершил авторизацию: ${googleError}`;
-      return;
-    }
-
-    if (!code) {
-      this.loading = false;
-      this.error = "Google не вернул код авторизации.";
-      return;
-    }
-
-    if (!state || !savedState || state !== savedState) {
-      this.loading = false;
-      this.error = "Проверка OAuth state не пройдена.";
-      return;
-    }
-
-    if (!codeVerifier) {
-      this.loading = false;
-      this.error = "Не найден PKCE code verifier.";
+      this.error = "Google не вернул ID token. Попробуйте войти ещё раз.";
+      console.error("[Google Auth] ID token отсутствует");
       return;
     }
 
     try {
-      const response = await fetch(
-        "https://oauth2.googleapis.com/token",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            client_id: GOOGLE_CLIENT_ID,
-            
-            code,
-            code_verifier: codeVerifier,
-            redirect_uri: `${window.location.origin}/auth/google`,
-            grant_type: "authorization_code",
-          }),
-        },
-      );
+      console.log("[Google Auth] ID token получен");
 
-      const tokenData = await response.json();
+      // Сохраняем Google ID token для запросов к backend
+      localStorage.setItem(UserStorageKeys.Token, idToken);
+      eventsApi.setToken(idToken);
 
-      if (!response.ok) {
+      this.message = "Получаем профиль пользователя...";
+
+      console.log("[Google Auth] Отправляем запрос getMyProfile");
+
+      const result = await this.client.query({
+        query: GET_MY_PROFILE,
+        fetchPolicy: "network-only",
+        errorPolicy: "all",
+      });
+      console.log("[Google Auth] GraphQL response:", result);
+      if (result.errors?.length) {
+        console.error("[Google Auth] GraphQL errors:", result.errors);
         throw new Error(
-          tokenData.error_description ||
-            tokenData.error ||
-            "Google не смог обменять код авторизации.",
+          result.errors.map((item) => item.message).join("; ")
         );
       }
 
-      if (!tokenData.id_token) {
-        throw new Error("Google не вернул ID token.");
+      const profile = result.data?.getMyProfile;
+      if (!profile) {
+        throw new Error("Backend не вернул профиль пользователя.");
+      }
+      console.log("[Google Auth] Профиль получен:", profile);
+      // Сохраняем пользователя в Pinia
+      this.profileStore.activeUser = {
+        id: profile.id,
+        email: profile.email,
+        role: profile.role,
+      };
+
+      this.profileStore.currentUser = profile;
+      this.message = "Вход выполнен. Перенаправляем...";
+      await this.router.push("/tasks");
+    } catch (error: unknown) {
+      console.error("[Google Auth] Ошибка:", error);
+
+      if (error instanceof Error) {
+        console.error("Тип ошибки:", error.name);
+        console.error("Сообщение:", error.message);
+        console.error("Подробности:", error.stack);
+
+        this.error = error.message;
+      } else {
+        this.error = "Не удалось получить профиль пользователя.";
       }
 
-      this.message =
-        "Google выдал ID token.";
-    } catch (error: unknown) {
-      this.error =
-        error instanceof Error
-          ? error.message
-          : "Не удалось обменять код авторизации.";
+      localStorage.removeItem(UserStorageKeys.Token);
+      eventsApi.setToken("");
 
-      console.error("Google OAuth token exchange failed:", error);
+      this.profileStore.activeUser = null;
+      this.profileStore.currentUser = null;
     } finally {
       this.loading = false;
     }
