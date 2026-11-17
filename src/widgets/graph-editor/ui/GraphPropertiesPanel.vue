@@ -148,10 +148,6 @@ function onDeleteClick() {
         Выберите вершину или ребро, чтобы изменить подпись, цвет и вес.
       </p>
       <dl class="graph-properties__summary">
-        <dt>Вершин</dt>
-        <dd>{{ graph.vertices.length }}</dd>
-        <dt>Рёбер</dt>
-        <dd>{{ graph.edges.length }}</dd>
         <dt>Тип</dt>
         <dd>{{ graph.isDirected ? "ориентированный" : "неориентированный" }}</dd>
       </dl>
