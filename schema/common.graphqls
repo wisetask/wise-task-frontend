@@ -1,0 +1,15 @@
+scalar Long
+
+input PaginationRequestInput {
+  pageSize: Int
+  page: Int
+}
+
+type PaginationResponse {
+  page: Int
+  pageSize: Int
+  totalCount: Long
+  totalPages: Int
+  hasNext: Boolean
+  hasPrevious: Boolean
+}

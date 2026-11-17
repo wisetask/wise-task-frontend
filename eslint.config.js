@@ -41,7 +41,7 @@ function layerRules() {
 
 export default defineConfig([
   {
-    ignores: ["dist", "node_modules", "coverage"],
+    ignores: ["dist", "node_modules", "coverage", "src/shared/api/generated"],
   },
   js.configs.recommended,
   tseslint.configs.recommended,

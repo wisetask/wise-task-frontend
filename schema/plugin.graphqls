@@ -1,0 +1,101 @@
+input PluginFilterInput {
+  name: String
+  description: String
+  category: String
+  graphType: GraphType
+  isValid: Boolean
+  pluginType: PluginType
+  isInternal: Boolean
+  authorId: String
+}
+
+input GetAllPluginRequestInput {
+  pagination: PaginationRequestInput
+  filter: PluginFilterInput
+}
+
+type GetAllPluginsResponse {
+  items: [Plugin!]
+  pagination: PaginationResponse
+}
+
+input PluginInput {
+  id: ID
+  name: String!
+  description: String!
+  category: String!
+  jarName: String
+  jarFile: String
+  authorId: ID
+  isValid: Boolean!
+  graphType: GraphType!
+  beanName: String
+  pluginType: PluginType!
+  isInternal: Boolean!
+}
+
+input SolutionInput {
+  pluginId: ID!
+  pluginType: PluginType!
+  payload: Payload!
+  additionalPayload: AdditionalPayload
+}
+
+input Payload {
+  discriminator: PayloadType!
+  graph: GraphInput
+}
+
+input AdditionalPayload {
+  discriminator: AdditionPayloadType!
+  otherGraph: GraphInput
+  handwrittenAnswer: String
+}
+
+type Plugin {
+  id: ID!
+  name: String!
+  description: String!
+  category: String!
+  author: Profile
+  graphType: GraphType!
+  isValid: Boolean!
+  beanName: String
+  pluginType: PluginType!
+  isInternal: Boolean!
+}
+
+type ImplementationResult {
+  result: Boolean!
+  graphTestResults: [GraphTestResult]!
+}
+
+type GraphTestResult {
+  graph: Graph
+  originalTimeResult: Int!
+  timeResult: Int!
+  result: String!
+  originalResult: String!
+}
+
+enum PluginType {
+  GRAPH_PROPERTY
+  GRAPH_CHARACTERISTIC
+  GRAPH_NEW_GRAPH
+  GRAPH_STRING
+}
+
+enum PayloadType {
+  GRAPH
+}
+
+enum AdditionPayloadType {
+  GRAPH
+  STRING
+}
+
+enum GraphType {
+  DIRECT
+  UNDIRECT
+  ANY
+}

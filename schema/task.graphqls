@@ -1,0 +1,187 @@
+input TaskFilterInput {
+  name: String
+  description: String
+  category: String
+  taskType: TaskType
+  authorId: String
+  isPublic: Boolean
+}
+
+input GetAllTaskRequestInput {
+  pagination: PaginationRequestInput
+  filter: TaskFilterInput
+}
+
+type GetAllTaskResponse {
+  items: [Task!]
+  pagination: PaginationResponse
+}
+
+input GetAllTaskSolutionsRequestInput {
+  taskId: String
+  authorId: String
+  isCorrect: Boolean
+  pagination: PaginationRequestInput
+}
+
+type GetAllTaskSolutionsResponse {
+  items: [Solution!]
+  pagination: PaginationResponse
+}
+
+enum TaskType {
+  GRAPH
+  IMPLEMENTATION
+  UNRECOGNIZED
+}
+
+input RuleInput {
+  isColor: Boolean!
+  isEdit: Boolean!
+  isMove: Boolean!
+  isDelete: Boolean!
+}
+
+input PluginInfoInput {
+  pluginId: String!
+  value: String!
+  mistakeText: String
+  sign: String
+  pluginType: PluginType!
+  order: Int!
+}
+
+input TaskGraphInput {
+  id: ID
+  name: String!
+  description: String!
+  category: String!
+  taskType: TaskType!
+  authorId: String
+  isPublic: Boolean!
+  isHiddenMistake: Boolean!
+  graph: GraphInput
+  rule: RuleInput!
+  condition: [PluginInfoInput]!
+}
+
+input TaskImplementationInput {
+  id: ID
+  name: String!
+  description: String!
+  category: String!
+  taskType: TaskType!
+  authorId: String
+  isPublic: Boolean!
+  pluginId: String!
+}
+
+input PluginStringInput {
+  key: String!
+  value: String!
+}
+
+input SolutionGraphInput {
+  id: ID
+  taskId: String!
+  authorId: String
+  graph: GraphInput!
+  pluginsInput: [PluginStringInput!]
+}
+
+input SolutionImplementationInput {
+  id: ID
+  taskId: String!
+  authorId: String
+  code: String!
+}
+
+interface Task {
+  id: ID!
+  name: String!
+  description: String!
+  category: String!
+  taskType: TaskType!
+  author: Profile
+  isPublic: Boolean!
+}
+
+type Rule {
+  isColor: Boolean!
+  isEdit: Boolean!
+  isMove: Boolean!
+  isDelete: Boolean!
+}
+
+type PluginInfo {
+  plugin: Plugin
+  value: String!
+  mistakeText: String
+  sign: String
+  pluginType: PluginType!
+}
+
+type TaskGraph implements Task {
+  id: ID!
+  name: String!
+  description: String!
+  category: String!
+  taskType: TaskType!
+  author: Profile
+  isPublic: Boolean!
+  isHiddenMistake: Boolean!
+  graph: Graph
+  rule: Rule!
+  conditions: [PluginInfo!]
+}
+
+type TaskImplementation implements Task {
+  id: ID!
+  name: String!
+  description: String!
+  category: String!
+  taskType: TaskType!
+  author: Profile
+  isPublic: Boolean!
+  plugin: Plugin
+}
+
+interface Solution {
+  id: ID!
+  task: Task
+  author: Profile
+  isCorrect: Boolean!
+}
+
+type SolutionGraph implements Solution {
+  id: ID!
+  task: Task
+  author: Profile
+  isCorrect: Boolean!
+  graph: Graph!
+  pluginResults: [PluginResult!]
+}
+
+type SolutionImplementation implements Solution {
+  id: ID!
+  task: Task
+  author: Profile
+  isCorrect: Boolean!
+  implementationResult: [GraphResult!]
+}
+
+type PluginResult {
+  plugin: Plugin
+  isCorrect: Boolean!
+  value: String!
+  trueValue: String!
+  pluginMessage: String!
+}
+
+type GraphResult {
+  id: String!
+  originalTimeResult: Float!
+  timeResult: Float!
+  originalResult: String!
+  result: String!
+}

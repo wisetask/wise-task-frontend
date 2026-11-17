@@ -1,0 +1,94 @@
+input GraphFilterInput {
+  id: String
+  authorId: String
+  vertexCount: Int
+  edgeCount: Int
+  isDirect: Boolean
+  isNamed: Boolean
+  name: String
+}
+
+input GetAllGraphsRequestInput {
+  pagination: PaginationRequestInput
+  filter: GraphFilterInput
+}
+
+type GetAllGraphsResponse {
+  items: [Graph!]
+  pagination: PaginationResponse
+}
+
+input CreateGraphRequest {
+  graph: GraphInput!
+}
+
+input GenerateGraphRequest {
+  vertexCount: Int!
+  edgeCount: Int!
+  isDirect: Boolean!
+  isSaved: Boolean!
+}
+
+input GraphInput {
+  id: ID
+  vertexCount: Int!
+  edgeCount: Int!
+  isDirect: Boolean!
+  vertexList: [VertexInput]!
+  edgeList: [EdgeInput]!
+  isNamed: Boolean!
+  name: String
+}
+
+input VertexInput {
+  id: Int!
+  weight: Int
+  label: String
+  xCoordinate: Int!
+  yCoordinate: Int!
+  color: Color!
+}
+
+input EdgeInput {
+  source: Int!
+  target: Int!
+  weight: Int
+  label: String
+  color: Color!
+}
+
+type Graph {
+  id: String!
+  vertexCount: Int!
+  edgeCount: Int!
+  isDirect: Boolean!
+  vertexList: [Vertex]!
+  edgeList: [Edge]!
+  isNamed: Boolean!
+  name: String
+  author: Profile
+}
+
+type Vertex {
+  id: Int!
+  weight: Int!
+  label: String!
+  xCoordinate: Int!
+  yCoordinate: Int!
+  color: Color!
+}
+
+type Edge {
+  source: Int!
+  target: Int!
+  weight: Int!
+  label: String!
+  color: Color!
+}
+
+enum Color {
+  GRAY
+  RED
+  BLUE
+  GREEN
+}
