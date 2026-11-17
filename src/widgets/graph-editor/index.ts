@@ -1,6 +1,10 @@
 export { default as GraphCanvas } from "./ui/GraphCanvas.vue";
+export { default as GraphEditor } from "./ui/GraphEditor.vue";
 export { default as GraphPropertiesPanel } from "./ui/GraphPropertiesPanel.vue";
 export { default as GraphStatsBar } from "./ui/GraphStatsBar.vue";
 export { default as GraphToolbar } from "./ui/GraphToolbar.vue";
+export { DEFAULT_HOTKEYS } from "./lib/hotkeys";
+export type { Hotkey, HotkeyAction } from "./lib/hotkeys";
 export { isSelectionValid } from "./lib/selection";
 export type { EditorTool, GraphSelection } from "./lib/selection";
+export { toolHint } from "./lib/toolHints";

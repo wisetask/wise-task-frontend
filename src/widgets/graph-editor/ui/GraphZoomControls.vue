@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { UiButton } from "@/shared/ui";
+import { DEFAULT_HOTKEYS, hotkeyText, withHotkey } from "../lib/hotkeys";
 import { parseZoomPercent } from "../lib/viewport";
 
 const props = defineProps<{
@@ -59,18 +60,26 @@ function onKeyDown(event: KeyboardEvent) {
     inputElement.value.blur();
   }
 }
+
+const fitTitle = withHotkey("Показать весь граф", "zoom-fit", DEFAULT_HOTKEYS);
+const zoomOutTitle = withHotkey("Уменьшить", "zoom-out", DEFAULT_HOTKEYS);
+const zoomInTitle = withHotkey("Увеличить", "zoom-in", DEFAULT_HOTKEYS);
+const percentTitle =
+  "Впишите масштаб от 25 до 400% и нажмите Enter. Клавиша " +
+  hotkeyText("zoom-reset", DEFAULT_HOTKEYS) +
+  " — 100%";
 </script>
 
 <template>
   <div class="graph-zoom" role="group" aria-label="Масштаб">
-    <UiButton size="sm" title="Показать весь граф (Shift+1)" @click="emit('fit')">
+    <UiButton size="sm" :title="fitTitle" @click="emit('fit')">
       <svg class="graph-zoom__icon" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M2 6 V2 H6 M10 2 H14 V6 M14 10 V14 H10 M6 14 H2 V10" />
       </svg>
       <span class="graph-zoom__label">Показать весь граф</span>
     </UiButton>
     <span class="graph-zoom__divider" />
-    <UiButton size="sm" title="Уменьшить (−)" @click="emit('zoomOut')">−</UiButton>
+    <UiButton size="sm" :title="zoomOutTitle" @click="emit('zoomOut')">−</UiButton>
     <input
       ref="inputElement"
       v-model="draft"
@@ -78,12 +87,12 @@ function onKeyDown(event: KeyboardEvent) {
       type="text"
       inputmode="decimal"
       aria-label="Масштаб в процентах"
-      title="Впишите масштаб от 25 до 400% и нажмите Enter. Клавиша 0 — 100%"
+      :title="percentTitle"
       @focus="onFocus"
       @blur="onBlur"
       @keydown="onKeyDown"
     />
-    <UiButton size="sm" title="Увеличить (+)" @click="emit('zoomIn')">+</UiButton>
+    <UiButton size="sm" :title="zoomInTitle" @click="emit('zoomIn')">+</UiButton>
   </div>
 </template>
 
