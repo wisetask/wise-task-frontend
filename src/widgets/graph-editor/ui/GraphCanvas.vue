@@ -18,13 +18,21 @@ import { isTyping, toCanvasPoint } from "../lib/pointer";
 import {
   isSelected,
   isSelectionValid,
+  paintSelected,
+  removeSelected,
+  selectAll,
+  selectInArea,
+  toggleSelected,
+  verticesToMove,
   type EditorTool,
   type GraphSelection,
 } from "../lib/selection";
+import { useBoxSelect } from "../lib/useBoxSelect";
 import { useCanvasMenu } from "../lib/useCanvasMenu";
 import { useCanvasPan } from "../lib/useCanvasPan";
 import { useVertexDrag } from "../lib/useVertexDrag";
 import { useViewport } from "../lib/useViewport";
+import type { Area } from "../lib/viewport";
 import { zoomKeyAction, type ZoomKeyAction } from "../lib/zoomKeys";
 import GraphArrowMarkers from "./GraphArrowMarkers.vue";
 import GraphContextMenu from "./GraphContextMenu.vue";
@@ -32,11 +40,19 @@ import GraphEdgeItem from "./GraphEdgeItem.vue";
 import GraphVertexItem from "./GraphVertexItem.vue";
 import GraphZoomControls from "./GraphZoomControls.vue";
 
-const props = defineProps<{
-  graph: Graph;
-  tool: EditorTool;
-  selection: GraphSelection | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    graph: Graph;
+    tool?: EditorTool;
+    selection?: GraphSelection | null;
+    readonly?: boolean;
+  }>(),
+  {
+    tool: "select",
+    selection: null,
+    readonly: false,
+  },
+);
 
 const emit = defineEmits<{
   "update:graph": [graph: Graph];
@@ -47,6 +63,7 @@ const emit = defineEmits<{
 const svgElement = ref<SVGSVGElement | null>(null);
 const edgeSourceId = ref<string | null>(null);
 const cursorPoint = ref<Point | null>(null);
+const isSpaceHeld = ref(false);
 const {
   transform,
   percent,
@@ -65,12 +82,19 @@ const { draggedVertexId, startDrag, consumeClick } = useVertexDrag({
   toWorld: toWorld,
   limit: limitToView,
   getGraph: () => props.graph,
+  getGroup: (vertexId) => verticesToMove(props.selection, vertexId),
   onStart: () => emit("before-change", props.graph),
   onMove: (graph) => emit("update:graph", graph),
 });
 
 const pan = useCanvasPan({ onPan: panViewport });
 const isPanning = pan.isPanning;
+
+const boxSelect = useBoxSelect({
+  toWorld: toWorld,
+  onSelect: selectArea,
+});
+const box = boxSelect.box;
 
 const edgeShapes = computed(() => buildEdgeShapes(props.graph, VERTEX_RADIUS));
 
@@ -81,6 +105,16 @@ const edgeSource = computed(() => {
   return findVertex(props.graph, edgeSourceId.value);
 });
 
+const canvasClasses = computed(() => {
+  return [
+    props.readonly ? "graph-canvas__svg--readonly" : "graph-canvas__svg--tool-" + props.tool,
+    {
+      "graph-canvas__svg--space": isSpaceHeld.value,
+      "graph-canvas__svg--panning": isPanning.value,
+    },
+  ];
+});
+
 const {
   menu,
   items: menuItems,
@@ -89,10 +123,17 @@ const {
   open: openMenuAt,
   close: closeMenu,
   takeTarget: takeMenuTarget,
-} = useCanvasMenu(() => props.graph);
+} = useCanvasMenu(
+  () => props.graph,
+  () => props.selection,
+);
 
 function select(selection: GraphSelection | null) {
   emit("update:selection", selection);
+}
+
+function selectArea(area: Area) {
+  select(selectInArea(props.graph, area));
 }
 
 function applyChange(newGraph: Graph) {
@@ -120,6 +161,15 @@ function deleteVertex(vertexId: string) {
 
 function deleteEdge(edgeId: string) {
   applyChange(removeEdge(props.graph, edgeId));
+}
+
+function deleteSelected() {
+  if (props.selection === null) {
+    return;
+  }
+  cancelEdge();
+  applyChange(removeSelected(props.graph, props.selection));
+  select(null);
 }
 
 function addVertexAt(point: Point) {
@@ -167,16 +217,36 @@ function runZoomKey(action: ZoomKeyAction) {
 }
 
 function onWheel(event: WheelEvent) {
+  if (props.readonly && !event.ctrlKey) {
+    return;
+  }
+  event.preventDefault();
   closeMenu();
   zoomByWheel(event);
 }
 
+function wantsPan(event: PointerEvent): boolean {
+  if (event.button === 1) {
+    return true;
+  }
+  if (event.button !== 0) {
+    return false;
+  }
+  if (props.readonly || isSpaceHeld.value) {
+    return true;
+  }
+  return props.tool === "pan" || props.tool === "edge" || props.tool === "delete";
+}
+
 function onBackgroundPointerDown(event: PointerEvent) {
-  const isMiddle = event.button === 1;
-  const isLeftOutsideVertexTool = event.button === 0 && props.tool !== "vertex";
-  if (isMiddle || isLeftOutsideVertexTool) {
+  if (wantsPan(event)) {
     closeMenu();
     pan.startPan(event);
+    return;
+  }
+  if (event.button === 0 && props.tool === "select") {
+    closeMenu();
+    boxSelect.startBox(event);
   }
 }
 
@@ -187,7 +257,10 @@ function onBackgroundMouseDown(event: MouseEvent) {
 }
 
 function onCanvasClick(event: MouseEvent) {
-  if (pan.consumeClick() || consumeClick()) {
+  if (pan.consumeClick() || boxSelect.consumeClick() || consumeClick()) {
+    return;
+  }
+  if (props.readonly || props.tool === "pan") {
     return;
   }
   if (props.tool === "vertex") {
@@ -214,6 +287,10 @@ function onCanvasPointerLeave() {
 }
 
 function onVertexPointerDown(event: PointerEvent, vertex: Vertex) {
+  if (props.readonly || isSpaceHeld.value || props.tool === "pan") {
+    onBackgroundPointerDown(event);
+    return;
+  }
   if (event.button !== 0 || props.tool === "delete") {
     return;
   }
@@ -221,8 +298,8 @@ function onVertexPointerDown(event: PointerEvent, vertex: Vertex) {
   startDrag(event, vertex);
 }
 
-function onVertexClick(vertexId: string) {
-  if (consumeClick()) {
+function onVertexClick(event: MouseEvent, vertexId: string) {
+  if (consumeClick() || pan.consumeClick() || props.readonly || props.tool === "pan") {
     return;
   }
   if (props.tool === "delete") {
@@ -231,6 +308,10 @@ function onVertexClick(vertexId: string) {
   }
   if (props.tool === "edge") {
     connectTo(vertexId);
+    return;
+  }
+  if (event.shiftKey) {
+    select(toggleSelected(props.selection, "vertex", vertexId));
     return;
   }
   select({ kind: "vertex", id: vertexId });
@@ -251,12 +332,19 @@ function connectTo(vertexId: string) {
   select({ kind: "edge", id: newEdge.id });
 }
 
-function onEdgeClick(edgeId: string) {
+function onEdgeClick(event: MouseEvent, edgeId: string) {
+  if (pan.consumeClick() || props.readonly || props.tool === "pan") {
+    return;
+  }
   if (props.tool === "delete") {
     deleteEdge(edgeId);
     return;
   }
   cancelEdge();
+  if (event.shiftKey) {
+    select(toggleSelected(props.selection, "edge", edgeId));
+    return;
+  }
   select({ kind: "edge", id: edgeId });
 }
 
@@ -265,22 +353,36 @@ function openMenu(event: MouseEvent, target: MenuTarget) {
   if (svgElement.value === null) {
     return;
   }
-  const box = svgElement.value.getBoundingClientRect();
+  const bounds = svgElement.value.getBoundingClientRect();
   const point = toCanvasPoint(svgElement.value, event);
-  openMenuAt(target, point, box.width, box.height);
+  openMenuAt(target, point, bounds.width, bounds.height);
 }
 
-function onVertexMenu(event: MouseEvent, vertexId: string) {
-  select({ kind: "vertex", id: vertexId });
-  openMenu(event, { kind: "vertex", id: vertexId });
+function isInGroup(kind: "vertex" | "edge", id: string): boolean {
+  if (props.selection === null || props.selection.kind !== "group") {
+    return false;
+  }
+  return isSelected(props.selection, kind, id);
 }
 
-function onEdgeMenu(event: MouseEvent, edgeId: string) {
-  select({ kind: "edge", id: edgeId });
-  openMenu(event, { kind: "edge", id: edgeId });
+function onItemMenu(event: MouseEvent, kind: "vertex" | "edge", id: string) {
+  if (props.readonly) {
+    openMenu(event, { kind: "view" });
+    return;
+  }
+  if (isInGroup(kind, id)) {
+    openMenu(event, { kind: "group" });
+    return;
+  }
+  select({ kind: kind, id: id });
+  openMenu(event, { kind: kind, id: id });
 }
 
 function onBackgroundMenu(event: MouseEvent) {
+  if (props.readonly) {
+    openMenu(event, { kind: "view" });
+    return;
+  }
   const point = toWorld(event);
   openMenu(event, { kind: "canvas", x: point.x, y: point.y });
 }
@@ -302,6 +404,8 @@ function onMenuChoose(action: MenuAction) {
     deleteVertex(target.id);
   } else if (action === "delete" && target.kind === "edge") {
     deleteEdge(target.id);
+  } else if (action === "delete" && target.kind === "group") {
+    deleteSelected();
   }
 }
 
@@ -314,17 +418,8 @@ function onMenuColor(color: GraphColor) {
     applyChange(updateVertex(props.graph, target.id, { color: color }));
   } else if (target.kind === "edge") {
     applyChange(updateEdge(props.graph, target.id, { color: color }));
-  }
-}
-
-function deleteSelected() {
-  if (props.selection === null) {
-    return;
-  }
-  if (props.selection.kind === "vertex") {
-    deleteVertex(props.selection.id);
-  } else {
-    deleteEdge(props.selection.id);
+  } else if (target.kind === "group") {
+    applyChange(paintSelected(props.graph, props.selection, color));
   }
 }
 
@@ -335,10 +430,23 @@ function onKeyDown(event: KeyboardEvent) {
       return;
     }
     cancelEdge();
-    select(null);
+    if (!props.readonly) {
+      select(null);
+    }
     return;
   }
-  if (isTyping(event)) {
+  if (props.readonly || isTyping(event)) {
+    return;
+  }
+  if (event.code === "Space") {
+    event.preventDefault();
+    isSpaceHeld.value = true;
+    return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.code === "KeyA") {
+    event.preventDefault();
+    cancelEdge();
+    select(selectAll(props.graph));
     return;
   }
   if (!event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -357,6 +465,16 @@ function onKeyDown(event: KeyboardEvent) {
   }
 }
 
+function onKeyUp(event: KeyboardEvent) {
+  if (event.code === "Space") {
+    isSpaceHeld.value = false;
+  }
+}
+
+function onWindowBlur() {
+  isSpaceHeld.value = false;
+}
+
 watch(
   () => props.tool,
   () => {
@@ -365,12 +483,30 @@ watch(
   },
 );
 
+watch(
+  () => props.readonly,
+  (isReadonly) => {
+    cancelEdge();
+    closeMenu();
+    if (isReadonly) {
+      fitView();
+    }
+  },
+);
+
 onMounted(() => {
   window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+  window.addEventListener("blur", onWindowBlur);
+  if (props.readonly) {
+    fitView();
+  }
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", onKeyDown);
+  window.removeEventListener("keyup", onKeyUp);
+  window.removeEventListener("blur", onWindowBlur);
 });
 </script>
 
@@ -379,14 +515,14 @@ onBeforeUnmount(() => {
     <svg
       ref="svgElement"
       class="graph-canvas__svg"
-      :class="['graph-canvas__svg--tool-' + tool, { 'graph-canvas__svg--panning': isPanning }]"
+      :class="canvasClasses"
       @click.self="onCanvasClick"
       @pointerdown.self="onBackgroundPointerDown"
       @mousedown.self="onBackgroundMouseDown"
       @contextmenu.self.prevent="onBackgroundMenu"
       @pointermove="onCanvasPointerMove"
       @pointerleave="onCanvasPointerLeave"
-      @wheel.prevent="onWheel"
+      @wheel="onWheel"
     >
       <GraphArrowMarkers />
 
@@ -406,8 +542,8 @@ onBeforeUnmount(() => {
           :shape="shape"
           :selected="isSelected(selection, 'edge', shape.id)"
           :directed="graph.isDirected"
-          @pick="onEdgeClick(shape.id)"
-          @menu="onEdgeMenu($event, shape.id)"
+          @pick="onEdgeClick($event, shape.id)"
+          @menu="onItemMenu($event, 'edge', shape.id)"
         />
 
         <GraphVertexItem
@@ -417,10 +553,19 @@ onBeforeUnmount(() => {
           :selected="isSelected(selection, 'vertex', vertex.id)"
           :highlighted="vertex.id === edgeSourceId"
           :dragged="vertex.id === draggedVertexId"
-          :draggable="tool !== 'delete'"
+          :draggable="!readonly && tool !== 'delete' && tool !== 'pan'"
           @grab="onVertexPointerDown($event, vertex)"
-          @pick="onVertexClick(vertex.id)"
-          @menu="onVertexMenu($event, vertex.id)"
+          @pick="onVertexClick($event, vertex.id)"
+          @menu="onItemMenu($event, 'vertex', vertex.id)"
+        />
+
+        <rect
+          v-if="box"
+          class="graph-canvas__box"
+          :x="box.left"
+          :y="box.top"
+          :width="box.right - box.left"
+          :height="box.bottom - box.top"
         />
       </g>
     </svg>
@@ -464,10 +609,25 @@ onBeforeUnmount(() => {
   touch-action: none;
 }
 
-.graph-canvas__svg--tool-select,
+.graph-canvas__svg--tool-select {
+  cursor: default;
+}
+
+.graph-canvas__svg--tool-pan,
 .graph-canvas__svg--tool-edge,
-.graph-canvas__svg--tool-delete {
+.graph-canvas__svg--tool-delete,
+.graph-canvas__svg--readonly,
+.graph-canvas__svg--space {
   cursor: grab;
+}
+
+.graph-canvas__svg--tool-pan :deep(.graph-vertex),
+.graph-canvas__svg--tool-pan :deep(.graph-edge),
+.graph-canvas__svg--readonly :deep(.graph-vertex),
+.graph-canvas__svg--readonly :deep(.graph-edge),
+.graph-canvas__svg--space :deep(.graph-vertex),
+.graph-canvas__svg--space :deep(.graph-edge) {
+  cursor: inherit;
 }
 
 .graph-canvas__svg--tool-vertex {
@@ -476,6 +636,16 @@ onBeforeUnmount(() => {
 
 .graph-canvas__svg--panning {
   cursor: grabbing;
+}
+
+.graph-canvas__box {
+  fill: var(--color-accent-muted);
+  fill-opacity: 0.5;
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .graph-canvas__preview {

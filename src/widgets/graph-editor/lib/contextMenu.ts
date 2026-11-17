@@ -1,9 +1,12 @@
 import { findEdge, findVertex, hasEdge, type Graph, type GraphColor } from "@/entities/graph";
+import { commonColor, type GraphSelection } from "./selection";
 
 export type MenuTarget =
   | { kind: "vertex"; id: string }
   | { kind: "edge"; id: string }
-  | { kind: "canvas"; x: number; y: number };
+  | { kind: "group" }
+  | { kind: "canvas"; x: number; y: number }
+  | { kind: "view" };
 
 export type MenuAction = "add-vertex" | "add-loop" | "delete" | "fit-view" | "reset-zoom";
 
@@ -30,9 +33,13 @@ export function buildMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
   if (target.kind === "edge") {
     return [{ action: "delete", label: "Удалить ребро", danger: true }];
   }
-  const items: MenuItem[] = [
-    { action: "add-vertex", label: "Добавить вершину здесь", danger: false },
-  ];
+  if (target.kind === "group") {
+    return [{ action: "delete", label: "Удалить выбранное", danger: true }];
+  }
+  const items: MenuItem[] = [];
+  if (target.kind === "canvas") {
+    items.push({ action: "add-vertex", label: "Добавить вершину здесь", danger: false });
+  }
   if (graph.vertices.length > 0) {
     items.push({ action: "fit-view", label: "Показать весь граф", danger: false });
   }
@@ -41,7 +48,7 @@ export function buildMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
 }
 
 export function hasColorChoice(target: MenuTarget): boolean {
-  return target.kind !== "canvas";
+  return target.kind === "vertex" || target.kind === "edge" || target.kind === "group";
 }
 
 export function menuHeight(itemCount: number, withColors: boolean): number {
@@ -70,7 +77,11 @@ export function menuPosition(
   return { left: left, top: top };
 }
 
-export function targetColor(graph: Graph, target: MenuTarget): GraphColor | null {
+export function targetColor(
+  graph: Graph,
+  target: MenuTarget,
+  selection: GraphSelection | null,
+): GraphColor | null {
   if (target.kind === "vertex") {
     const vertex = findVertex(graph, target.id);
     return vertex ? vertex.color : null;
@@ -78,6 +89,9 @@ export function targetColor(graph: Graph, target: MenuTarget): GraphColor | null
   if (target.kind === "edge") {
     const edge = findEdge(graph, target.id);
     return edge ? edge.color : null;
+  }
+  if (target.kind === "group") {
+    return commonColor(graph, selection);
   }
   return null;
 }

@@ -4,6 +4,7 @@ import { colorClass, GRAPH_COLORS } from "../lib/colors";
 
 withDefaults(
   defineProps<{
+    modelValue: GraphColor | null;
     small?: boolean;
   }>(),
   {
@@ -11,7 +12,9 @@ withDefaults(
   },
 );
 
-const color = defineModel<GraphColor>({ required: true });
+const emit = defineEmits<{
+  "update:modelValue": [color: GraphColor];
+}>();
 </script>
 
 <template>
@@ -28,11 +31,11 @@ const color = defineModel<GraphColor>({ required: true });
       class="graph-swatches__option"
       :class="[
         'graph-swatches__option--' + colorClass(option.value),
-        { 'graph-swatches__option--active': color === option.value },
+        { 'graph-swatches__option--active': modelValue === option.value },
       ]"
-      :aria-pressed="color === option.value"
+      :aria-pressed="modelValue === option.value"
       :title="option.title"
-      @click="color = option.value"
+      @click="emit('update:modelValue', option.value)"
     >
       <span class="graph-swatches__name">{{ option.title }}</span>
     </button>

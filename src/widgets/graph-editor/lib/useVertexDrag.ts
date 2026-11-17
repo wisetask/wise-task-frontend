@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { moveVertex, type Graph, type Vertex } from "@/entities/graph";
+import { findVertex, moveVertices, type Graph, type Vertex } from "@/entities/graph";
 import type { Point } from "./geometry";
 import { usePointerDrag } from "./usePointerDrag";
 
@@ -7,6 +7,7 @@ interface DragCallbacks {
   toWorld: (event: MouseEvent) => Point;
   limit: (point: Point) => Point;
   getGraph: () => Graph;
+  getGroup: (vertexId: string) => string[];
   onStart: () => void;
   onMove: (graph: Graph) => void;
 }
@@ -14,6 +15,7 @@ interface DragCallbacks {
 export function useVertexDrag(callbacks: DragCallbacks) {
   const draggedVertexId = ref<string | null>(null);
   let grabOffset: Point = { x: 0, y: 0 };
+  let group: string[] = [];
 
   const drag = usePointerDrag({
     onStart: callbacks.onStart,
@@ -25,10 +27,17 @@ export function useVertexDrag(callbacks: DragCallbacks) {
       const wanted = { x: point.x - grabOffset.x, y: point.y - grabOffset.y };
       const position = callbacks.limit(wanted);
       const graph = callbacks.getGraph();
-      callbacks.onMove(moveVertex(graph, draggedVertexId.value, position.x, position.y));
+      const vertex = findVertex(graph, draggedVertexId.value);
+      if (vertex === undefined) {
+        return;
+      }
+      const dx = position.x - vertex.x;
+      const dy = position.y - vertex.y;
+      callbacks.onMove(moveVertices(graph, group, dx, dy));
     },
     onEnd: () => {
       draggedVertexId.value = null;
+      group = [];
     },
   });
 
@@ -36,6 +45,7 @@ export function useVertexDrag(callbacks: DragCallbacks) {
     const point = callbacks.toWorld(event);
     grabOffset = { x: point.x - vertex.x, y: point.y - vertex.y };
     draggedVertexId.value = vertex.id;
+    group = callbacks.getGroup(vertex.id);
     drag.begin(event);
   }
 

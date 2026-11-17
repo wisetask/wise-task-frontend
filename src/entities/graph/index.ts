@@ -7,6 +7,7 @@ export {
   findVertex,
   hasEdge,
   moveVertex,
+  moveVertices,
   nextVertexLabel,
   removeEdge,
   removeVertex,

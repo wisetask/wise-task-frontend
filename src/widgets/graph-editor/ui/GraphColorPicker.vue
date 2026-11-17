@@ -2,13 +2,22 @@
 import type { GraphColor } from "@/entities/graph";
 import GraphColorSwatches from "./GraphColorSwatches.vue";
 
-const color = defineModel<GraphColor>({ required: true });
+defineProps<{
+  modelValue: GraphColor | null;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [color: GraphColor];
+}>();
 </script>
 
 <template>
   <div class="graph-color-picker">
     <span class="graph-color-picker__label">Цвет</span>
-    <GraphColorSwatches v-model="color" />
+    <GraphColorSwatches
+      :model-value="modelValue"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
   </div>
 </template>
 

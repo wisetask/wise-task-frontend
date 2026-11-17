@@ -3,8 +3,6 @@ import { computed, watch } from "vue";
 import {
   findEdge,
   findVertex,
-  removeEdge,
-  removeVertex,
   updateEdge,
   updateVertex,
   type Graph,
@@ -13,8 +11,14 @@ import {
 } from "@/entities/graph";
 import { UiButton, UiTextField } from "@/shared/ui";
 import { createEditSession } from "../lib/editSession";
-import { describeEdge } from "../lib/labels";
-import type { GraphSelection } from "../lib/selection";
+import { describeEdge, describeGroup } from "../lib/labels";
+import {
+  commonColor,
+  paintSelected,
+  removeSelected,
+  selectedIds,
+  type GraphSelection,
+} from "../lib/selection";
 import { parseWeight } from "../lib/weight";
 import GraphColorPicker from "./GraphColorPicker.vue";
 
@@ -45,6 +49,15 @@ const edge = computed(() => {
   return findEdge(props.graph, props.selection.id);
 });
 
+const group = computed(() => {
+  if (props.selection === null || props.selection.kind !== "group") {
+    return null;
+  }
+  return selectedIds(props.selection);
+});
+
+const groupColor = computed(() => commonColor(props.graph, props.selection));
+
 const selected = computed(() => {
   if (vertex.value) {
     return vertex.value;
@@ -59,10 +72,21 @@ const title = computed(() => {
   if (edge.value) {
     return describeEdge(props.graph, edge.value);
   }
+  if (group.value) {
+    return describeGroup(group.value.vertexIds.length, group.value.edgeIds.length);
+  }
   return "Свойства";
 });
 
-const deleteText = computed(() => (vertex.value ? "Удалить вершину" : "Удалить ребро"));
+const deleteText = computed(() => {
+  if (vertex.value) {
+    return "Удалить вершину";
+  }
+  if (edge.value) {
+    return "Удалить ребро";
+  }
+  return "Удалить выбранное";
+});
 
 const labelPlaceholder = computed(() => (edge.value ? "Например, a" : ""));
 
@@ -74,7 +98,7 @@ watch(
 );
 
 function fieldKey(field: string): string {
-  if (props.selection === null) {
+  if (props.selection === null || props.selection.kind === "group") {
     return field;
   }
   return props.selection.kind + ":" + props.selection.id + ":" + field;
@@ -108,13 +132,14 @@ function onColorChange(color: GraphColor) {
   changeSelected({ color: color });
 }
 
+function onGroupColorChange(color: GraphColor) {
+  emit("before-change", props.graph);
+  emit("update:graph", paintSelected(props.graph, props.selection, color));
+}
+
 function onDeleteClick() {
   emit("before-change", props.graph);
-  if (vertex.value) {
-    emit("update:graph", removeVertex(props.graph, vertex.value.id));
-  } else if (edge.value) {
-    emit("update:graph", removeEdge(props.graph, edge.value.id));
-  }
+  emit("update:graph", removeSelected(props.graph, props.selection));
   emit("update:selection", null);
 }
 </script>
@@ -143,9 +168,19 @@ function onDeleteClick() {
       <UiButton variant="danger" size="sm" @click="onDeleteClick">{{ deleteText }}</UiButton>
     </template>
 
+    <template v-else-if="group">
+      <GraphColorPicker :model-value="groupColor" @update:model-value="onGroupColorChange" />
+      <p class="graph-properties__empty">
+        Потяните любую из выбранных вершин, чтобы сдвинуть всю группу. Shift+клик добавляет или
+        убирает вершину из выбора.
+      </p>
+      <UiButton variant="danger" size="sm" @click="onDeleteClick">{{ deleteText }}</UiButton>
+    </template>
+
     <template v-else>
       <p class="graph-properties__empty">
-        Выберите вершину или ребро, чтобы изменить подпись, цвет и вес.
+        Выберите вершину или ребро, чтобы изменить подпись, цвет и вес. Несколько вершин можно
+        выделить рамкой.
       </p>
       <dl class="graph-properties__summary">
         <dt>Тип</dt>
