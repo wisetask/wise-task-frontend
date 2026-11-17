@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { pathsOfLength, power } from "@/entities/relation";
 import { UiButton, UiCheckbox, UiTextField } from "@/shared/ui";
+import {
+  countFilled,
+  countMistakes,
+  emptyAnswers,
+  isSolved,
+  RelationMatrix,
+  type Answers,
+  type CellPosition,
+} from "@/widgets/relation-matrix";
 
 const name = ref("");
 const email = ref("");
@@ -13,6 +23,41 @@ const emailError = computed(() => {
     return "В почте должен быть символ @";
   }
   return "";
+});
+
+const relation = [
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 1, 0],
+  [0, 0, 0, 1, 0],
+  [0, 0, 0, 1, 1],
+  [1, 0, 0, 0, 0],
+];
+const square = power(relation, 2, "classic");
+const squareAnswers = ref<Answers>(emptyAnswers(5));
+const showResult = ref(true);
+const hovered = ref<CellPosition | null>(null);
+
+const pathsText = computed(() => {
+  if (hovered.value === null) {
+    return "Наведите на клетку A², чтобы увидеть пути длины 2.";
+  }
+  const from = hovered.value.row + 1;
+  const to = hovered.value.col + 1;
+  const paths = pathsOfLength(relation, hovered.value.row, hovered.value.col, 2);
+  if (paths.length === 0) {
+    return "Из " + from + " в " + to + " путей длины 2 нет.";
+  }
+  const texts = paths.map((path) => path.map((vertex) => vertex + 1).join(" → "));
+  return "Из " + from + " в " + to + ": " + texts.join(", ");
+});
+
+const progressText = computed(() => {
+  if (isSolved(squareAnswers.value, square)) {
+    return "Матрица заполнена верно.";
+  }
+  const filled = countFilled(squareAnswers.value);
+  const mistakes = countMistakes(squareAnswers.value, square);
+  return "Заполнено " + filled + " из 25, ошибок: " + mistakes + ".";
 });
 
 function fakeSave() {
@@ -77,6 +122,28 @@ function fakeSave() {
         <UiCheckbox :model-value="true" label="Недоступная галочка" disabled />
       </div>
     </section>
+
+    <section class="ui-kit__section">
+      <h2 class="ui-kit__heading">Матрица отношения</h2>
+      <p class="ui-kit__note">
+        Виджет из <code>widgets/relation-matrix</code>. Заполните A² — число путей длины 2.
+      </p>
+      <div class="ui-kit__row ui-kit__row--top">
+        <RelationMatrix title="A" :values="relation" />
+        <RelationMatrix
+          v-model:answers="squareAnswers"
+          title="A²"
+          editable
+          :expected="square"
+          :show-result="showResult"
+          :highlight="hovered"
+          @hover="hovered = $event"
+        />
+      </div>
+      <UiCheckbox v-model="showResult" label="Сразу показывать, верно или нет" />
+      <p class="ui-kit__note">{{ pathsText }}</p>
+      <p class="ui-kit__note">{{ progressText }}</p>
+    </section>
   </main>
 </template>
 
@@ -112,6 +179,16 @@ function fakeSave() {
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
+}
+
+.ui-kit__row--top {
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.ui-kit__note {
+  margin: var(--space-2) 0;
+  color: var(--color-text-muted);
 }
 
 .ui-kit__form {
