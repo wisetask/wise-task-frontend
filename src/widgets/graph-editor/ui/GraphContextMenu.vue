@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { GraphColor } from "@/entities/graph";
-import { colorClass, GRAPH_COLORS } from "../lib/colors";
 import { MENU_WIDTH, type MenuAction, type MenuItem } from "../lib/contextMenu";
+import GraphColorSwatches from "./GraphColorSwatches.vue";
 
 defineProps<{
   left: number;
@@ -54,24 +54,13 @@ onBeforeUnmount(() => {
     :style="{ left: left + 'px', top: top + 'px', width: MENU_WIDTH + 'px' }"
     @contextmenu.prevent
   >
-    <div v-if="showColors" class="graph-menu__colors" role="group" aria-label="Цвет">
-      <button
-        v-for="option in GRAPH_COLORS"
-        :key="option.value"
-        type="button"
-        role="menuitemradio"
-        class="graph-menu__color"
-        :class="[
-          'graph-menu__color--' + colorClass(option.value),
-          { 'graph-menu__color--active': currentColor === option.value },
-        ]"
-        :aria-checked="currentColor === option.value"
-        :title="option.title"
-        @click="emit('color', option.value)"
-      >
-        <span class="graph-menu__hidden">{{ option.title }}</span>
-      </button>
-    </div>
+    <GraphColorSwatches
+      v-if="showColors && currentColor !== null"
+      class="graph-menu__colors"
+      small
+      :model-value="currentColor"
+      @update:model-value="emit('color', $event)"
+    />
     <button
       v-for="item in items"
       :key="item.action"
@@ -100,41 +89,9 @@ onBeforeUnmount(() => {
 }
 
 .graph-menu__colors {
-  display: flex;
-  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border);
   margin-bottom: var(--space-1);
-}
-
-.graph-menu__color {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 2px solid var(--graph-vertex-stroke);
-  border-radius: 50%;
-  background: var(--graph-vertex-fill);
-  cursor: pointer;
-}
-
-.graph-menu__color--red {
-  border-color: var(--graph-red-stroke);
-  background: var(--graph-red-fill);
-}
-
-.graph-menu__color--green {
-  border-color: var(--graph-green-stroke);
-  background: var(--graph-green-fill);
-}
-
-.graph-menu__color--blue {
-  border-color: var(--graph-blue-stroke);
-  background: var(--graph-blue-fill);
-}
-
-.graph-menu__color--active {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
 }
 
 .graph-menu__item {
@@ -157,18 +114,8 @@ onBeforeUnmount(() => {
   color: var(--color-danger);
 }
 
-.graph-menu__item:focus-visible,
-.graph-menu__color:focus-visible {
+.graph-menu__item:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
-}
-
-.graph-menu__hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 </style>

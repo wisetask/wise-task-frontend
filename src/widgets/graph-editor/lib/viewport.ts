@@ -39,6 +39,25 @@ export function zoomAt(viewport: Viewport, center: Point, factor: number): Viewp
   };
 }
 
+export function zoomToPercent(viewport: Viewport, center: Point, percent: number): Viewport {
+  return zoomAt(viewport, center, percent / 100 / viewport.scale);
+}
+
+const PERCENT_PATTERN = /^\d+([.,]\d+)?\s*%?$/;
+
+export function parseZoomPercent(text: string): number | null {
+  const trimmed = text.trim();
+  if (!PERCENT_PATTERN.test(trimmed)) {
+    return null;
+  }
+  const digits = trimmed.replace("%", "").trim().replace(",", ".");
+  const value = Number(digits);
+  if (value <= 0) {
+    return null;
+  }
+  return value;
+}
+
 export function panBy(viewport: Viewport, dx: number, dy: number): Viewport {
   return { x: viewport.x + dx, y: viewport.y + dy, scale: viewport.scale };
 }

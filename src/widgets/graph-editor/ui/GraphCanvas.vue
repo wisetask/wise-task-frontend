@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   addEdge,
   addVertex,
-  findEdge,
   findVertex,
   removeEdge,
   removeVertex,
@@ -13,14 +12,7 @@ import {
   type GraphColor,
   type Vertex,
 } from "@/entities/graph";
-import {
-  buildMenuItems,
-  hasColorChoice,
-  menuHeight,
-  menuPosition,
-  type MenuAction,
-  type MenuTarget,
-} from "../lib/contextMenu";
+import type { MenuAction, MenuTarget } from "../lib/contextMenu";
 import { buildEdgeShapes, VERTEX_RADIUS, type Point } from "../lib/geometry";
 import { isTyping, toCanvasPoint } from "../lib/pointer";
 import {
@@ -29,32 +21,15 @@ import {
   type EditorTool,
   type GraphSelection,
 } from "../lib/selection";
+import { useCanvasMenu } from "../lib/useCanvasMenu";
 import { useCanvasPan } from "../lib/useCanvasPan";
 import { useVertexDrag } from "../lib/useVertexDrag";
-import {
-  createViewport,
-  keepInArea,
-  panBy,
-  screenToWorld,
-  viewportTransform,
-  visibleArea,
-  wheelFactor,
-  ZOOM_STEP,
-  zoomAt,
-  zoomPercent,
-  type Viewport,
-} from "../lib/viewport";
+import { useViewport } from "../lib/useViewport";
 import GraphArrowMarkers from "./GraphArrowMarkers.vue";
 import GraphContextMenu from "./GraphContextMenu.vue";
 import GraphEdgeItem from "./GraphEdgeItem.vue";
 import GraphVertexItem from "./GraphVertexItem.vue";
 import GraphZoomControls from "./GraphZoomControls.vue";
-
-interface OpenMenu {
-  target: MenuTarget;
-  left: number;
-  top: number;
-}
 
 const props = defineProps<{
   graph: Graph;
@@ -71,21 +46,18 @@ const emit = defineEmits<{
 const svgElement = ref<SVGSVGElement | null>(null);
 const edgeSourceId = ref<string | null>(null);
 const cursorPoint = ref<Point | null>(null);
-const viewport = ref<Viewport>(createViewport());
-const menu = ref<OpenMenu | null>(null);
-
-function toWorld(event: MouseEvent): Point {
-  return screenToWorld(viewport.value, toCanvasPoint(svgElement.value, event));
-}
-
-function limitToView(point: Point): Point {
-  if (svgElement.value === null) {
-    return point;
-  }
-  const box = svgElement.value.getBoundingClientRect();
-  const area = visibleArea(viewport.value, box.width, box.height);
-  return keepInArea(point, area, VERTEX_RADIUS);
-}
+const {
+  transform,
+  percent,
+  toWorld,
+  limitToView,
+  zoomIn,
+  zoomOut,
+  setPercent,
+  zoomByWheel,
+  pan: panViewport,
+  reset: resetViewport,
+} = useViewport(svgElement);
 
 const { draggedVertexId, startDrag, consumeClick } = useVertexDrag({
   toWorld: toWorld,
@@ -95,16 +67,10 @@ const { draggedVertexId, startDrag, consumeClick } = useVertexDrag({
   onMove: (graph) => emit("update:graph", graph),
 });
 
-const pan = useCanvasPan({
-  onPan: (dx, dy) => {
-    viewport.value = panBy(viewport.value, dx, dy);
-  },
-});
+const pan = useCanvasPan({ onPan: panViewport });
 const isPanning = pan.isPanning;
 
 const edgeShapes = computed(() => buildEdgeShapes(props.graph, VERTEX_RADIUS));
-const transform = computed(() => viewportTransform(viewport.value));
-const percent = computed(() => zoomPercent(viewport.value));
 
 const edgeSource = computed(() => {
   if (edgeSourceId.value === null) {
@@ -113,30 +79,15 @@ const edgeSource = computed(() => {
   return findVertex(props.graph, edgeSourceId.value);
 });
 
-const menuItems = computed(() => {
-  if (menu.value === null) {
-    return [];
-  }
-  return buildMenuItems(props.graph, menu.value.target);
-});
-
-const menuShowsColors = computed(() => menu.value !== null && hasColorChoice(menu.value.target));
-
-const menuColor = computed<GraphColor | null>(() => {
-  if (menu.value === null) {
-    return null;
-  }
-  const target = menu.value.target;
-  if (target.kind === "vertex") {
-    const vertex = findVertex(props.graph, target.id);
-    return vertex ? vertex.color : null;
-  }
-  if (target.kind === "edge") {
-    const edge = findEdge(props.graph, target.id);
-    return edge ? edge.color : null;
-  }
-  return null;
-});
+const {
+  menu,
+  items: menuItems,
+  showColors: menuShowsColors,
+  currentColor: menuColor,
+  open: openMenuAt,
+  close: closeMenu,
+  takeTarget: takeMenuTarget,
+} = useCanvasMenu(() => props.graph);
 
 function select(selection: GraphSelection | null) {
   emit("update:selection", selection);
@@ -158,10 +109,6 @@ function cancelEdge() {
   cursorPoint.value = null;
 }
 
-function closeMenu() {
-  menu.value = null;
-}
-
 function deleteVertex(vertexId: string) {
   if (edgeSourceId.value === vertexId) {
     cancelEdge();
@@ -180,27 +127,29 @@ function addVertexAt(point: Point) {
   select({ kind: "vertex", id: newVertex.id });
 }
 
-function zoomAround(center: Point, factor: number) {
+function onZoomIn() {
   closeMenu();
-  viewport.value = zoomAt(viewport.value, center, factor);
+  zoomIn();
 }
 
-function canvasCenter(): Point {
-  if (svgElement.value === null) {
-    return { x: 0, y: 0 };
-  }
-  const box = svgElement.value.getBoundingClientRect();
-  return { x: box.width / 2, y: box.height / 2 };
+function onZoomOut() {
+  closeMenu();
+  zoomOut();
+}
+
+function onSetPercent(percent: number) {
+  closeMenu();
+  setPercent(percent);
 }
 
 function resetZoom() {
   closeMenu();
-  viewport.value = createViewport();
+  resetViewport();
 }
 
 function onWheel(event: WheelEvent) {
-  const factor = wheelFactor(event.deltaY, event.deltaMode);
-  zoomAround(toCanvasPoint(svgElement.value, event), factor);
+  closeMenu();
+  zoomByWheel(event);
 }
 
 function onBackgroundPointerDown(event: PointerEvent) {
@@ -299,10 +248,7 @@ function openMenu(event: MouseEvent, target: MenuTarget) {
   }
   const box = svgElement.value.getBoundingClientRect();
   const point = toCanvasPoint(svgElement.value, event);
-  const items = buildMenuItems(props.graph, target);
-  const height = menuHeight(items.length, hasColorChoice(target));
-  const position = menuPosition(point.x, point.y, height, box.width, box.height);
-  menu.value = { target: target, left: position.left, top: position.top };
+  openMenuAt(target, point, box.width, box.height);
 }
 
 function onVertexMenu(event: MouseEvent, vertexId: string) {
@@ -321,11 +267,10 @@ function onBackgroundMenu(event: MouseEvent) {
 }
 
 function onMenuChoose(action: MenuAction) {
-  if (menu.value === null) {
+  const target = takeMenuTarget();
+  if (target === null) {
     return;
   }
-  const target = menu.value.target;
-  closeMenu();
   if (action === "reset-zoom") {
     resetZoom();
   } else if (action === "add-vertex" && target.kind === "canvas") {
@@ -340,11 +285,10 @@ function onMenuChoose(action: MenuAction) {
 }
 
 function onMenuColor(color: GraphColor) {
-  if (menu.value === null) {
+  const target = takeMenuTarget();
+  if (target === null) {
     return;
   }
-  const target = menu.value.target;
-  closeMenu();
   if (target.kind === "vertex") {
     applyChange(updateVertex(props.graph, target.id, { color: color }));
   } else if (target.kind === "edge") {
@@ -451,9 +395,9 @@ onBeforeUnmount(() => {
 
     <GraphZoomControls
       :percent="percent"
-      @zoom-in="zoomAround(canvasCenter(), ZOOM_STEP)"
-      @zoom-out="zoomAround(canvasCenter(), 1 / ZOOM_STEP)"
-      @reset="resetZoom"
+      @zoom-in="onZoomIn"
+      @zoom-out="onZoomOut"
+      @set-percent="onSetPercent"
     />
 
     <GraphContextMenu

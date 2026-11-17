@@ -1,4 +1,4 @@
-import { hasEdge, type Graph } from "@/entities/graph";
+import { findEdge, findVertex, hasEdge, type Graph, type GraphColor } from "@/entities/graph";
 
 export type MenuTarget =
   | { kind: "vertex"; id: string }
@@ -64,4 +64,16 @@ export function menuPosition(
     top = Math.max(0, y - height);
   }
   return { left: left, top: top };
+}
+
+export function targetColor(graph: Graph, target: MenuTarget): GraphColor | null {
+  if (target.kind === "vertex") {
+    const vertex = findVertex(graph, target.id);
+    return vertex ? vertex.color : null;
+  }
+  if (target.kind === "edge") {
+    const edge = findEdge(graph, target.id);
+    return edge ? edge.color : null;
+  }
+  return null;
 }
