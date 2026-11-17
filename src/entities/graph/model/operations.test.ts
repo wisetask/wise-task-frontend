@@ -6,6 +6,7 @@ import {
   findEdge,
   hasEdge,
   moveVertex,
+  moveVertices,
   nextVertexLabel,
   removeEdge,
   removeVertex,
@@ -38,6 +39,19 @@ describe("graph operations", () => {
     expect(graph.vertices[0].x).toBe(100);
     expect(graph.vertices[0].y).toBe(200);
     expect(graph.vertices[1].x).toBe(5);
+  });
+
+  it("moves several vertices by the same distance", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 10, 20);
+    graph = addVertex(graph, 50, 50);
+    const moved = moveVertices(graph, [graph.vertices[0].id, graph.vertices[1].id], 5, -10);
+    expect(moved.vertices[0].x).toBe(5);
+    expect(moved.vertices[0].y).toBe(-10);
+    expect(moved.vertices[1].x).toBe(15);
+    expect(moved.vertices[1].y).toBe(10);
+    expect(moved.vertices[2]).toBe(graph.vertices[2]);
   });
 
   it("removes edges together with their vertex", () => {

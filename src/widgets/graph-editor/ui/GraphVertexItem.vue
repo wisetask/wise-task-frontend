@@ -13,7 +13,7 @@ defineProps<{
 
 const emit = defineEmits<{
   grab: [event: PointerEvent];
-  pick: [];
+  pick: [event: MouseEvent];
   menu: [event: MouseEvent];
 }>();
 </script>
@@ -30,7 +30,7 @@ const emit = defineEmits<{
       },
     ]"
     @pointerdown="emit('grab', $event)"
-    @click.stop="emit('pick')"
+    @click.stop="emit('pick', $event)"
     @contextmenu.prevent="emit('menu', $event)"
   >
     <circle :cx="vertex.x" :cy="vertex.y" :r="VERTEX_RADIUS" />

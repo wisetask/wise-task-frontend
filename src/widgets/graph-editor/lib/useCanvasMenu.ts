@@ -9,6 +9,7 @@ import {
   type MenuTarget,
 } from "./contextMenu";
 import type { Point } from "./geometry";
+import type { GraphSelection } from "./selection";
 
 interface OpenMenu {
   target: MenuTarget;
@@ -16,7 +17,7 @@ interface OpenMenu {
   top: number;
 }
 
-export function useCanvasMenu(getGraph: () => Graph) {
+export function useCanvasMenu(getGraph: () => Graph, getSelection: () => GraphSelection | null) {
   const menu = ref<OpenMenu | null>(null);
 
   const items = computed(() => {
@@ -32,7 +33,7 @@ export function useCanvasMenu(getGraph: () => Graph) {
     if (menu.value === null) {
       return null;
     }
-    return targetColor(getGraph(), menu.value.target);
+    return targetColor(getGraph(), menu.value.target, getSelection());
   });
 
   function open(target: MenuTarget, point: Point, boxWidth: number, boxHeight: number) {

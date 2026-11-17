@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addEdge, addVertex, createEmptyGraph, updateVertex } from "@/entities/graph";
+import { makeSelection } from "./selection";
 import {
   buildMenuItems,
   hasColorChoice,
@@ -58,8 +59,24 @@ describe("editor context menu", () => {
     graph = addVertex(graph, 0, 0);
     const id = graph.vertices[0].id;
     graph = updateVertex(graph, id, { color: "BLUE" });
-    expect(targetColor(graph, { kind: "vertex", id: id })).toBe("BLUE");
-    expect(targetColor(graph, { kind: "vertex", id: "missing" })).toBeNull();
-    expect(targetColor(graph, { kind: "canvas", x: 0, y: 0 })).toBeNull();
+    expect(targetColor(graph, { kind: "vertex", id: id }, null)).toBe("BLUE");
+    expect(targetColor(graph, { kind: "vertex", id: "missing" }, null)).toBeNull();
+    expect(targetColor(graph, { kind: "canvas", x: 0, y: 0 }, null)).toBeNull();
+  });
+
+  it("offers to delete or paint a selected group", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 50, 0);
+    const group = makeSelection([graph.vertices[0].id, graph.vertices[1].id], []);
+    expect(actionsOf(buildMenuItems(graph, { kind: "group" }))).toEqual(["delete"]);
+    expect(hasColorChoice({ kind: "group" })).toBe(true);
+    expect(targetColor(graph, { kind: "group" }, group)).toBe("GRAY");
+  });
+
+  it("only offers zoom in the view-only mode", () => {
+    const graph = addVertex(createEmptyGraph(false), 0, 0);
+    expect(actionsOf(buildMenuItems(graph, { kind: "view" }))).toEqual(["fit-view", "reset-zoom"]);
+    expect(hasColorChoice({ kind: "view" })).toBe(false);
   });
 });

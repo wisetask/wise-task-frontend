@@ -19,21 +19,32 @@ const savedGraph = loadGraph(storage);
 const graph = ref<Graph>(savedGraph === null ? createEmptyGraph(false) : savedGraph);
 const tool = ref<EditorTool>("vertex");
 const selection = ref<GraphSelection | null>(null);
+const viewOnly = ref(false);
 const history = useGraphHistory(graph);
 const canUndo = history.canUndo;
 const canRedo = history.canRedo;
 
 const hints = {
-  select: "Кликните по вершине или ребру, чтобы изменить его. Фон можно таскать, колесо — масштаб.",
+  select: "Тяните по пустому месту — рамка. Shift+клик — добавить к выбору, Ctrl+A — всё.",
+  pan: "Тяните мышью, чтобы двигать холст. Колесо — масштаб. Граф в этом режиме не меняется.",
   vertex: "Кликайте по пустому месту, чтобы добавить вершины. Их можно перетаскивать.",
   edge: "Кликните по первой вершине, потом по второй. Дважды по одной — петля. Esc — отмена.",
   delete: "Кликните по вершине или ребру, чтобы удалить.",
 };
 
-const hint = computed(() => hints[tool.value]);
+const hint = computed(() => {
+  if (viewOnly.value) {
+    return "Только просмотр: граф можно двигать и масштабировать, но не менять.";
+  }
+  return hints[tool.value];
+});
 
 watch(graph, (value) => {
   saveGraph(storage, value);
+});
+
+watch(viewOnly, () => {
+  selection.value = null;
 });
 
 function forgetMissingSelection() {
@@ -76,16 +87,20 @@ function clearGraph() {
     <header class="sandbox__header">
       <h1 class="sandbox__title">Песочница редактора</h1>
       <span class="sandbox__hint">{{ hint }}</span>
-      <UiCheckbox
-        class="sandbox__toggle"
-        :model-value="graph.isDirected"
-        label="Ориентированный"
-        @update:model-value="onDirectedChange"
-      />
-      <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
+      <UiCheckbox v-model="viewOnly" class="sandbox__toggle" label="Только просмотр" />
+      <template v-if="!viewOnly">
+        <UiCheckbox
+          class="sandbox__nowrap"
+          :model-value="graph.isDirected"
+          label="Ориентированный"
+          @update:model-value="onDirectedChange"
+        />
+        <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
+      </template>
     </header>
-    <div class="sandbox__workspace">
+    <div class="sandbox__workspace" :class="{ 'sandbox__workspace--view': viewOnly }">
       <GraphToolbar
+        v-if="!viewOnly"
         v-model:tool="tool"
         class="sandbox__toolbar"
         :can-undo="canUndo"
@@ -99,12 +114,14 @@ function clearGraph() {
             v-model:graph="graph"
             v-model:selection="selection"
             :tool="tool"
+            :readonly="viewOnly"
             @before-change="onBeforeChange"
           />
         </div>
         <GraphStatsBar :graph="graph" />
       </div>
       <GraphPropertiesPanel
+        v-if="!viewOnly"
         v-model:graph="graph"
         v-model:selection="selection"
         class="sandbox__properties"
@@ -148,11 +165,19 @@ function clearGraph() {
   white-space: nowrap;
 }
 
+.sandbox__nowrap {
+  white-space: nowrap;
+}
+
 .sandbox__workspace {
   display: grid;
   flex: 1;
   grid-template-columns: auto 1fr 280px;
   min-height: 0;
+}
+
+.sandbox__workspace--view {
+  grid-template-columns: 1fr;
 }
 
 .sandbox__toolbar {

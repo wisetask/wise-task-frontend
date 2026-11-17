@@ -7,6 +7,7 @@ interface ToolButton {
   id: EditorTool;
   title: string;
   hotkey: string;
+  code: string;
 }
 
 const props = defineProps<{
@@ -22,10 +23,11 @@ const emit = defineEmits<{
 const tool = defineModel<EditorTool>("tool", { required: true });
 
 const tools: ToolButton[] = [
-  { id: "select", title: "Выбор и перемещение", hotkey: "1" },
-  { id: "vertex", title: "Вершина", hotkey: "2" },
-  { id: "edge", title: "Ребро", hotkey: "3" },
-  { id: "delete", title: "Удаление", hotkey: "4" },
+  { id: "select", title: "Выбор и перемещение", hotkey: "1", code: "Digit1" },
+  { id: "pan", title: "Рука — двигать холст", hotkey: "H", code: "KeyH" },
+  { id: "vertex", title: "Вершина", hotkey: "2", code: "Digit2" },
+  { id: "edge", title: "Ребро", hotkey: "3", code: "Digit3" },
+  { id: "delete", title: "Удаление", hotkey: "4", code: "Digit4" },
 ];
 
 function isUndoKey(event: KeyboardEvent): boolean {
@@ -62,11 +64,11 @@ function onKeyDown(event: KeyboardEvent) {
     }
     return;
   }
-  if (event.altKey) {
+  if (event.altKey || event.shiftKey) {
     return;
   }
   for (const button of tools) {
-    if (event.key === button.hotkey) {
+    if (event.key === button.hotkey || event.code === button.code) {
       tool.value = button.id;
     }
   }
@@ -98,6 +100,14 @@ onBeforeUnmount(() => {
           v-if="button.id === 'select'"
           d="M5 3 L5 19 L9.5 14.5 L12.5 21 L15 20 L12 13.5 L18 13.5 Z"
         />
+        <g v-if="button.id === 'pan'">
+          <line x1="12" y1="3" x2="12" y2="21" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <path d="M9 6 L12 3 L15 6" />
+          <path d="M9 18 L12 21 L15 18" />
+          <path d="M6 9 L3 12 L6 15" />
+          <path d="M18 9 L21 12 L18 15" />
+        </g>
         <circle v-if="button.id === 'vertex'" cx="12" cy="12" r="6" />
         <g v-if="button.id === 'edge'">
           <line x1="6" y1="18" x2="18" y2="6" />

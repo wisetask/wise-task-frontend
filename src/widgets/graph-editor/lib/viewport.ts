@@ -131,3 +131,12 @@ export function fitArea(area: Area, width: number, height: number, padding: numb
     scale: scale,
   };
 }
+
+export function areaBetween(from: Point, to: Point): Area {
+  return {
+    left: Math.min(from.x, to.x),
+    top: Math.min(from.y, to.y),
+    right: Math.max(from.x, to.x),
+    bottom: Math.max(from.y, to.y),
+  };
+}

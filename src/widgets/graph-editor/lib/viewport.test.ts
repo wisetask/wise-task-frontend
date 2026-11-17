@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  areaBetween,
   createViewport,
   fitArea,
   keepInArea,
@@ -115,5 +116,12 @@ describe("canvas viewport", () => {
   it("does not zoom out too far to fit a huge graph", () => {
     const area = { left: 0, top: 0, right: 100000, bottom: 100 };
     expect(fitArea(area, 800, 600, 0).scale).toBe(MIN_SCALE);
+  });
+
+  it("builds a frame from two corners in any order", () => {
+    const expected = { left: 10, top: 20, right: 50, bottom: 80 };
+    expect(areaBetween({ x: 10, y: 20 }, { x: 50, y: 80 })).toEqual(expected);
+    expect(areaBetween({ x: 50, y: 80 }, { x: 10, y: 20 })).toEqual(expected);
+    expect(areaBetween({ x: 50, y: 20 }, { x: 10, y: 80 })).toEqual(expected);
   });
 });

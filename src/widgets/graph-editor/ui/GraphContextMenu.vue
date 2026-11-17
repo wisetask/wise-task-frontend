@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
     @contextmenu.prevent
   >
     <GraphColorSwatches
-      v-if="showColors && currentColor !== null"
+      v-if="showColors"
       class="graph-menu__colors"
       small
       :model-value="currentColor"

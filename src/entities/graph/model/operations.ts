@@ -70,6 +70,25 @@ export function moveVertex(graph: Graph, vertexId: string, x: number, y: number)
   return withParts(graph, vertices, graph.edges);
 }
 
+export function moveVertices(graph: Graph, vertexIds: string[], dx: number, dy: number): Graph {
+  const vertices: Vertex[] = [];
+  for (const vertex of graph.vertices) {
+    if (vertexIds.includes(vertex.id)) {
+      vertices.push({
+        id: vertex.id,
+        label: vertex.label,
+        x: vertex.x + dx,
+        y: vertex.y + dy,
+        color: vertex.color,
+        weight: vertex.weight,
+      });
+    } else {
+      vertices.push(vertex);
+    }
+  }
+  return withParts(graph, vertices, graph.edges);
+}
+
 export function removeVertex(graph: Graph, vertexId: string): Graph {
   const vertices = graph.vertices.filter((vertex) => vertex.id !== vertexId);
   const edges = graph.edges.filter((edge) => edge.source !== vertexId && edge.target !== vertexId);
