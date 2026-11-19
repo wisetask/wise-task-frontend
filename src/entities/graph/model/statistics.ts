@@ -1,3 +1,4 @@
+import { splitIntoComponents } from "./connectivity";
 import type { Graph } from "./types";
 
 export interface GraphStatistics {
@@ -68,47 +69,7 @@ export function countIsolated(graph: Graph): number {
 // Число компонент связности. Направление рёбер не учитываем:
 // для статистики важно, связаны ли вершины вообще.
 export function countComponents(graph: Graph): number {
-  // Соседи каждой вершины
-  const neighbors = new Map<string, string[]>();
-  for (const vertex of graph.vertices) {
-    neighbors.set(vertex.id, []);
-  }
-  for (const edge of graph.edges) {
-    const sourceList = neighbors.get(edge.source);
-    const targetList = neighbors.get(edge.target);
-    if (sourceList === undefined || targetList === undefined) {
-      continue;
-    }
-    sourceList.push(edge.target);
-    targetList.push(edge.source);
-  }
-
-  const visited = new Set<string>();
-  let components = 0;
-
-  for (const vertex of graph.vertices) {
-    if (visited.has(vertex.id)) {
-      continue;
-    }
-
-    // Нашли новую компоненту — обходим её целиком в ширину
-    components += 1;
-    visited.add(vertex.id);
-    const queue: string[] = [vertex.id];
-    let head = 0;
-    while (head < queue.length) {
-      const current = queue[head];
-      head += 1;
-      for (const next of neighbors.get(current) ?? []) {
-        if (!visited.has(next)) {
-          visited.add(next);
-          queue.push(next);
-        }
-      }
-    }
-  }
-
-  return components;
+  return splitIntoComponents(graph).length;
 }
 
 export function graphStatistics(graph: Graph): GraphStatistics {
