@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import type { Graph } from "@/entities/graph";
 import { useGraphHistory } from "@/features/graph-history";
+import type { GraphClipboard } from "../lib/clipboard";
 import { toolFromAction, type HotkeyAction } from "../lib/hotkeys";
 import { isSelectionValid, type EditorTool, type GraphSelection } from "../lib/selection";
 import { useEditorKeys } from "../lib/useEditorKeys";
@@ -24,6 +25,10 @@ const tool = defineModel<EditorTool>("tool", { default: "vertex" });
 
 const selection = ref<GraphSelection | null>(null);
 const panelOpen = ref(true);
+const clipboard = ref<GraphClipboard | null>(null);
+const pasteCount = ref(0);
+
+const PASTE_SHIFT = 40;
 const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 const history = useGraphHistory(graph);
 const canUndo = history.canUndo;
@@ -97,6 +102,26 @@ function runHotkey(action: HotkeyAction) {
     canvas.value.fitView();
   } else if (action === "select-all") {
     canvas.value.selectAll();
+  } else if (action === "copy" || action === "cut") {
+    const copied = canvas.value.copy();
+    if (copied === null) {
+      return;
+    }
+    clipboard.value = copied;
+    pasteCount.value = 0;
+    if (action === "cut") {
+      canvas.value.deleteSelected();
+    }
+  } else if (action === "paste") {
+    if (clipboard.value !== null) {
+      pasteCount.value = pasteCount.value + 1;
+      canvas.value.paste(clipboard.value, PASTE_SHIFT * pasteCount.value);
+    }
+  } else if (action === "duplicate") {
+    const copied = canvas.value.copy();
+    if (copied !== null) {
+      canvas.value.paste(copied, PASTE_SHIFT);
+    }
   } else if (action === "delete") {
     canvas.value.deleteSelected();
   } else if (action === "cancel") {

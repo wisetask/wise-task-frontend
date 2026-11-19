@@ -60,6 +60,14 @@ describe("editor hotkeys", () => {
     expect(find("Digit0", true, false)).toBeNull();
   });
 
+  it("copies, cuts, pastes and duplicates with Ctrl", () => {
+    expect(find("KeyC", true, false)).toBe("copy");
+    expect(find("KeyX", true, false)).toBe("cut");
+    expect(find("KeyV", true, false)).toBe("paste");
+    expect(find("KeyD", true, false)).toBe("duplicate");
+    expect(find("KeyC", false, false)).toBeNull();
+  });
+
   it("selects all, deletes and cancels", () => {
     expect(find("KeyA", true, false)).toBe("select-all");
     expect(find("KeyA", false, false)).toBeNull();

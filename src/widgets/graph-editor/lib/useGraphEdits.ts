@@ -8,6 +8,7 @@ import {
   type Graph,
   type GraphColor,
 } from "@/entities/graph";
+import { pasteClipboard, type GraphClipboard } from "./clipboard";
 import type { MenuTarget } from "./contextMenu";
 import { layoutGraph, type LayoutKind } from "./layout";
 import type { Point } from "./geometry";
@@ -87,6 +88,12 @@ export function useGraphEdits(options: GraphEditsOptions) {
     apply(layoutGraph(options.getGraph(), kind, rootId));
   }
 
+  function paste(clipboard: GraphClipboard, offset: number) {
+    const result = pasteClipboard(options.getGraph(), clipboard, offset);
+    apply(result.graph);
+    options.onSelect(result.selection);
+  }
+
   function selectEverything() {
     options.onSelect(selectAll(options.getGraph()));
   }
@@ -110,6 +117,7 @@ export function useGraphEdits(options: GraphEditsOptions) {
     deleteVertex: deleteVertex,
     deleteEdge: deleteEdge,
     deleteSelected: deleteSelected,
+    paste: paste,
     arrange: arrange,
     selectEverything: selectEverything,
     paint: paint,

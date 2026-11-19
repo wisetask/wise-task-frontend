@@ -13,6 +13,10 @@ export type HotkeyAction =
   | "zoom-reset"
   | "zoom-fit"
   | "select-all"
+  | "copy"
+  | "cut"
+  | "paste"
+  | "duplicate"
   | "delete"
   | "cancel";
 
@@ -66,6 +70,10 @@ export const DEFAULT_HOTKEYS: Hotkey[] = [
   key("zoom-reset", "Numpad0"),
   shiftKey("zoom-fit", "Digit1"),
   ctrlKey("select-all", "KeyA"),
+  ctrlKey("copy", "KeyC"),
+  ctrlKey("cut", "KeyX"),
+  ctrlKey("paste", "KeyV"),
+  ctrlKey("duplicate", "KeyD"),
   key("delete", "Delete"),
   key("delete", "Backspace"),
   key("cancel", "Escape"),
