@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { findVertex, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
+import { copySelection, type GraphClipboard } from "../lib/clipboard";
 import { layoutOfAction, type MenuAction, type MenuTarget } from "../lib/contextMenu";
 import { buildEdgeShapes, VERTEX_RADIUS, type Point } from "../lib/geometry";
 import { toCanvasPoint, wantsToggle } from "../lib/pointer";
@@ -407,6 +408,19 @@ onMounted(() => {
   }
 });
 
+function copy(): GraphClipboard | null {
+  return copySelection(props.graph, props.selection);
+}
+
+function paste(clipboard: GraphClipboard, offset: number) {
+  if (props.readonly) {
+    return;
+  }
+  cancelEdge();
+  closeMenu();
+  edits.paste(clipboard, offset);
+}
+
 defineExpose({
   zoomIn: onZoomIn,
   zoomOut: onZoomOut,
@@ -414,6 +428,8 @@ defineExpose({
   fitView: fitView,
   selectAll: selectEverything,
   deleteSelected: deleteSelected,
+  copy: copy,
+  paste: paste,
   cancel: cancel,
 });
 </script>

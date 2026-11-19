@@ -179,4 +179,53 @@ describe("graph editor", () => {
     expect(wrapper.find(".graph-properties").exists()).toBe(true);
     expect(panelTitle(wrapper)).not.toBe("Свойства");
   });
+
+  it("copies and pastes the selection and undoes the paste in one step", async () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 100, 100);
+    graph = addVertex(graph, 200, 100);
+    graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
+    const wrapper = mountEditor(graph, "select");
+    await press("KeyA", true);
+    await press("KeyC", true);
+    await press("KeyV", true);
+    expect(graphOf(wrapper).vertices.length).toBe(4);
+    expect(graphOf(wrapper).edges.length).toBe(2);
+    expect(graphOf(wrapper).vertices[2].x).toBe(140);
+    expect(panelTitle(wrapper)).toBe("Выбрано: 2 вершины, 1 ребро");
+    await press("KeyZ", true);
+    expect(graphOf(wrapper).vertices.length).toBe(2);
+    expect(graphOf(wrapper).edges.length).toBe(1);
+  });
+
+  it("shifts every next paste further", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await clickVertex(wrapper, 0, false);
+    await press("KeyC", true);
+    await press("KeyV", true);
+    await press("KeyV", true);
+    const vertices = graphOf(wrapper).vertices;
+    expect(vertices.length).toBe(5);
+    expect(vertices[3].x).toBe(140);
+    expect(vertices[4].x).toBe(180);
+    expect(vertices.map((vertex) => vertex.label)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("cuts the selection and pastes it back", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await clickVertex(wrapper, 2, false);
+    await press("KeyX", true);
+    expect(graphOf(wrapper).vertices.length).toBe(2);
+    await press("KeyV", true);
+    expect(graphOf(wrapper).vertices.length).toBe(3);
+    expect(graphOf(wrapper).vertices[2].x).toBe(240);
+  });
+
+  it("duplicates the selection with Ctrl+D", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await clickVertex(wrapper, 1, false);
+    await press("KeyD", true);
+    expect(graphOf(wrapper).vertices.length).toBe(4);
+    expect(graphOf(wrapper).vertices[3].x).toBe(340);
+  });
 });
