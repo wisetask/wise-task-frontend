@@ -48,6 +48,7 @@ function onWindowPointerDown(event: PointerEvent) {
 
 function onWindowKeyDown(event: KeyboardEvent) {
   if (isMenuOpen.value && event.key === "Escape") {
+    event.stopPropagation();
     closeMenu();
     if (avatarButton.value !== null) {
       avatarButton.value.focus();
@@ -66,12 +67,12 @@ watch(
 
 onMounted(() => {
   window.addEventListener("pointerdown", onWindowPointerDown);
-  window.addEventListener("keydown", onWindowKeyDown);
+  window.addEventListener("keydown", onWindowKeyDown, true);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("pointerdown", onWindowPointerDown);
-  window.removeEventListener("keydown", onWindowKeyDown);
+  window.removeEventListener("keydown", onWindowKeyDown, true);
 });
 </script>
 
