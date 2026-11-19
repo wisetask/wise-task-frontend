@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { RouterView } from "vue-router";
-import { AppHeader } from "@/widgets/app-header";
-import type { HeaderUser } from "@/widgets/app-header";
+import { AppHeader, type HeaderUser } from "@/widgets/app-header";
 
 // ВРЕМЕННО, пока не влит T08 (вход): тестовый пользователь.
 // Поменяйте role на USER, AUTHOR или null, чтобы проверить разные шапки.
