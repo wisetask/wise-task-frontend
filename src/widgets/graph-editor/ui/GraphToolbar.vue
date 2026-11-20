@@ -15,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   undo: [];
   redo: [];
+  help: [];
 }>();
 
 const tool = defineModel<EditorTool>("tool", { required: true });
@@ -29,6 +30,7 @@ const tools: ToolButton[] = [
 
 const undoTitle = withHotkey("Отменить", "undo", DEFAULT_HOTKEYS);
 const redoTitle = withHotkey("Повторить", "redo", DEFAULT_HOTKEYS);
+const helpTitle = withHotkey("Горячие клавиши", "help", DEFAULT_HOTKEYS);
 
 function toolTitle(button: ToolButton): string {
   return withHotkey(button.title, toolAction(button.id), DEFAULT_HOTKEYS);
@@ -114,6 +116,20 @@ function redo() {
       </svg>
       <span class="graph-toolbar__label">Повторить</span>
     </button>
+
+    <button
+      type="button"
+      class="graph-toolbar__button graph-toolbar__button--bottom"
+      :title="helpTitle"
+      @click="emit('help')"
+    >
+      <svg class="graph-toolbar__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9.5 9.5 A2.5 2.5 0 1 1 12 12 V13.5" />
+        <line x1="12" y1="17" x2="12" y2="17.01" />
+      </svg>
+      <span class="graph-toolbar__label">Горячие клавиши</span>
+    </button>
   </nav>
 </template>
 
@@ -147,6 +163,10 @@ function redo() {
   color: var(--color-text-muted);
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.graph-toolbar__button--bottom {
+  margin-top: auto;
 }
 
 .graph-toolbar__divider {

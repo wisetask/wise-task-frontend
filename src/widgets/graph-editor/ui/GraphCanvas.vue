@@ -73,6 +73,7 @@ const edits = useGraphEdits({
     emit("before-change", before);
     emit("update:graph", after);
   },
+  onMove: (after) => emit("update:graph", after),
   onSelect: select,
 });
 
@@ -428,6 +429,14 @@ function paste(clipboard: GraphClipboard, shift: Point) {
   edits.paste(clipboard, shift);
 }
 
+function moveSelected(dx: number, dy: number, record: boolean) {
+  if (props.readonly) {
+    return;
+  }
+  closeMenu();
+  edits.moveSelected(dx, dy, record);
+}
+
 defineExpose({
   zoomIn: onZoomIn,
   zoomOut: onZoomOut,
@@ -438,6 +447,7 @@ defineExpose({
   copy: copy,
   paste: paste,
   pointerPosition: pointerPosition,
+  moveSelected: moveSelected,
   cancel: cancel,
 });
 </script>

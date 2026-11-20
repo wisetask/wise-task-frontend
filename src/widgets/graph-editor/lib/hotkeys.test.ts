@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  comboText,
   DEFAULT_HOTKEYS,
   findHotkey,
   hotkeyText,
   keyName,
+  MOVE_FAR_STEP,
+  MOVE_STEP,
+  moveFromAction,
   toolAction,
   toolFromAction,
   withHotkey,
@@ -108,5 +112,27 @@ describe("editor hotkeys", () => {
     expect(toolAction("pan")).toBe("tool-pan");
     expect(toolFromAction("tool-edge")).toBe("edge");
     expect(toolFromAction("undo")).toBeNull();
+  });
+
+  it("moves the selection with arrows and further with Shift", () => {
+    expect(find("ArrowUp", false, false)).toBe("move-up");
+    expect(find("ArrowLeft", false, false)).toBe("move-left");
+    expect(find("ArrowRight", false, true)).toBe("move-right-far");
+    expect(find("ArrowDown", true, false)).toBeNull();
+    expect(moveFromAction("move-up")).toEqual({ x: 0, y: -MOVE_STEP });
+    expect(moveFromAction("move-right")).toEqual({ x: MOVE_STEP, y: 0 });
+    expect(moveFromAction("move-left-far")).toEqual({ x: -MOVE_FAR_STEP, y: 0 });
+    expect(moveFromAction("move-down-far")).toEqual({ x: 0, y: MOVE_FAR_STEP });
+    expect(moveFromAction("undo")).toBeNull();
+  });
+
+  it("opens the help with a question mark", () => {
+    expect(find("Slash", false, true)).toBe("help");
+    expect(find("Slash", false, false)).toBeNull();
+    expect(hotkeyText("help", DEFAULT_HOTKEYS)).toBe("?");
+    expect(hotkeyText("move-left-far", DEFAULT_HOTKEYS)).toBe("Shift+←");
+    expect(comboText({ action: "help", code: "Slash", ctrl: true, shift: true })).toBe(
+      "Ctrl+Shift+/",
+    );
   });
 });

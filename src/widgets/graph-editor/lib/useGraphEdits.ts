@@ -1,6 +1,7 @@
 import {
   addEdge,
   addVertex,
+  moveVertices,
   removeEdge,
   removeVertex,
   updateEdge,
@@ -17,6 +18,7 @@ import {
   paintSelected,
   removeSelected,
   selectAll,
+  selectedIds,
   type GraphSelection,
 } from "./selection";
 
@@ -24,6 +26,7 @@ interface GraphEditsOptions {
   getGraph: () => Graph;
   getSelection: () => GraphSelection | null;
   onChange: (before: Graph, after: Graph) => void;
+  onMove: (after: Graph) => void;
   onSelect: (selection: GraphSelection | null) => void;
 }
 
@@ -94,6 +97,19 @@ export function useGraphEdits(options: GraphEditsOptions) {
     options.onSelect(result.selection);
   }
 
+  function moveSelected(dx: number, dy: number, record: boolean) {
+    const vertexIds = selectedIds(options.getSelection()).vertexIds;
+    if (vertexIds.length === 0) {
+      return;
+    }
+    const newGraph = moveVertices(options.getGraph(), vertexIds, dx, dy);
+    if (record) {
+      apply(newGraph);
+    } else {
+      options.onMove(newGraph);
+    }
+  }
+
   function selectEverything() {
     options.onSelect(selectAll(options.getGraph()));
   }
@@ -118,6 +134,7 @@ export function useGraphEdits(options: GraphEditsOptions) {
     deleteEdge: deleteEdge,
     deleteSelected: deleteSelected,
     paste: paste,
+    moveSelected: moveSelected,
     arrange: arrange,
     selectEverything: selectEverything,
     paint: paint,

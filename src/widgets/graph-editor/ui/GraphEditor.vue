@@ -4,10 +4,11 @@ import type { Graph } from "@/entities/graph";
 import { useGraphHistory } from "@/features/graph-history";
 import { pasteShift, type GraphClipboard } from "../lib/clipboard";
 import type { Point } from "../lib/geometry";
-import { toolFromAction, type HotkeyAction } from "../lib/hotkeys";
+import { moveFromAction, toolFromAction, type HotkeyAction } from "../lib/hotkeys";
 import { isSelectionValid, type EditorTool, type GraphSelection } from "../lib/selection";
 import { useEditorKeys } from "../lib/useEditorKeys";
 import GraphCanvas from "./GraphCanvas.vue";
+import GraphHotkeysHelp from "./GraphHotkeysHelp.vue";
 import GraphPropertiesPanel from "./GraphPropertiesPanel.vue";
 import GraphStatsBar from "./GraphStatsBar.vue";
 import GraphToolbar from "./GraphToolbar.vue";
@@ -26,6 +27,7 @@ const tool = defineModel<EditorTool>("tool", { default: "vertex" });
 
 const selection = ref<GraphSelection | null>(null);
 const panelOpen = ref(true);
+const helpOpen = ref(false);
 const clipboard = ref<GraphClipboard | null>(null);
 const hasPasted = ref(false);
 const pasteRepeat = ref(0);
@@ -79,7 +81,17 @@ function startOver(newGraph: Graph) {
   history.clear();
 }
 
-function runHotkey(action: HotkeyAction) {
+function runHotkey(action: HotkeyAction, isRepeat: boolean) {
+  if (helpOpen.value) {
+    if (action === "help" || action === "cancel") {
+      helpOpen.value = false;
+    }
+    return;
+  }
+  if (action === "help") {
+    helpOpen.value = true;
+    return;
+  }
   const newTool = toolFromAction(action);
   if (newTool !== null) {
     tool.value = newTool;
@@ -98,6 +110,11 @@ function runHotkey(action: HotkeyAction) {
     return;
   }
   if (canvas.value === null) {
+    return;
+  }
+  const move = moveFromAction(action);
+  if (move !== null) {
+    canvas.value.moveSelected(move.x, move.y, !isRepeat);
     return;
   }
   if (action === "zoom-in") {
@@ -150,6 +167,7 @@ watch(
   () => props.readonly,
   () => {
     selection.value = null;
+    helpOpen.value = false;
   },
 );
 
@@ -176,6 +194,7 @@ defineExpose({
       :can-redo="canRedo"
       @undo="undo"
       @redo="redo"
+      @help="helpOpen = true"
     />
     <div class="graph-editor__center">
       <div class="graph-editor__canvas">
@@ -213,11 +232,13 @@ defineExpose({
         @before-change="onBeforeChange"
       />
     </div>
+    <GraphHotkeysHelp v-if="helpOpen" @close="helpOpen = false" />
   </div>
 </template>
 
 <style scoped>
 .graph-editor {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   height: 100%;
