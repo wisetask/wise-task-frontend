@@ -15,6 +15,7 @@ const emit = defineEmits<{
   grab: [event: PointerEvent];
   pick: [event: MouseEvent];
   menu: [event: MouseEvent];
+  rename: [];
 }>();
 </script>
 
@@ -32,6 +33,7 @@ const emit = defineEmits<{
     @pointerdown="emit('grab', $event)"
     @click.stop="emit('pick', $event)"
     @contextmenu.prevent="emit('menu', $event)"
+    @dblclick.stop="emit('rename')"
   >
     <circle :cx="vertex.x" :cy="vertex.y" :r="VERTEX_RADIUS" />
     <text :x="vertex.x" :y="vertex.y + 5" text-anchor="middle" class="graph-vertex__label">

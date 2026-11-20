@@ -3,8 +3,9 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { findVertex, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
 import { copySelection, type GraphClipboard } from "../lib/clipboard";
 import { layoutOfAction, type MenuAction, type MenuTarget } from "../lib/contextMenu";
-import { buildEdgeShapes, VERTEX_RADIUS, type Point } from "../lib/geometry";
+import { buildEdgeShapes, vertexAt, VERTEX_RADIUS, type Point } from "../lib/geometry";
 import { toCanvasPoint, wantsToggle } from "../lib/pointer";
+import { canRename, currentLabel, newLabel, renamePoint, type RenameTarget } from "../lib/rename";
 import {
   isSelected,
   selectInArea,
@@ -16,12 +17,14 @@ import {
 import { useBoxSelect } from "../lib/useBoxSelect";
 import { useCanvasMenu } from "../lib/useCanvasMenu";
 import { useCanvasPan } from "../lib/useCanvasPan";
+import { useEdgeDrag } from "../lib/useEdgeDrag";
 import { useGraphEdits } from "../lib/useGraphEdits";
 import { useVertexDrag } from "../lib/useVertexDrag";
 import { useViewport } from "../lib/useViewport";
 import GraphArrowMarkers from "./GraphArrowMarkers.vue";
 import GraphContextMenu from "./GraphContextMenu.vue";
 import GraphEdgeItem from "./GraphEdgeItem.vue";
+import GraphRenameField from "./GraphRenameField.vue";
 import GraphVertexItem from "./GraphVertexItem.vue";
 import GraphZoomControls from "./GraphZoomControls.vue";
 
@@ -51,16 +54,18 @@ const svgElement = ref<SVGSVGElement | null>(null);
 const edgeSourceId = ref<string | null>(null);
 const cursorPoint = ref<Point | null>(null);
 const pointerPoint = ref<Point | null>(null);
+const renaming = ref<RenameTarget | null>(null);
 
 const {
   transform,
   percent,
   toWorld,
+  toScreen,
   limitToView,
   zoomIn,
   zoomOut,
   setPercent,
-  zoomByWheel,
+  applyWheel,
   pan: panViewport,
   reset: resetViewport,
   fitTo,
@@ -87,6 +92,27 @@ const { draggedVertexId, startDrag, consumeClick } = useVertexDrag({
 });
 
 const pan = useCanvasPan({ onPan: panViewport });
+
+const edgeDrag = useEdgeDrag({
+  toWorld: toWorld,
+  onStart: (sourceId) => {
+    closeMenu();
+    edgeSourceId.value = sourceId;
+  },
+  onMove: (point) => {
+    cursorPoint.value = point;
+  },
+  onDrop: (sourceId, point) => {
+    if (edgeSourceId.value !== sourceId) {
+      return;
+    }
+    cancelEdge();
+    const target = vertexAt(props.graph, point, VERTEX_RADIUS);
+    if (target !== null && target.id !== sourceId) {
+      edits.connect(sourceId, target.id);
+    }
+  },
+});
 
 const boxSelect = useBoxSelect({
   toWorld: toWorld,
@@ -122,8 +148,27 @@ const canvasClasses = computed(() => {
     {
       "graph-canvas__svg--space": props.panMode,
       "graph-canvas__svg--panning": pan.isPanning.value,
+      "graph-canvas__svg--linking": edgeDrag.isDragging.value,
     },
   ];
+});
+
+const renameField = computed(() => {
+  if (renaming.value === null) {
+    return null;
+  }
+  const point = renamePoint(props.graph, renaming.value, edgeShapes.value);
+  const label = currentLabel(props.graph, renaming.value);
+  if (point === null || label === null) {
+    return null;
+  }
+  const screen = toScreen(point);
+  return {
+    key: renaming.value.kind + renaming.value.id,
+    left: screen.x,
+    top: screen.y,
+    value: label,
+  };
 });
 
 const ignoresClicks = computed(() => props.readonly || props.tool === "pan");
@@ -154,9 +199,50 @@ function selectEverything() {
   edits.selectEverything();
 }
 
+function openRename(kind: "vertex" | "edge", id: string) {
+  closeMenu();
+  cancelEdge();
+  select({ kind: kind, id: id });
+  renaming.value = { kind: kind, id: id };
+}
+
+function startRename(kind: "vertex" | "edge", id: string) {
+  if (canRename(kind, props.tool, props.readonly)) {
+    openRename(kind, id);
+  }
+}
+
+function renameSelected() {
+  if (props.readonly || props.selection === null || props.selection.kind === "group") {
+    return;
+  }
+  openRename(props.selection.kind, props.selection.id);
+}
+
+function finishRename(text: string) {
+  const target = renaming.value;
+  renaming.value = null;
+  if (target === null) {
+    return;
+  }
+  const oldLabel = currentLabel(props.graph, target);
+  if (oldLabel === null) {
+    return;
+  }
+  const label = newLabel(target.kind, oldLabel, text);
+  if (label !== null) {
+    edits.rename(target, label);
+  }
+}
+
+function cancelRename() {
+  renaming.value = null;
+}
+
 function cancel() {
   closeMenu();
   cancelEdge();
+  cancelRename();
   if (!props.readonly) {
     select(null);
   }
@@ -193,7 +279,7 @@ function onWheel(event: WheelEvent) {
   }
   event.preventDefault();
   closeMenu();
-  zoomByWheel(event);
+  applyWheel(event);
 }
 
 function wantsPan(event: PointerEvent): boolean {
@@ -228,7 +314,7 @@ function onBackgroundMouseDown(event: MouseEvent) {
 }
 
 function onCanvasClick(event: MouseEvent) {
-  if (pan.consumeClick() || boxSelect.consumeClick() || consumeClick()) {
+  if (pan.consumeClick() || boxSelect.consumeClick() || edgeDrag.consumeClick() || consumeClick()) {
     return;
   }
   if (ignoresClicks.value) {
@@ -264,11 +350,15 @@ function onVertexPointerDown(event: PointerEvent, vertex: Vertex) {
     return;
   }
   closeMenu();
+  if (props.tool === "edge") {
+    edgeDrag.startEdge(event, vertex.id);
+    return;
+  }
   startDrag(event, vertex);
 }
 
 function onVertexClick(event: MouseEvent, vertexId: string) {
-  if (consumeClick() || pan.consumeClick() || ignoresClicks.value) {
+  if (consumeClick() || edgeDrag.consumeClick() || pan.consumeClick() || ignoresClicks.value) {
     return;
   }
   if (props.tool === "delete") {
@@ -392,6 +482,7 @@ watch(
   () => {
     cancelEdge();
     closeMenu();
+    cancelRename();
   },
 );
 
@@ -400,6 +491,7 @@ watch(
   (isReadonly) => {
     cancelEdge();
     closeMenu();
+    cancelRename();
     if (isReadonly) {
       fitView();
     }
@@ -448,6 +540,7 @@ defineExpose({
   paste: paste,
   pointerPosition: pointerPosition,
   moveSelected: moveSelected,
+  renameSelected: renameSelected,
   cancel: cancel,
 });
 </script>
@@ -485,6 +578,7 @@ defineExpose({
           :selected="isSelected(selection, 'edge', shape.id)"
           :directed="graph.isDirected"
           @pick="onEdgeClick($event, shape.id)"
+          @rename="startRename('edge', shape.id)"
           @menu="onItemMenu($event, 'edge', shape.id)"
         />
 
@@ -495,9 +589,10 @@ defineExpose({
           :selected="isSelected(selection, 'vertex', vertex.id)"
           :highlighted="vertex.id === edgeSourceId"
           :dragged="vertex.id === draggedVertexId"
-          :draggable="!readonly && tool !== 'delete' && tool !== 'pan'"
+          :draggable="!readonly && tool !== 'delete' && tool !== 'pan' && tool !== 'edge'"
           @grab="onVertexPointerDown($event, vertex)"
           @pick="onVertexClick($event, vertex.id)"
+          @rename="startRename('vertex', vertex.id)"
           @menu="onItemMenu($event, 'vertex', vertex.id)"
         />
 
@@ -511,6 +606,16 @@ defineExpose({
         />
       </g>
     </svg>
+
+    <GraphRenameField
+      v-if="renameField"
+      :key="renameField.key"
+      :left="renameField.left"
+      :top="renameField.top"
+      :value="renameField.value"
+      @commit="finishRename"
+      @cancel="cancelRename"
+    />
 
     <GraphZoomControls
       :percent="percent"
@@ -574,6 +679,11 @@ defineExpose({
 }
 
 .graph-canvas__svg--tool-vertex {
+  cursor: crosshair;
+}
+
+.graph-canvas__svg--linking,
+.graph-canvas__svg--linking :deep(.graph-vertex) {
   cursor: crosshair;
 }
 

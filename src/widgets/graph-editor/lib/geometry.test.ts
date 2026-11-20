@@ -8,6 +8,7 @@ import {
   loopPath,
   straightEdgePath,
   straightLabelPoint,
+  vertexAt,
 } from "./geometry";
 
 describe("graph canvas geometry", () => {
@@ -63,5 +64,15 @@ describe("graph canvas geometry", () => {
     expect(straightLabelPoint({ x: 0, y: 0 }, { x: 100, y: 40 })).toEqual({ x: 50, y: 20 });
     expect(curvedLabelPoint({ x: 0, y: 0 }, { x: 100, y: 0 }, 20)).toEqual({ x: 50, y: 10 });
     expect(loopLabelPoint({ x: 100, y: 100 }, 20)).toEqual({ x: 100, y: 40 });
+  });
+
+  it("finds the vertex under a point", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 100, 100);
+    graph = addVertex(graph, 110, 100);
+    graph = addVertex(graph, 300, 300);
+    expect(vertexAt(graph, { x: 300, y: 310 }, 18)).toBe(graph.vertices[2]);
+    expect(vertexAt(graph, { x: 105, y: 100 }, 18)).toBe(graph.vertices[1]);
+    expect(vertexAt(graph, { x: 200, y: 200 }, 18)).toBeNull();
   });
 });

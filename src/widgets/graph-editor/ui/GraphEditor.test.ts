@@ -290,4 +290,63 @@ describe("graph editor", () => {
     await wrapper.find(".graph-help__close").trigger("click");
     expect(wrapper.find(".graph-help").exists()).toBe(false);
   });
+
+  it("renames a vertex with a double click and undoes it", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await wrapper.findAll(".graph-vertex")[0].trigger("dblclick");
+    const field = wrapper.find(".graph-rename");
+    expect((field.element as HTMLInputElement).value).toBe("1");
+    await field.setValue("A");
+    await field.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+    expect(wrapper.find(".graph-rename").exists()).toBe(false);
+    expect(graphOf(wrapper).vertices[0].label).toBe("A");
+    await press("KeyZ", true);
+    expect(graphOf(wrapper).vertices[0].label).toBe("1");
+  });
+
+  it("renames the selected edge with F2 and keeps the label after Esc", async () => {
+    let graph = threeVertices();
+    graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
+    const wrapper = mountEditor(graph, "select");
+    await wrapper.find(".graph-edge").trigger("click");
+    await press("F2", false);
+    const field = wrapper.find(".graph-rename");
+    await field.setValue("путь");
+    await field.trigger("keydown", { key: "Escape" });
+    await flushPromises();
+    expect(wrapper.find(".graph-rename").exists()).toBe(false);
+    expect(graphOf(wrapper).edges[0].label).toBe("");
+  });
+
+  it("draws an edge by dragging from one vertex to another", async () => {
+    const wrapper = mountEditor(threeVertices(), "edge");
+    await wrapper.findAll(".graph-vertex")[0].trigger("pointerdown", {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+    });
+    window.dispatchEvent(new MouseEvent("pointermove", { clientX: 200, clientY: 100 }));
+    window.dispatchEvent(new MouseEvent("pointermove", { clientX: 302, clientY: 104 }));
+    window.dispatchEvent(new MouseEvent("pointerup", { clientX: 302, clientY: 104 }));
+    await flushPromises();
+    const graph = graphOf(wrapper);
+    expect(graph.edges.length).toBe(1);
+    expect(graph.edges[0].source).toBe(graph.vertices[0].id);
+    expect(graph.edges[0].target).toBe(graph.vertices[1].id);
+    expect(graph.vertices[0].x).toBe(100);
+  });
+
+  it("pans with two fingers and zooms with a pinch on a touchpad", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    const svg = wrapper.find("svg.graph-canvas__svg");
+    await svg.trigger("wheel", { deltaX: 5, deltaY: 10 });
+    expect(wrapper.find("svg.graph-canvas__svg > g").attributes("transform")).toBe(
+      "translate(-5 -10) scale(1)",
+    );
+    await svg.trigger("wheel", { deltaX: 0, deltaY: -10, ctrlKey: true });
+    expect(wrapper.find("svg.graph-canvas__svg > g").attributes("transform")).toContain(
+      "scale(1.10",
+    );
+  });
 });

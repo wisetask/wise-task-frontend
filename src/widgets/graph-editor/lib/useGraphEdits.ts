@@ -11,6 +11,7 @@ import {
 } from "@/entities/graph";
 import { pasteClipboard, type GraphClipboard } from "./clipboard";
 import type { MenuTarget } from "./contextMenu";
+import type { RenameTarget } from "./rename";
 import { layoutGraph, type LayoutKind } from "./layout";
 import type { Point } from "./geometry";
 import {
@@ -110,6 +111,15 @@ export function useGraphEdits(options: GraphEditsOptions) {
     }
   }
 
+  function rename(target: RenameTarget, label: string) {
+    const graph = options.getGraph();
+    if (target.kind === "vertex") {
+      apply(updateVertex(graph, target.id, { label: label }));
+    } else {
+      apply(updateEdge(graph, target.id, { label: label }));
+    }
+  }
+
   function selectEverything() {
     options.onSelect(selectAll(options.getGraph()));
   }
@@ -135,6 +145,7 @@ export function useGraphEdits(options: GraphEditsOptions) {
     deleteSelected: deleteSelected,
     paste: paste,
     moveSelected: moveSelected,
+    rename: rename,
     arrange: arrange,
     selectEverything: selectEverything,
     paint: paint,

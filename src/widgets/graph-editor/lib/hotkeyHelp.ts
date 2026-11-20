@@ -43,6 +43,7 @@ const HELP_SOURCES: HelpSectionSource[] = [
       { title: "Вставить", actions: ["paste"] },
       { title: "Дублировать", actions: ["duplicate"] },
       { title: "Удалить выделенное", actions: ["delete"] },
+      { title: "Переименовать вершину или ребро", actions: ["rename"] },
       {
         title: "Сдвинуть выделенные вершины",
         actions: ["move-up", "move-down", "move-left", "move-right"],
@@ -66,12 +67,14 @@ const HELP_SOURCES: HelpSectionSource[] = [
 ];
 
 export const MOUSE_HELP: HelpSection = {
-  title: "Мышь",
+  title: "Мышь и тачпад",
   rows: [
     { title: "Добавить к выделению или убрать из него", keys: ["Ctrl+клик", "Shift+клик"] },
     { title: "Выделить рамкой (инструмент «Выбор»)", keys: ["Тянуть по пустому месту"] },
-    { title: "Двигать холст", keys: ["Пробел+тянуть", "Средняя кнопка"] },
-    { title: "Масштаб", keys: ["Колёсико"] },
+    { title: "Провести ребро (инструмент «Ребро»)", keys: ["Тянуть от вершины к вершине"] },
+    { title: "Переименовать", keys: ["Двойной клик"] },
+    { title: "Двигать холст", keys: ["Пробел+тянуть", "Средняя кнопка", "Два пальца"] },
+    { title: "Масштаб", keys: ["Колёсико", "Щипок"] },
     { title: "Меню", keys: ["Правая кнопка"] },
   ],
 };

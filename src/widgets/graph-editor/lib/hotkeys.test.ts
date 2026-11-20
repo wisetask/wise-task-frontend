@@ -130,6 +130,7 @@ describe("editor hotkeys", () => {
     expect(find("Slash", false, true)).toBe("help");
     expect(find("Slash", false, false)).toBeNull();
     expect(hotkeyText("help", DEFAULT_HOTKEYS)).toBe("?");
+    expect(find("F2", false, false)).toBe("rename");
     expect(hotkeyText("move-left-far", DEFAULT_HOTKEYS)).toBe("Shift+←");
     expect(comboText({ action: "help", code: "Slash", ctrl: true, shift: true })).toBe(
       "Ctrl+Shift+/",

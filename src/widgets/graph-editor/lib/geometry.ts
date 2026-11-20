@@ -1,4 +1,4 @@
-import { findVertex, hasEdge, type Graph, type GraphColor } from "@/entities/graph";
+import { findVertex, hasEdge, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
 import { edgeText } from "./labels";
 
 export const VERTEX_RADIUS = 18;
@@ -155,4 +155,14 @@ export function buildEdgeShapes(graph: Graph, radius: number): EdgeShape[] {
     }
   }
   return shapes;
+}
+
+export function vertexAt(graph: Graph, point: Point, radius: number): Vertex | null {
+  let found: Vertex | null = null;
+  for (const vertex of graph.vertices) {
+    if (distance(vertex, point) <= radius) {
+      found = vertex;
+    }
+  }
+  return found;
 }
