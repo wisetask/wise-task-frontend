@@ -2,7 +2,8 @@
 import { ref, watch } from "vue";
 import type { Graph } from "@/entities/graph";
 import { useGraphHistory } from "@/features/graph-history";
-import type { GraphClipboard } from "../lib/clipboard";
+import { pasteShift, type GraphClipboard } from "../lib/clipboard";
+import type { Point } from "../lib/geometry";
 import { toolFromAction, type HotkeyAction } from "../lib/hotkeys";
 import { isSelectionValid, type EditorTool, type GraphSelection } from "../lib/selection";
 import { useEditorKeys } from "../lib/useEditorKeys";
@@ -26,9 +27,16 @@ const tool = defineModel<EditorTool>("tool", { default: "vertex" });
 const selection = ref<GraphSelection | null>(null);
 const panelOpen = ref(true);
 const clipboard = ref<GraphClipboard | null>(null);
-const pasteCount = ref(0);
+const hasPasted = ref(false);
+const pasteRepeat = ref(0);
+const lastPastePointer = ref<Point | null>(null);
 
-const PASTE_SHIFT = 40;
+function samePlace(first: Point | null, second: Point | null): boolean {
+  if (first === null || second === null) {
+    return first === second;
+  }
+  return first.x === second.x && first.y === second.y;
+}
 const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 const history = useGraphHistory(graph);
 const canUndo = history.canUndo;
@@ -108,19 +116,26 @@ function runHotkey(action: HotkeyAction) {
       return;
     }
     clipboard.value = copied;
-    pasteCount.value = 0;
+    hasPasted.value = false;
     if (action === "cut") {
       canvas.value.deleteSelected();
     }
   } else if (action === "paste") {
     if (clipboard.value !== null) {
-      pasteCount.value = pasteCount.value + 1;
-      canvas.value.paste(clipboard.value, PASTE_SHIFT * pasteCount.value);
+      const pointer = canvas.value.pointerPosition();
+      if (hasPasted.value && samePlace(pointer, lastPastePointer.value)) {
+        pasteRepeat.value = pasteRepeat.value + 1;
+      } else {
+        pasteRepeat.value = 0;
+      }
+      hasPasted.value = true;
+      lastPastePointer.value = pointer;
+      canvas.value.paste(clipboard.value, pasteShift(clipboard.value, pointer, pasteRepeat.value));
     }
   } else if (action === "duplicate") {
     const copied = canvas.value.copy();
     if (copied !== null) {
-      canvas.value.paste(copied, PASTE_SHIFT);
+      canvas.value.paste(copied, pasteShift(copied, null, 0));
     }
   } else if (action === "delete") {
     canvas.value.deleteSelected();

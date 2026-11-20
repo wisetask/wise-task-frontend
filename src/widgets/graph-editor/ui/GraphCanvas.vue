@@ -50,6 +50,7 @@ const emit = defineEmits<{
 const svgElement = ref<SVGSVGElement | null>(null);
 const edgeSourceId = ref<string | null>(null);
 const cursorPoint = ref<Point | null>(null);
+const pointerPoint = ref<Point | null>(null);
 
 const {
   transform,
@@ -242,13 +243,15 @@ function onCanvasClick(event: MouseEvent) {
 }
 
 function onCanvasPointerMove(event: PointerEvent) {
+  pointerPoint.value = toWorld(event);
   if (edgeSourceId.value !== null) {
-    cursorPoint.value = toWorld(event);
+    cursorPoint.value = pointerPoint.value;
   }
 }
 
 function onCanvasPointerLeave() {
   cursorPoint.value = null;
+  pointerPoint.value = null;
 }
 
 function onVertexPointerDown(event: PointerEvent, vertex: Vertex) {
@@ -412,13 +415,17 @@ function copy(): GraphClipboard | null {
   return copySelection(props.graph, props.selection);
 }
 
-function paste(clipboard: GraphClipboard, offset: number) {
+function pointerPosition(): Point | null {
+  return pointerPoint.value;
+}
+
+function paste(clipboard: GraphClipboard, shift: Point) {
   if (props.readonly) {
     return;
   }
   cancelEdge();
   closeMenu();
-  edits.paste(clipboard, offset);
+  edits.paste(clipboard, shift);
 }
 
 defineExpose({
@@ -430,6 +437,7 @@ defineExpose({
   deleteSelected: deleteSelected,
   copy: copy,
   paste: paste,
+  pointerPosition: pointerPosition,
   cancel: cancel,
 });
 </script>

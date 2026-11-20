@@ -228,4 +228,23 @@ describe("graph editor", () => {
     expect(graphOf(wrapper).vertices.length).toBe(4);
     expect(graphOf(wrapper).vertices[3].x).toBe(340);
   });
+
+  it("pastes under the mouse when it is over the canvas", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await clickVertex(wrapper, 0, false);
+    await press("KeyC", true);
+    const svg = wrapper.find("svg.graph-canvas__svg");
+    await svg.trigger("pointermove", { clientX: 500, clientY: 400 });
+    await press("KeyV", true);
+    await press("KeyV", true);
+    const vertices = graphOf(wrapper).vertices;
+    expect(vertices[3].x).toBe(500);
+    expect(vertices[3].y).toBe(400);
+    expect(vertices[4].x).toBe(540);
+    expect(vertices[4].y).toBe(440);
+    await svg.trigger("pointermove", { clientX: 50, clientY: 60 });
+    await press("KeyV", true);
+    expect(graphOf(wrapper).vertices[5].x).toBe(50);
+    expect(graphOf(wrapper).vertices[5].y).toBe(60);
+  });
 });
