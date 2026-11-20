@@ -88,8 +88,8 @@ export function useGraphEdits(options: GraphEditsOptions) {
     apply(layoutGraph(options.getGraph(), kind, rootId));
   }
 
-  function paste(clipboard: GraphClipboard, offset: number) {
-    const result = pasteClipboard(options.getGraph(), clipboard, offset);
+  function paste(clipboard: GraphClipboard, shift: Point) {
+    const result = pasteClipboard(options.getGraph(), clipboard, shift);
     apply(result.graph);
     options.onSelect(result.selection);
   }

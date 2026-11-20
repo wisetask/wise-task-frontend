@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addEdge, addVertex, createEmptyGraph, updateVertex, type Graph } from "@/entities/graph";
-import { copySelection, pasteClipboard } from "./clipboard";
+import { clipboardCenter, copySelection, pasteClipboard, pasteShift } from "./clipboard";
 import { makeSelection } from "./selection";
 
 function pathWithLoop(): Graph {
@@ -46,7 +46,7 @@ describe("editor clipboard", () => {
     if (clipboard === null) {
       throw new Error("nothing copied");
     }
-    const result = pasteClipboard(graph, clipboard, 40);
+    const result = pasteClipboard(graph, clipboard, { x: 40, y: 40 });
     expect(result.graph.vertices.length).toBe(5);
     expect(result.graph.edges.length).toBe(5);
     const pasted = result.graph.vertices.slice(3);
@@ -70,7 +70,7 @@ describe("editor clipboard", () => {
     if (clipboard === null) {
       throw new Error("nothing copied");
     }
-    const result = pasteClipboard(graph, clipboard, 40);
+    const result = pasteClipboard(graph, clipboard, { x: 40, y: 40 });
     const pastedIds = result.graph.vertices.slice(3).map((vertex) => vertex.id);
     for (const edge of result.graph.edges.slice(3)) {
       expect(pastedIds.includes(edge.source)).toBe(true);
@@ -88,7 +88,7 @@ describe("editor clipboard", () => {
     if (clipboard === null) {
       throw new Error("nothing copied");
     }
-    const result = pasteClipboard(graph, clipboard, 40);
+    const result = pasteClipboard(graph, clipboard, { x: 40, y: 40 });
     expect(result.graph.vertices.slice(3).map((vertex) => vertex.label)).toEqual(["4", "A"]);
   });
 
@@ -98,8 +98,44 @@ describe("editor clipboard", () => {
     if (clipboard === null) {
       throw new Error("nothing copied");
     }
-    pasteClipboard(graph, clipboard, 40);
+    pasteClipboard(graph, clipboard, { x: 40, y: 40 });
     expect(graph.vertices.length).toBe(3);
     expect(graph.edges.length).toBe(3);
+  });
+
+  it("finds the middle of what was copied", () => {
+    const graph = pathWithLoop();
+    const clipboard = copySelection(
+      graph,
+      makeSelection([graph.vertices[0].id, graph.vertices[2].id], []),
+    );
+    expect(clipboard === null ? null : clipboardCenter(clipboard)).toEqual({ x: 100, y: 0 });
+  });
+
+  it("puts the copy under the mouse, or next to the original when the mouse is away", () => {
+    const graph = pathWithLoop();
+    const clipboard = copySelection(
+      graph,
+      makeSelection([graph.vertices[0].id, graph.vertices[1].id], []),
+    );
+    if (clipboard === null) {
+      throw new Error("nothing copied");
+    }
+    expect(pasteShift(clipboard, { x: 500, y: 300 }, 0)).toEqual({ x: 450, y: 300 });
+    expect(pasteShift(clipboard, { x: 500, y: 300 }, 2)).toEqual({ x: 530, y: 380 });
+    expect(pasteShift(clipboard, null, 0)).toEqual({ x: 40, y: 40 });
+    expect(pasteShift(clipboard, null, 1)).toEqual({ x: 80, y: 80 });
+  });
+
+  it("keeps whole coordinates after pasting at a zoomed mouse position", () => {
+    const graph = pathWithLoop();
+    const clipboard = copySelection(graph, makeSelection([graph.vertices[0].id], []));
+    if (clipboard === null) {
+      throw new Error("nothing copied");
+    }
+    const result = pasteClipboard(graph, clipboard, { x: 10.4, y: 20.6 });
+    const pasted = result.graph.vertices[3];
+    expect(pasted.x).toBe(10);
+    expect(pasted.y).toBe(21);
   });
 });

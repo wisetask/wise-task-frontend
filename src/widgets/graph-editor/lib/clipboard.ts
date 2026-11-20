@@ -1,6 +1,8 @@
 import { nextVertexLabel, type Edge, type Graph, type Vertex } from "@/entities/graph";
 import { createId } from "@/shared/lib/createId";
+import type { Point } from "./geometry";
 import { makeSelection, selectedIds, type GraphSelection } from "./selection";
+import { pointsArea } from "./viewport";
 
 export interface GraphClipboard {
   vertices: Vertex[];
@@ -13,6 +15,8 @@ export interface PasteResult {
 }
 
 const NUMBER_LABEL = /^\d+$/;
+
+export const PASTE_STEP = 40;
 
 export function copySelection(
   graph: Graph,
@@ -37,11 +41,28 @@ export function copySelection(
   return { vertices: vertices, edges: edges };
 }
 
-export function pasteClipboard(
-  graph: Graph,
+export function clipboardCenter(clipboard: GraphClipboard): Point {
+  const area = pointsArea(clipboard.vertices);
+  if (area === null) {
+    return { x: 0, y: 0 };
+  }
+  return { x: (area.left + area.right) / 2, y: (area.top + area.bottom) / 2 };
+}
+
+export function pasteShift(
   clipboard: GraphClipboard,
-  offset: number,
-): PasteResult {
+  pointer: Point | null,
+  repeat: number,
+): Point {
+  const extra = PASTE_STEP * repeat;
+  if (pointer === null) {
+    return { x: PASTE_STEP + extra, y: PASTE_STEP + extra };
+  }
+  const center = clipboardCenter(clipboard);
+  return { x: pointer.x - center.x + extra, y: pointer.y - center.y + extra };
+}
+
+export function pasteClipboard(graph: Graph, clipboard: GraphClipboard, shift: Point): PasteResult {
   const newIds = new Map<string, string>();
   let nextNumber = Number(nextVertexLabel(graph));
   const vertices: Vertex[] = [];
@@ -56,8 +77,8 @@ export function pasteClipboard(
     vertices.push({
       id: id,
       label: label,
-      x: vertex.x + offset,
-      y: vertex.y + offset,
+      x: Math.round(vertex.x + shift.x),
+      y: Math.round(vertex.y + shift.y),
       color: vertex.color,
       weight: vertex.weight,
     });
