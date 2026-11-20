@@ -8,9 +8,17 @@ import {
   setDirected,
   type Graph,
 } from "@/entities/graph";
+import { downloadBlob } from "@/shared/lib/downloadBlob";
 import { downloadText } from "@/shared/lib/downloadText";
+import { svgToPng } from "@/shared/lib/svgToPng";
 import { UiButton, UiCheckbox } from "@/shared/ui";
-import { GraphEditor, toolHint, type EditorTool } from "@/widgets/graph-editor";
+import {
+  GraphEditor,
+  graphToSvg,
+  imageFileName,
+  toolHint,
+  type EditorTool,
+} from "@/widgets/graph-editor";
 import { browserStorage, loadGraph, saveGraph } from "../lib/savedGraph";
 
 const storage = browserStorage();
@@ -43,6 +51,24 @@ function showNotice(text: string, isError: boolean) {
 function downloadGraph() {
   downloadText(graphFileName(graph.value), graphToFileText(graph.value), "application/json");
   showNotice("Граф сохранён в файл " + graphFileName(graph.value) + ".", false);
+}
+
+function downloadSvg() {
+  const fileName = imageFileName(graph.value, "svg");
+  downloadText(fileName, graphToSvg(graph.value).svg, "image/svg+xml");
+  showNotice("Картинка сохранена в файл " + fileName + ".", false);
+}
+
+async function downloadPng() {
+  const fileName = imageFileName(graph.value, "png");
+  const image = graphToSvg(graph.value);
+  try {
+    const blob = await svgToPng(image.svg, image.width, image.height, 2);
+    downloadBlob(fileName, blob);
+    showNotice("Картинка сохранена в файл " + fileName + ".", false);
+  } catch {
+    showNotice("Не получилось сохранить картинку. Попробуйте SVG.", true);
+  }
 }
 
 function chooseFile() {
@@ -110,6 +136,8 @@ function clearGraph() {
         <UiButton size="sm" @click="chooseFile">Открыть</UiButton>
       </template>
       <UiButton size="sm" @click="downloadGraph">Скачать</UiButton>
+      <UiButton size="sm" title="Скачать картинку графа в PNG" @click="downloadPng">PNG</UiButton>
+      <UiButton size="sm" title="Скачать картинку графа в SVG" @click="downloadSvg">SVG</UiButton>
       <input
         ref="fileInput"
         class="sandbox__file"

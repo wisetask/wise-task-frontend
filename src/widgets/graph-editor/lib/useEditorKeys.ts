@@ -4,7 +4,7 @@ import { isTyping } from "./pointer";
 
 interface EditorKeysOptions {
   isEnabled: () => boolean;
-  onAction: (action: HotkeyAction) => void;
+  onAction: (action: HotkeyAction, isRepeat: boolean) => void;
 }
 
 export function useEditorKeys(options: EditorKeysOptions) {
@@ -24,7 +24,7 @@ export function useEditorKeys(options: EditorKeysOptions) {
       return;
     }
     event.preventDefault();
-    options.onAction(action);
+    options.onAction(action, event.repeat);
   }
 
   function onKeyUp(event: KeyboardEvent) {

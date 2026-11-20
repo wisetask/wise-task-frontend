@@ -40,6 +40,13 @@ async function press(code: string, ctrl: boolean) {
   await flushPromises();
 }
 
+async function pressWith(code: string, shift: boolean, repeat: boolean) {
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { code: code, shiftKey: shift, repeat: repeat }),
+  );
+  await flushPromises();
+}
+
 async function clickVertex(wrapper: EditorWrapper, index: number, ctrl: boolean) {
   await wrapper.findAll(".graph-vertex")[index].trigger("click", { ctrlKey: ctrl });
   await flushPromises();
@@ -246,5 +253,41 @@ describe("graph editor", () => {
     await press("KeyV", true);
     expect(graphOf(wrapper).vertices[5].x).toBe(50);
     expect(graphOf(wrapper).vertices[5].y).toBe(60);
+  });
+
+  it("moves the selected vertices with arrows and undoes a held key in one step", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await clickVertex(wrapper, 0, false);
+    await clickVertex(wrapper, 1, true);
+    await pressWith("ArrowRight", false, false);
+    await pressWith("ArrowDown", true, false);
+    let vertices = graphOf(wrapper).vertices;
+    expect(vertices[0].x).toBe(101);
+    expect(vertices[1].x).toBe(301);
+    expect(vertices[1].y).toBe(110);
+    expect(vertices[2].x).toBe(200);
+    await pressWith("ArrowLeft", false, false);
+    await pressWith("ArrowLeft", false, true);
+    await pressWith("ArrowLeft", false, true);
+    expect(graphOf(wrapper).vertices[0].x).toBe(98);
+    await press("KeyZ", true);
+    vertices = graphOf(wrapper).vertices;
+    expect(vertices[0].x).toBe(101);
+    expect(vertices[0].y).toBe(110);
+  });
+
+  it("opens the hotkey help and ignores other keys while it is open", async () => {
+    const wrapper = mountEditor(threeVertices(), "select");
+    await pressWith("Slash", true, false);
+    expect(wrapper.find(".graph-help").exists()).toBe(true);
+    expect(wrapper.find(".graph-help").text()).toContain("Сдвинуть выделенные вершины");
+    await press("Digit2", false);
+    expect(wrapper.props("tool")).toBe("select");
+    await press("Escape", false);
+    expect(wrapper.find(".graph-help").exists()).toBe(false);
+    await wrapper.find(".graph-toolbar__button--bottom").trigger("click");
+    expect(wrapper.find(".graph-help").exists()).toBe(true);
+    await wrapper.find(".graph-help__close").trigger("click");
+    expect(wrapper.find(".graph-help").exists()).toBe(false);
   });
 });

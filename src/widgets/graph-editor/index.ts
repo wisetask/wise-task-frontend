@@ -3,6 +3,8 @@ export { default as GraphEditor } from "./ui/GraphEditor.vue";
 export { default as GraphPropertiesPanel } from "./ui/GraphPropertiesPanel.vue";
 export { default as GraphStatsBar } from "./ui/GraphStatsBar.vue";
 export { default as GraphToolbar } from "./ui/GraphToolbar.vue";
+export { graphToSvg, imageFileName } from "./lib/graphImage";
+export type { GraphImage } from "./lib/graphImage";
 export { DEFAULT_HOTKEYS } from "./lib/hotkeys";
 export type { Hotkey, HotkeyAction } from "./lib/hotkeys";
 export { isSelectionValid } from "./lib/selection";

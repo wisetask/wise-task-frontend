@@ -1,3 +1,4 @@
+import type { Point } from "./geometry";
 import type { EditorTool } from "./selection";
 
 export type HotkeyAction =
@@ -18,7 +19,16 @@ export type HotkeyAction =
   | "paste"
   | "duplicate"
   | "delete"
-  | "cancel";
+  | "cancel"
+  | "move-up"
+  | "move-down"
+  | "move-left"
+  | "move-right"
+  | "move-up-far"
+  | "move-down-far"
+  | "move-left-far"
+  | "move-right-far"
+  | "help";
 
 export interface Hotkey {
   action: HotkeyAction;
@@ -77,6 +87,15 @@ export const DEFAULT_HOTKEYS: Hotkey[] = [
   key("delete", "Delete"),
   key("delete", "Backspace"),
   key("cancel", "Escape"),
+  key("move-up", "ArrowUp"),
+  key("move-down", "ArrowDown"),
+  key("move-left", "ArrowLeft"),
+  key("move-right", "ArrowRight"),
+  shiftKey("move-up-far", "ArrowUp"),
+  shiftKey("move-down-far", "ArrowDown"),
+  shiftKey("move-left-far", "ArrowLeft"),
+  shiftKey("move-right-far", "ArrowRight"),
+  shiftKey("help", "Slash"),
 ];
 
 export function findHotkey(press: KeyPress, hotkeys: Hotkey[]): HotkeyAction | null {
@@ -100,6 +119,11 @@ const KEY_NAMES: Record<string, string> = {
   Escape: "Esc",
   Delete: "Delete",
   Backspace: "Backspace",
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+  Slash: "/",
 };
 
 export function keyName(code: string): string {
@@ -118,17 +142,24 @@ export function keyName(code: string): string {
   return code;
 }
 
+export function comboText(hotkey: Hotkey): string {
+  if (hotkey.code === "Slash" && hotkey.shift && !hotkey.ctrl) {
+    return "?";
+  }
+  let text = keyName(hotkey.code);
+  if (hotkey.shift) {
+    text = "Shift+" + text;
+  }
+  if (hotkey.ctrl) {
+    text = "Ctrl+" + text;
+  }
+  return text;
+}
+
 export function hotkeyText(action: HotkeyAction, hotkeys: Hotkey[]): string {
   for (const hotkey of hotkeys) {
     if (hotkey.action === action) {
-      let text = keyName(hotkey.code);
-      if (hotkey.shift) {
-        text = "Shift+" + text;
-      }
-      if (hotkey.ctrl) {
-        text = "Ctrl+" + text;
-      }
-      return text;
+      return comboText(hotkey);
     }
   }
   return "";
@@ -160,6 +191,35 @@ export function toolFromAction(action: HotkeyAction): EditorTool | null {
   for (const tool of TOOLS) {
     if (TOOL_ACTIONS[tool] === action) {
       return tool;
+    }
+  }
+  return null;
+}
+
+export const MOVE_STEP = 1;
+export const MOVE_FAR_STEP = 10;
+
+interface MoveAction {
+  action: HotkeyAction;
+  dx: number;
+  dy: number;
+}
+
+const MOVES: MoveAction[] = [
+  { action: "move-up", dx: 0, dy: -MOVE_STEP },
+  { action: "move-down", dx: 0, dy: MOVE_STEP },
+  { action: "move-left", dx: -MOVE_STEP, dy: 0 },
+  { action: "move-right", dx: MOVE_STEP, dy: 0 },
+  { action: "move-up-far", dx: 0, dy: -MOVE_FAR_STEP },
+  { action: "move-down-far", dx: 0, dy: MOVE_FAR_STEP },
+  { action: "move-left-far", dx: -MOVE_FAR_STEP, dy: 0 },
+  { action: "move-right-far", dx: MOVE_FAR_STEP, dy: 0 },
+];
+
+export function moveFromAction(action: HotkeyAction): Point | null {
+  for (const move of MOVES) {
+    if (move.action === action) {
+      return { x: move.dx, y: move.dy };
     }
   }
   return null;
