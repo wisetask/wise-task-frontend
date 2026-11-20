@@ -154,6 +154,8 @@ function runHotkey(action: HotkeyAction, isRepeat: boolean) {
     if (copied !== null) {
       canvas.value.paste(copied, pasteShift(copied, null, 0));
     }
+  } else if (action === "rename") {
+    canvas.value.renameSelected();
   } else if (action === "delete") {
     canvas.value.deleteSelected();
   } else if (action === "cancel") {

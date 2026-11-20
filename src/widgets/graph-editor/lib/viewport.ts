@@ -31,6 +31,13 @@ export function screenToWorld(viewport: Viewport, point: Point): Point {
   };
 }
 
+export function worldToScreen(viewport: Viewport, point: Point): Point {
+  return {
+    x: point.x * viewport.scale + viewport.x,
+    y: point.y * viewport.scale + viewport.y,
+  };
+}
+
 export function zoomAt(viewport: Viewport, center: Point, factor: number): Viewport {
   const scale = clamp(viewport.scale * factor, MIN_SCALE, MAX_SCALE);
   const world = screenToWorld(viewport, center);
@@ -72,6 +79,37 @@ export function wheelFactor(deltaY: number, deltaMode: number): number {
     pixels = deltaY * LINE_HEIGHT;
   }
   return Math.exp(-pixels * 0.0015);
+}
+
+export const TOUCHPAD_DELTA = 40;
+export const PINCH_SPEED = 0.01;
+
+export interface WheelInput {
+  deltaX: number;
+  deltaY: number;
+  deltaMode: number;
+  ctrlKey: boolean;
+}
+
+export type WheelGesture =
+  { kind: "zoom"; factor: number } | { kind: "pan"; dx: number; dy: number };
+
+export function isTouchpadWheel(input: WheelInput): boolean {
+  if (input.deltaMode !== 0) {
+    return false;
+  }
+  return input.deltaX !== 0 || Math.abs(input.deltaY) < TOUCHPAD_DELTA;
+}
+
+export function wheelGesture(input: WheelInput): WheelGesture {
+  const touchpad = isTouchpadWheel(input);
+  if (input.ctrlKey && touchpad) {
+    return { kind: "zoom", factor: Math.exp(-input.deltaY * PINCH_SPEED) };
+  }
+  if (touchpad) {
+    return { kind: "pan", dx: -input.deltaX, dy: -input.deltaY };
+  }
+  return { kind: "zoom", factor: wheelFactor(input.deltaY, input.deltaMode) };
 }
 
 export function viewportTransform(viewport: Viewport): string {

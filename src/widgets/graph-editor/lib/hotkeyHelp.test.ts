@@ -32,11 +32,12 @@ describe("hotkey help", () => {
       "Инструменты",
       "Правка",
       "Вид",
-      "Мышь",
+      "Мышь и тачпад",
     ]);
     expect(rowKeys(sections, "Рука — двигать холст")).toEqual(["H"]);
     expect(rowKeys(sections, "Сдвинуть выделенные вершины")).toEqual(["↑", "↓", "←", "→"]);
     expect(rowKeys(sections, "Горячие клавиши")).toEqual(["?"]);
+    expect(rowKeys(sections, "Переименовать вершину или ребро")).toEqual(["F2"]);
   });
 
   it("follows a custom table and drops rows without keys", () => {

@@ -28,6 +28,7 @@ export type HotkeyAction =
   | "move-down-far"
   | "move-left-far"
   | "move-right-far"
+  | "rename"
   | "help";
 
 export interface Hotkey {
@@ -95,6 +96,7 @@ export const DEFAULT_HOTKEYS: Hotkey[] = [
   shiftKey("move-down-far", "ArrowDown"),
   shiftKey("move-left-far", "ArrowLeft"),
   shiftKey("move-right-far", "ArrowRight"),
+  key("rename", "F2"),
   shiftKey("help", "Slash"),
 ];
 

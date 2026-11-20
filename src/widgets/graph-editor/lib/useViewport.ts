@@ -11,7 +11,8 @@ import {
   screenToWorld,
   viewportTransform,
   visibleArea,
-  wheelFactor,
+  wheelGesture,
+  worldToScreen,
   ZOOM_STEP,
   zoomAt,
   zoomPercent,
@@ -58,10 +59,18 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
     viewport.value = zoomToPercent(viewport.value, center(), percent);
   }
 
-  function zoomByWheel(event: WheelEvent) {
+  function toScreen(point: Point): Point {
+    return worldToScreen(viewport.value, point);
+  }
+
+  function applyWheel(event: WheelEvent) {
+    const gesture = wheelGesture(event);
+    if (gesture.kind === "pan") {
+      viewport.value = panBy(viewport.value, gesture.dx, gesture.dy);
+      return;
+    }
     const point = toCanvasPoint(svgElement.value, event);
-    const factor = wheelFactor(event.deltaY, event.deltaMode);
-    viewport.value = zoomAt(viewport.value, point, factor);
+    viewport.value = zoomAt(viewport.value, point, gesture.factor);
   }
 
   function pan(dx: number, dy: number) {
@@ -86,11 +95,12 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
     transform: transform,
     percent: percent,
     toWorld: toWorld,
+    toScreen: toScreen,
     limitToView: limitToView,
     zoomIn: zoomIn,
     zoomOut: zoomOut,
     setPercent: setPercent,
-    zoomByWheel: zoomByWheel,
+    applyWheel: applyWheel,
     pan: pan,
     reset: reset,
     fitTo: fitTo,

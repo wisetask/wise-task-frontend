@@ -3,6 +3,7 @@ import {
   areaBetween,
   createViewport,
   fitArea,
+  isTouchpadWheel,
   keepInArea,
   MAX_SCALE,
   MIN_SCALE,
@@ -12,6 +13,8 @@ import {
   screenToWorld,
   visibleArea,
   wheelFactor,
+  wheelGesture,
+  worldToScreen,
   zoomAt,
   zoomPercent,
   zoomToPercent,
@@ -123,5 +126,37 @@ describe("canvas viewport", () => {
     expect(areaBetween({ x: 10, y: 20 }, { x: 50, y: 80 })).toEqual(expected);
     expect(areaBetween({ x: 50, y: 80 }, { x: 10, y: 20 })).toEqual(expected);
     expect(areaBetween({ x: 50, y: 20 }, { x: 10, y: 80 })).toEqual(expected);
+  });
+
+  it("turns world points back into screen points", () => {
+    const viewport = { x: 30, y: -20, scale: 2 };
+    expect(worldToScreen(viewport, { x: 10, y: 15 })).toEqual({ x: 50, y: 10 });
+    const back = screenToWorld(viewport, worldToScreen(viewport, { x: 7, y: 9 }));
+    expect(back).toEqual({ x: 7, y: 9 });
+  });
+
+  it("tells a touchpad from a mouse wheel", () => {
+    const wheel = { deltaX: 0, deltaY: 100, deltaMode: 0, ctrlKey: false };
+    const lines = { deltaX: 0, deltaY: 3, deltaMode: 1, ctrlKey: false };
+    const fingers = { deltaX: 0, deltaY: 6, deltaMode: 0, ctrlKey: false };
+    const sideways = { deltaX: 120, deltaY: 0, deltaMode: 0, ctrlKey: false };
+    expect(isTouchpadWheel(wheel)).toBe(false);
+    expect(isTouchpadWheel(lines)).toBe(false);
+    expect(isTouchpadWheel(fingers)).toBe(true);
+    expect(isTouchpadWheel(sideways)).toBe(true);
+  });
+
+  it("pans with two fingers and zooms with a pinch or the wheel", () => {
+    const fingers = wheelGesture({ deltaX: 4, deltaY: -6, deltaMode: 0, ctrlKey: false });
+    expect(fingers).toEqual({ kind: "pan", dx: -4, dy: 6 });
+    const pinch = wheelGesture({ deltaX: 0, deltaY: -10, deltaMode: 0, ctrlKey: true });
+    expect(pinch.kind).toBe("zoom");
+    if (pinch.kind === "zoom") {
+      expect(pinch.factor).toBe(Math.exp(0.1));
+    }
+    const wheel = wheelGesture({ deltaX: 0, deltaY: 100, deltaMode: 0, ctrlKey: false });
+    expect(wheel).toEqual({ kind: "zoom", factor: wheelFactor(100, 0) });
+    const ctrlWheel = wheelGesture({ deltaX: 0, deltaY: 100, deltaMode: 0, ctrlKey: true });
+    expect(ctrlWheel).toEqual({ kind: "zoom", factor: wheelFactor(100, 0) });
   });
 });
