@@ -36,3 +36,4 @@ export {
   graphStatistics,
   vertexDegree,
 } from "./model/statistics";
+export { graphNeighbors, splitIntoComponents } from "./model/connectivity";
