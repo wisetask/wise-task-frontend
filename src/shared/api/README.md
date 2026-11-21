@@ -9,7 +9,7 @@ import { useQuery } from "@vue/apollo-composable";
 import { graphql } from "@/shared/api";
 ```
 
-`graphql` появляется в `@/shared/api` после первого запуска `npm run codegen`: он создаёт папку `generated/`, а в `index.ts` нужно добавить строку `export { graphql } from "./generated";`.
+Типы запросов лежат в `generated/`. После того как добавили или изменили запрос, перезапустите `npm run codegen`.
 `graphql` -- функция для написания запросов.
 `useQuery` -- функция для выполнения запроса.
 Пример:
