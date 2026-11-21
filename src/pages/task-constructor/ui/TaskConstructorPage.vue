@@ -16,13 +16,30 @@ import {
   graphForRules,
   type ConstructorTab,
 } from "../model/taskDraft";
+import { browserStorage, clearDraft, loadDraft, saveDraft } from "../lib/savedDraft";
 
-const draft = ref(createTaskDraft());
+const storage = browserStorage();
+const savedDraft = loadDraft(storage);
+const draft = ref(savedDraft === null ? createTaskDraft() : savedDraft);
+const isSaving = ref(storage !== null);
+const isClearing = ref(false);
 const activeTab = ref<ConstructorTab>("main");
 const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
 
 const tabs = computed(() => draftTabs(draft.value));
 const problems = computed(() => draftProblems(draft.value));
+
+const pageTitle = computed(() => {
+  const name = draft.value.name.trim();
+  return name === "" ? "Новая задача" : name;
+});
+
+const saveStatus = computed(() => {
+  if (isSaving.value) {
+    return "Черновик сохраняется в браузере";
+  }
+  return "Браузер не даёт сохранить черновик";
+});
 
 watch(tabs, (newTabs) => {
   let isShown = false;
@@ -51,6 +68,21 @@ watch(
   },
 );
 
+watch(
+  draft,
+  (value) => {
+    isSaving.value = saveDraft(storage, value);
+  },
+  { deep: true },
+);
+
+function startOver() {
+  clearDraft(storage);
+  draft.value = createTaskDraft();
+  activeTab.value = "main";
+  isClearing.value = false;
+}
+
 function onDirectionChange(event: Event) {
   const select = event.target as HTMLSelectElement;
   draft.value.rules = withDirection(draft.value.rules, select.value as GraphDirection);
@@ -60,7 +92,10 @@ function onDirectionChange(event: Event) {
 <template>
   <main class="constructor">
     <header class="constructor__header">
-      <h1 class="constructor__title">Новая задача</h1>
+      <div class="constructor__heading">
+        <h1 class="constructor__title">{{ pageTitle }}</h1>
+        <span class="constructor__status">{{ saveStatus }}</span>
+      </div>
       <nav class="constructor__tabs" role="tablist" aria-label="Части задачи">
         <button
           v-for="tab in tabs"
@@ -77,15 +112,28 @@ function onDirectionChange(event: Event) {
           {{ tab.title }}
         </button>
       </nav>
-      <UiButton
-        variant="primary"
-        size="sm"
-        class="constructor__save"
-        disabled
-        title="Сохранение появится, когда подключим вход"
+      <div
+        v-if="isClearing"
+        class="constructor__actions"
+        role="group"
+        aria-label="Очистка черновика"
       >
-        Создать задачу
-      </UiButton>
+        <span class="constructor__confirm">Удалить всё и начать заново?</span>
+        <UiButton variant="danger" size="sm" @click="startOver">Да, очистить</UiButton>
+        <UiButton size="sm" @click="isClearing = false">Отмена</UiButton>
+      </div>
+      <div v-else class="constructor__actions">
+        <UiButton size="sm" @click="isClearing = true">Очистить черновик</UiButton>
+        <UiButton
+          variant="primary"
+          size="sm"
+          class="constructor__save"
+          disabled
+          title="Сохранение появится, когда подключим вход"
+        >
+          Создать задачу
+        </UiButton>
+      </div>
     </header>
 
     <section
@@ -195,9 +243,37 @@ function onDirectionChange(event: Event) {
   border-bottom: 1px solid var(--color-border);
 }
 
+.constructor__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-2) 0;
+}
+
 .constructor__title {
   margin: 0;
+  overflow: hidden;
   font-size: var(--font-size-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.constructor__status {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.constructor__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.constructor__confirm {
+  font-size: var(--font-size-md);
   white-space: nowrap;
 }
 
@@ -231,10 +307,6 @@ function onDirectionChange(event: Event) {
 .constructor__tab:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
-}
-
-.constructor__save {
-  margin-left: auto;
 }
 
 .constructor__panel {
