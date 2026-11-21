@@ -25,20 +25,7 @@ export function graphNeighbors(graph: Graph): Map<string, string[]> {
 // BFS из countComponents (T13), адаптированный для сбора компонент.
 // Направление рёбер не учитываем.
 export function splitIntoComponents(graph: Graph): Graph[] {
-  // Соседи каждой вершины
-  const neighbors = new Map<string, string[]>();
-  for (const vertex of graph.vertices) {
-    neighbors.set(vertex.id, []);
-  }
-  for (const edge of graph.edges) {
-    const sourceList = neighbors.get(edge.source);
-    const targetList = neighbors.get(edge.target);
-    if (sourceList === undefined || targetList === undefined) {
-      continue;
-    }
-    sourceList.push(edge.target);
-    targetList.push(edge.source);
-  }
+  const neighbors = graphNeighbors(graph);
 
   const visited = new Set<string>();
   const components: Graph[] = [];

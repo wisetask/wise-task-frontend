@@ -1,5 +1,5 @@
 import type { Graph, Vertex } from "@/entities/graph";
-import { splitIntoComponents } from "./components";
+import { splitIntoComponents } from "@/entities/graph";
 import { layoutComponent } from "./layouts";
 
 export function normalizeGraph(graph: Graph): Graph {
