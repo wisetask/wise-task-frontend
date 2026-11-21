@@ -1,9 +1,13 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import TaskConstructorPage from "./TaskConstructorPage.vue";
 
 enableAutoUnmount(afterEach);
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
 
 function tabTitles(wrapper: ReturnType<typeof mount>): string[] {
   const titles: string[] = [];
@@ -40,5 +44,28 @@ describe("task constructor page", () => {
     await wrapper.find("input").setValue("Дерево");
     expect(wrapper.find(".constructor__problems").text()).not.toContain("название");
     expect(wrapper.find(".constructor__save").attributes("disabled")).toBeDefined();
+  });
+
+  it("keeps the draft after the page is opened again", async () => {
+    const first = mount(TaskConstructorPage, { attachTo: document.body });
+    await first.find("input").setValue("Дерево");
+    first.unmount();
+    const second = mount(TaskConstructorPage, { attachTo: document.body });
+    expect((second.find("input").element as HTMLInputElement).value).toBe("Дерево");
+    expect(second.find(".constructor__title").text()).toBe("Дерево");
+  });
+
+  it("clears the draft only after confirmation", async () => {
+    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    await wrapper.find("input").setValue("Дерево");
+    const clearButton = wrapper.findAll(".constructor__actions button")[0];
+    await clearButton.trigger("click");
+    expect(wrapper.find(".constructor__confirm").exists()).toBe(true);
+    await wrapper.findAll(".constructor__actions button")[1].trigger("click");
+    expect((wrapper.find("input").element as HTMLInputElement).value).toBe("Дерево");
+    await wrapper.findAll(".constructor__actions button")[0].trigger("click");
+    await wrapper.findAll(".constructor__actions button")[0].trigger("click");
+    expect((wrapper.find("input").element as HTMLInputElement).value).toBe("");
+    expect(wrapper.find(".constructor__title").text()).toBe("Новая задача");
   });
 });
