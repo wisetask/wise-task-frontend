@@ -11,7 +11,7 @@ import {
 import { downloadBlob } from "@/shared/lib/downloadBlob";
 import { downloadText } from "@/shared/lib/downloadText";
 import { svgToPng } from "@/shared/lib/svgToPng";
-import { UiButton, UiCheckbox } from "@/shared/ui";
+import { UiButton, UiCheckbox, UiMenuButton, type UiMenuItem } from "@/shared/ui";
 import {
   GraphEditor,
   graphToSvg,
@@ -30,6 +30,12 @@ const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const notice = ref("");
 const noticeIsError = ref(false);
+
+const DOWNLOAD_ITEMS: UiMenuItem[] = [
+  { id: "json", label: "Граф (.json)", hint: "Файл, который потом можно открыть здесь" },
+  { id: "png", label: "Картинка PNG", hint: "Для отчёта или презентации" },
+  { id: "svg", label: "Картинка SVG", hint: "Векторная, не теряет чёткость" },
+];
 
 const hint = computed(() => toolHint(tool.value, viewOnly.value));
 
@@ -68,6 +74,16 @@ async function downloadPng() {
     showNotice("Картинка сохранена в файл " + fileName + ".", false);
   } catch {
     showNotice("Не получилось сохранить картинку. Попробуйте SVG.", true);
+  }
+}
+
+function onDownload(id: string) {
+  if (id === "json") {
+    downloadGraph();
+  } else if (id === "png") {
+    downloadPng();
+  } else if (id === "svg") {
+    downloadSvg();
   }
 }
 
@@ -133,11 +149,16 @@ function clearGraph() {
           @update:model-value="onDirectedChange"
         />
         <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
-        <UiButton size="sm" @click="chooseFile">Открыть</UiButton>
+        <UiButton
+          size="sm"
+          class="sandbox__nowrap"
+          title="Открыть граф из файла .json, скачанного здесь раньше"
+          @click="chooseFile"
+        >
+          Открыть граф (.json)
+        </UiButton>
       </template>
-      <UiButton size="sm" @click="downloadGraph">Скачать</UiButton>
-      <UiButton size="sm" title="Скачать картинку графа в PNG" @click="downloadPng">PNG</UiButton>
-      <UiButton size="sm" title="Скачать картинку графа в SVG" @click="downloadSvg">SVG</UiButton>
+      <UiMenuButton label="Скачать" size="sm" :items="DOWNLOAD_ITEMS" @select="onDownload" />
       <input
         ref="fileInput"
         class="sandbox__file"

@@ -25,7 +25,7 @@ export function visibleSections(role: string | null): HeaderSection[] {
   sections.push({ title: "Мои решения", to: "/solutions" });
 
   if (role === "AUTHOR" || role === "ADMIN") {
-    sections.push({ title: "Конструктор", to: "/constructor" });
+    sections.push({ title: "Конструктор задач", to: "/constructor" });
   }
 
   if (role === "ADMIN") {
