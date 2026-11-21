@@ -8,7 +8,14 @@ export { graphToSvg, imageFileName } from "./lib/graphImage";
 export type { GraphImage } from "./lib/graphImage";
 export { DEFAULT_HOTKEYS } from "./lib/hotkeys";
 export type { Hotkey, HotkeyAction } from "./lib/hotkeys";
-export { allowEverything, directedByRules, rulesSummary } from "./lib/rules";
+export {
+  allowEverything,
+  DIRECTION_TITLES,
+  DIRECTIONS,
+  directedByRules,
+  rulesSummary,
+  withDirection,
+} from "./lib/rules";
 export type { EditorRules, GraphDirection } from "./lib/rules";
 export { isSelectionValid } from "./lib/selection";
 export type { EditorTool, GraphSelection } from "./lib/selection";

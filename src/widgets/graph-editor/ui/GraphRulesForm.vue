@@ -11,6 +11,15 @@ import {
   type RuleFlag,
 } from "../lib/rules";
 
+withDefaults(
+  defineProps<{
+    showDirection?: boolean;
+  }>(),
+  {
+    showDirection: true,
+  },
+);
+
 const rules = defineModel<EditorRules>({ required: true });
 
 function setFlag(flag: RuleFlag, value: boolean) {
@@ -33,7 +42,7 @@ function onDirectionChange(event: Event) {
       :label="option.title"
       @update:model-value="setFlag(option.flag, $event)"
     />
-    <label class="graph-rules__direction">
+    <label v-if="showDirection" class="graph-rules__direction">
       Вид графа
       <select class="graph-rules__select" :value="rules.direction" @change="onDirectionChange">
         <option v-for="direction in DIRECTIONS" :key="direction" :value="direction">
