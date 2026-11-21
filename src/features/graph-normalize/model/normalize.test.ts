@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { countComponents, type Graph } from "@/entities/graph";
-import { splitIntoComponents } from "./components";
+import { splitIntoComponents } from "@/entities/graph";
 import {
   detectType,
   isBipartite,
