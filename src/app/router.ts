@@ -29,11 +29,15 @@ export const router = createRouter({
   routes: [
     // Вход и регистрация: снаружи AppLayout, шапки на них нет.
     // Имя "sign-in" нужно app/main.ts: туда ведёт перенаправление при 401.
-    // заглушка пока не сделаю Т08
     {
       path: "/sign-in",
       name: "sign-in",
-      component: () => import("@/pages/not-found"),
+      component: () => import("@/pages/sign-in"),
+    },
+    {
+      path: "/sign-up",
+      name: "sign-up",
+      component: () => import("@/pages/sign-up"),
     },
     // Страницы с шапкой
     {

@@ -1,25 +1,20 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { RouterView } from "vue-router";
-import { AppHeader, type HeaderUser } from "@/widgets/app-header";
+import { RouterView, useRouter } from "vue-router";
+import { useUserStore } from "@/entities/user";
+import { AppHeader } from "@/widgets/app-header";
 
-// ВРЕМЕННО, пока не влит T08 (вход): тестовый пользователь.
-// Поменяйте role на USER, AUTHOR или null, чтобы проверить разные шапки.
-const user = ref<HeaderUser | null>({
-  firstName: "Иван",
-  lastName: "Петров",
-  email: "test@test.ru",
-  role: "ADMIN",
-});
+const userStore = useUserStore();
+const router = useRouter();
 
-function onSignOut() {
-  user.value = null;
+async function onSignOut() {
+  await userStore.logOut();
+  router.push({ name: "sign-in" });
 }
 </script>
 
 <template>
   <div class="app-layout">
-    <AppHeader :user="user" @sign-out="onSignOut" />
+    <AppHeader :user="userStore.user" @sign-out="onSignOut" />
     <!-- Не <main>: на самих страницах он уже есть -->
     <div class="app-layout__page">
       <RouterView />
