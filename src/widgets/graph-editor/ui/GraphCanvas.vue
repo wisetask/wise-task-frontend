@@ -16,6 +16,7 @@ import {
 } from "../lib/selection";
 import { useBoxSelect } from "../lib/useBoxSelect";
 import { useCanvasMenu } from "../lib/useCanvasMenu";
+import { allowEverything, type EditorRules } from "../lib/rules";
 import { useCanvasPan } from "../lib/useCanvasPan";
 import { useEdgeDrag } from "../lib/useEdgeDrag";
 import { useGraphEdits } from "../lib/useGraphEdits";
@@ -35,12 +36,14 @@ const props = withDefaults(
     selection?: GraphSelection | null;
     readonly?: boolean;
     panMode?: boolean;
+    rules?: EditorRules;
   }>(),
   {
     tool: "select",
     selection: null,
     readonly: false,
     panMode: false,
+    rules: () => allowEverything(),
   },
 );
 
@@ -131,6 +134,7 @@ const {
 } = useCanvasMenu(
   () => props.graph,
   () => props.selection,
+  () => props.rules,
 );
 
 const edgeShapes = computed(() => buildEdgeShapes(props.graph, VERTEX_RADIUS));
@@ -171,6 +175,13 @@ const renameField = computed(() => {
   };
 });
 
+const verticesDraggable = computed(() => {
+  if (props.readonly || !props.rules.canMove) {
+    return false;
+  }
+  return props.tool === "select" || props.tool === "vertex";
+});
+
 const ignoresClicks = computed(() => props.readonly || props.tool === "pan");
 
 function select(selection: GraphSelection | null) {
@@ -207,13 +218,16 @@ function openRename(kind: "vertex" | "edge", id: string) {
 }
 
 function startRename(kind: "vertex" | "edge", id: string) {
-  if (canRename(kind, props.tool, props.readonly)) {
+  if (props.rules.canEditLabels && canRename(kind, props.tool, props.readonly)) {
     openRename(kind, id);
   }
 }
 
 function renameSelected() {
-  if (props.readonly || props.selection === null || props.selection.kind === "group") {
+  if (props.readonly || !props.rules.canEditLabels) {
+    return;
+  }
+  if (props.selection === null || props.selection.kind === "group") {
     return;
   }
   openRename(props.selection.kind, props.selection.id);
@@ -354,7 +368,9 @@ function onVertexPointerDown(event: PointerEvent, vertex: Vertex) {
     edgeDrag.startEdge(event, vertex.id);
     return;
   }
-  startDrag(event, vertex);
+  if (props.rules.canMove) {
+    startDrag(event, vertex);
+  }
 }
 
 function onVertexClick(event: MouseEvent, vertexId: string) {
@@ -589,7 +605,7 @@ defineExpose({
           :selected="isSelected(selection, 'vertex', vertex.id)"
           :highlighted="vertex.id === edgeSourceId"
           :dragged="vertex.id === draggedVertexId"
-          :draggable="!readonly && tool !== 'delete' && tool !== 'pan' && tool !== 'edge'"
+          :draggable="verticesDraggable"
           @grab="onVertexPointerDown($event, vertex)"
           @pick="onVertexClick($event, vertex.id)"
           @rename="startRename('vertex', vertex.id)"

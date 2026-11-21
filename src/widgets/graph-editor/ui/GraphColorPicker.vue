@@ -2,9 +2,15 @@
 import type { GraphColor } from "@/entities/graph";
 import GraphColorSwatches from "./GraphColorSwatches.vue";
 
-defineProps<{
-  modelValue: GraphColor | null;
-}>();
+withDefaults(
+  defineProps<{
+    modelValue: GraphColor | null;
+    disabled?: boolean;
+  }>(),
+  {
+    disabled: false,
+  },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [color: GraphColor];
@@ -16,6 +22,7 @@ const emit = defineEmits<{
     <span class="graph-color-picker__label">Цвет</span>
     <GraphColorSwatches
       :model-value="modelValue"
+      :disabled="disabled"
       @update:model-value="emit('update:modelValue', $event)"
     />
   </div>

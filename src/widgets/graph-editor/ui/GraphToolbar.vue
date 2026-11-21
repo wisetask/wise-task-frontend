@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { DEFAULT_HOTKEYS, toolAction, withHotkey } from "../lib/hotkeys";
+import { allowEverything, canUseTool, type EditorRules } from "../lib/rules";
 import type { EditorTool } from "../lib/selection";
 
 interface ToolButton {
@@ -7,10 +9,16 @@ interface ToolButton {
   title: string;
 }
 
-const props = defineProps<{
-  canUndo: boolean;
-  canRedo: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    canUndo: boolean;
+    canRedo: boolean;
+    rules?: EditorRules;
+  }>(),
+  {
+    rules: () => allowEverything(),
+  },
+);
 
 const emit = defineEmits<{
   undo: [];
@@ -20,13 +28,23 @@ const emit = defineEmits<{
 
 const tool = defineModel<EditorTool>("tool", { required: true });
 
-const tools: ToolButton[] = [
+const ALL_TOOLS: ToolButton[] = [
   { id: "select", title: "Выбор и перемещение" },
   { id: "pan", title: "Рука — двигать холст" },
   { id: "vertex", title: "Вершина" },
   { id: "edge", title: "Ребро" },
   { id: "delete", title: "Удаление" },
 ];
+
+const tools = computed(() => {
+  const allowed: ToolButton[] = [];
+  for (const button of ALL_TOOLS) {
+    if (canUseTool(button.id, props.rules)) {
+      allowed.push(button);
+    }
+  }
+  return allowed;
+});
 
 const undoTitle = withHotkey("Отменить", "undo", DEFAULT_HOTKEYS);
 const redoTitle = withHotkey("Повторить", "redo", DEFAULT_HOTKEYS);

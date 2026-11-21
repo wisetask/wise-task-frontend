@@ -6,9 +6,11 @@ withDefaults(
   defineProps<{
     modelValue: GraphColor | null;
     small?: boolean;
+    disabled?: boolean;
   }>(),
   {
     small: false,
+    disabled: false,
   },
 );
 
@@ -35,6 +37,7 @@ const emit = defineEmits<{
       ]"
       :aria-pressed="modelValue === option.value"
       :title="option.title"
+      :disabled="disabled"
       @click="emit('update:modelValue', option.value)"
     >
       <span class="graph-swatches__name">{{ option.title }}</span>
@@ -76,6 +79,11 @@ const emit = defineEmits<{
 .graph-swatches__option--blue {
   border-color: var(--graph-blue-stroke);
   background: var(--graph-blue-fill);
+}
+
+.graph-swatches__option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .graph-swatches__option--active {
