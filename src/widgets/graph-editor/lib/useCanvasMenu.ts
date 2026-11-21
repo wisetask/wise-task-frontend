@@ -10,6 +10,7 @@ import {
   type MenuTarget,
 } from "./contextMenu";
 import type { Point } from "./geometry";
+import type { EditorRules } from "./rules";
 import type { GraphSelection } from "./selection";
 
 interface OpenMenu {
@@ -19,17 +20,23 @@ interface OpenMenu {
   submenuOnLeft: boolean;
 }
 
-export function useCanvasMenu(getGraph: () => Graph, getSelection: () => GraphSelection | null) {
+export function useCanvasMenu(
+  getGraph: () => Graph,
+  getSelection: () => GraphSelection | null,
+  getRules: () => EditorRules,
+) {
   const menu = ref<OpenMenu | null>(null);
 
   const items = computed(() => {
     if (menu.value === null) {
       return [];
     }
-    return buildMenuItems(getGraph(), menu.value.target);
+    return buildMenuItems(getGraph(), menu.value.target, getRules());
   });
 
-  const showColors = computed(() => menu.value !== null && hasColorChoice(menu.value.target));
+  const showColors = computed(() => {
+    return menu.value !== null && hasColorChoice(menu.value.target, getRules());
+  });
 
   const currentColor = computed(() => {
     if (menu.value === null) {
@@ -39,8 +46,12 @@ export function useCanvasMenu(getGraph: () => Graph, getSelection: () => GraphSe
   });
 
   function open(target: MenuTarget, point: Point, boxWidth: number, boxHeight: number) {
-    const count = buildMenuItems(getGraph(), target).length;
-    const height = menuHeight(count, hasColorChoice(target));
+    const count = buildMenuItems(getGraph(), target, getRules()).length;
+    const withColors = hasColorChoice(target, getRules());
+    if (count === 0 && !withColors) {
+      return;
+    }
+    const height = menuHeight(count, withColors);
     const position = menuPosition(point.x, point.y, height, boxWidth, boxHeight);
     menu.value = {
       target: target,

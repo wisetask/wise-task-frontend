@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
 import { addEdge, addVertex, createEmptyGraph, type Graph } from "@/entities/graph";
+import type { EditorRules } from "../lib/rules";
 import type { EditorTool } from "../lib/selection";
 import GraphEditor from "./GraphEditor.vue";
 
@@ -22,6 +23,31 @@ function mountEditor(graph: Graph, tool: EditorTool, readonly = false) {
 }
 
 type EditorWrapper = ReturnType<typeof mountEditor>;
+
+function taskRules(): EditorRules {
+  return {
+    canAdd: false,
+    canDelete: false,
+    canEditLabels: false,
+    canColor: true,
+    canMove: true,
+    direction: "undirected",
+  };
+}
+
+function mountWithRules(graph: Graph, tool: EditorTool, rules: EditorRules) {
+  const wrapper = mount(GraphEditor, {
+    attachTo: document.body,
+    props: {
+      graph: graph,
+      tool: tool,
+      rules: rules,
+      "onUpdate:graph": (value: Graph) => wrapper.setProps({ graph: value }),
+      "onUpdate:tool": (value: EditorTool) => wrapper.setProps({ tool: value }),
+    },
+  });
+  return wrapper;
+}
 
 function graphOf(wrapper: EditorWrapper): Graph {
   return wrapper.props("graph");
@@ -348,5 +374,54 @@ describe("graph editor", () => {
     expect(wrapper.find("svg.graph-canvas__svg > g").attributes("transform")).toContain(
       "scale(1.10",
     );
+  });
+
+  it("hides forbidden tools and ignores their keys", async () => {
+    const wrapper = mountWithRules(threeVertices(), "select", taskRules());
+    await wrapper.setProps({ tool: "vertex" });
+    await flushPromises();
+    expect(wrapper.props("tool")).toBe("select");
+    expect(wrapper.findAll(".graph-toolbar__button[aria-pressed]").length).toBe(2);
+    await press("Digit2", false);
+    expect(wrapper.props("tool")).toBe("select");
+    await clickVertex(wrapper, 0, false);
+    await press("Delete", false);
+    expect(graphOf(wrapper).vertices.length).toBe(3);
+    await press("KeyD", true);
+    expect(graphOf(wrapper).vertices.length).toBe(3);
+    await pressWith("ArrowRight", false, false);
+    expect(graphOf(wrapper).vertices[0].x).toBe(101);
+  });
+
+  it("locks the properties the task does not let you change", async () => {
+    const wrapper = mountWithRules(threeVertices(), "select", taskRules());
+    expect(wrapper.find(".graph-properties").text()).toContain("В этой задаче нельзя");
+    await clickVertex(wrapper, 0, false);
+    const inputs = wrapper.findAll(".graph-properties input");
+    expect(inputs.length).toBe(2);
+    expect(inputs[0].attributes("disabled")).toBeDefined();
+    expect(inputs[1].attributes("disabled")).toBeDefined();
+    expect(wrapper.find(".graph-properties .ui-button--danger").exists()).toBe(false);
+    expect(wrapper.find(".graph-swatches__option").attributes("disabled")).toBeUndefined();
+    await wrapper.findAll(".graph-vertex")[0].trigger("dblclick");
+    expect(wrapper.find(".graph-rename").exists()).toBe(false);
+  });
+
+  it("does not drag vertices when moving is forbidden", async () => {
+    const rules = taskRules();
+    rules.canMove = false;
+    const wrapper = mountWithRules(threeVertices(), "select", rules);
+    await wrapper.findAll(".graph-vertex")[0].trigger("pointerdown", {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+    });
+    window.dispatchEvent(new MouseEvent("pointermove", { clientX: 150, clientY: 160 }));
+    window.dispatchEvent(new MouseEvent("pointerup", { clientX: 150, clientY: 160 }));
+    await flushPromises();
+    expect(graphOf(wrapper).vertices[0].x).toBe(100);
+    await clickVertex(wrapper, 0, false);
+    await pressWith("ArrowRight", false, false);
+    expect(graphOf(wrapper).vertices[0].x).toBe(100);
   });
 });
