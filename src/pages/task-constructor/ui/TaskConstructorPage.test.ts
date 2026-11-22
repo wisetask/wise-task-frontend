@@ -20,9 +20,9 @@ function tabTitles(wrapper: ReturnType<typeof mount>): string[] {
 describe("task constructor page", () => {
   it("adds the graph tab when the graph is given", async () => {
     const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
-    expect(tabTitles(wrapper)).toEqual(["Основное", "Условия"]);
+    expect(tabTitles(wrapper)).toEqual(["Основное", "Условия", "Как увидит студент"]);
     await wrapper.find('input[type="checkbox"]').setValue(true);
-    expect(tabTitles(wrapper)).toEqual(["Основное", "Граф", "Условия"]);
+    expect(tabTitles(wrapper)).toEqual(["Основное", "Граф", "Условия", "Как увидит студент"]);
     await wrapper.findAll('[role="tab"]')[1].trigger("click");
     expect(wrapper.find(".graph-editor").exists()).toBe(true);
     expect(wrapper.find(".graph-rules").text()).not.toContain("Вид графа");
@@ -38,12 +38,35 @@ describe("task constructor page", () => {
     expect(summary).not.toContain("неориентированный");
   });
 
-  it("lists what is missing and keeps saving off for now", async () => {
+  it("shows what is ready and keeps saving off for now", async () => {
     const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
-    expect(wrapper.find(".constructor__problems").text()).toContain("Введите название задачи");
+    const readiness = () => wrapper.find(".constructor__readiness").text();
+    expect(readiness()).toContain("Введите название задачи");
+    expect(readiness()).toContain("Осталось заполнить: 3.");
     await wrapper.find("input").setValue("Дерево");
-    expect(wrapper.find(".constructor__problems").text()).not.toContain("название");
+    expect(readiness()).not.toContain("Введите название задачи");
+    expect(readiness()).toContain("Осталось заполнить: 2.");
     expect(wrapper.find(".constructor__save").attributes("disabled")).toBeDefined();
+  });
+
+  it("lets the author try the task with the student rules", async () => {
+    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    await wrapper.find('input[type="checkbox"]').setValue(true);
+    await wrapper.findAll('[role="tab"]')[1].trigger("click");
+    const ruleBoxes = wrapper.findAll('.graph-rules input[type="checkbox"]');
+    await ruleBoxes[0].setValue(false);
+    await ruleBoxes[1].setValue(false);
+    await wrapper.findAll('[role="tab"]')[3].trigger("click");
+    expect(wrapper.find(".constructor__trial-bar").exists()).toBe(true);
+    expect(wrapper.findAll(".graph-toolbar__button[aria-pressed]").length).toBe(2);
+    expect(wrapper.find(".constructor__task-hints").text()).toContain("нельзя добавлять");
+  });
+
+  it("lets the student pick the kind when the graph is drawn from scratch", async () => {
+    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    await wrapper.findAll('[role="tab"]')[2].trigger("click");
+    expect(wrapper.find(".constructor__task").text()).toContain("Граф студент рисует сам.");
+    expect(wrapper.find(".constructor__task").text()).toContain("Ориентированный граф");
   });
 
   it("keeps the draft after the page is opened again", async () => {
