@@ -95,6 +95,7 @@ describe("editor context menu", () => {
     const items = buildMenuItems(square, { kind: "canvas", x: 0, y: 0 });
     expect(actionsOf(items)).toEqual(["add-vertex", "layout", "fit-view", "reset-zoom"]);
     expect(actionsOf(items[1].submenu)).toEqual([
+      "layout-auto",
       "layout-circle",
       "layout-grid",
       "layout-levels",

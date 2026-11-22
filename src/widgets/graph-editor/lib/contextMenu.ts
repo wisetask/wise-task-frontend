@@ -15,6 +15,7 @@ export type MenuAction =
   | "layout"
   | "add-loop"
   | "delete"
+  | "layout-auto"
   | "layout-circle"
   | "layout-grid"
   | "layout-levels"
@@ -41,6 +42,7 @@ interface LayoutItem {
 }
 
 const LAYOUT_ITEMS: LayoutItem[] = [
+  { action: "layout-auto", kind: "auto", label: "Автоматически" },
   { action: "layout-circle", kind: "circle", label: "По кругу" },
   { action: "layout-grid", kind: "grid", label: "Сеткой" },
   { action: "layout-levels", kind: "levels", label: "По уровням" },
