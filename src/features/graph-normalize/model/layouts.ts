@@ -28,13 +28,17 @@ export function layoutCircle(graph: Graph): Graph {
 export function layoutChain(graph: Graph): Graph {
   const neighbors = graphNeighbors(graph);
   const start = graph.vertices.find((vertex) => neighbors.get(vertex.id)!.length <= 1);
-  if (!start) return layoutCircle(graph);
+  if (!start) {
+    return layoutCircle(graph);
+  }
   const positions = new Map<string, Position>();
   const queue = [start.id];
   positions.set(start.id, { x: 0, y: 0 });
   for (let head = 0; head < queue.length; head++) {
     for (const next of neighbors.get(queue[head]) ?? []) {
-      if (positions.has(next)) continue;
+      if (positions.has(next)) {
+        continue;
+      }
       positions.set(next, { x: positions.size * SPACING, y: 0 });
       queue.push(next);
     }
@@ -81,14 +85,21 @@ export function layoutStar(graph: Graph): Graph {
     const scale = radius > 0 ? Math.max(1, SPACING / radius) : 1;
     positions.set(vertex.id, { x: vertex.x * scale, y: vertex.y * scale });
   }
-  if (root !== undefined) positions.set(root, { x: 0, y: 0 });
+  if (root !== undefined) {
+    positions.set(root, { x: 0, y: 0 });
+  }
   return withPositions(graph, positions);
 }
 
-export function layoutTree(graph: Graph): Graph {
+export function layoutTree(graph: Graph, id: string | null = null): Graph {
   const neighbors = graphNeighbors(graph);
-  const root = rootId(graph, neighbors);
-  if (root === undefined) return withPositions(graph, new Map());
+  const root =
+    id !== null && graph.vertices.some((vertex) => vertex.id === id)
+      ? id
+      : rootId(graph, neighbors);
+  if (root === undefined) {
+    return withPositions(graph, new Map());
+  }
   const children = new Map<string, string[]>();
   const depths = new Map<string, number>([[root, 0]]);
   const queue = [root];
@@ -96,7 +107,9 @@ export function layoutTree(graph: Graph): Graph {
     const current = queue[head];
     const list: string[] = [];
     for (const next of neighbors.get(current) ?? []) {
-      if (depths.has(next)) continue;
+      if (depths.has(next)) {
+        continue;
+      }
       depths.set(next, depths.get(current)! + 1);
       list.push(next);
       queue.push(next);
@@ -128,7 +141,9 @@ export function layoutTree(graph: Graph): Graph {
 
 export function layoutBipartite(graph: Graph): Graph {
   const colors = bipartiteColors(graph);
-  if (!colors) return layoutCircle(graph);
+  if (!colors) {
+    return layoutCircle(graph);
+  }
   const rows = [0, 0];
   const positions = new Map<string, Position>();
   for (const vertex of graph.vertices) {

@@ -180,6 +180,29 @@ describe("graph editor", () => {
     expect(graphOf(wrapper).vertices).toEqual(before.vertices);
   });
 
+  it("lays out a chain automatically and restores it with one undo", async () => {
+    let graph = threeVertices();
+    const [first, second, third] = graph.vertices;
+    graph = addEdge(graph, first.id, second.id);
+    graph = addEdge(graph, second.id, third.id);
+    const wrapper = mountEditor(graph, "select");
+
+    await wrapper
+      .find("svg.graph-canvas__svg")
+      .trigger("contextmenu", { clientX: 10, clientY: 10 });
+    await flushPromises();
+    await wrapper.find(".graph-menu__group").trigger("mouseenter");
+    const auto = wrapper.findAll(".graph-menu__submenu .graph-menu__item")[0];
+    expect(auto.text()).toBe("Автоматически");
+    await auto.trigger("click");
+    await flushPromises();
+
+    const heights = graphOf(wrapper).vertices.map((vertex) => vertex.y);
+    expect(new Set(heights).size).toBe(1);
+    await press("KeyZ", true);
+    expect(graphOf(wrapper)).toEqual(graph);
+  });
+
   it("does not accept a fractional weight", async () => {
     const wrapper = mountEditor(threeVertices(), "select");
     await clickVertex(wrapper, 0, false);

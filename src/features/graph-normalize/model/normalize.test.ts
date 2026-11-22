@@ -10,7 +10,8 @@ import {
   isStar,
   isTree,
 } from "./graphType";
-import { normalizeGraph } from "./normalize";
+import { layoutTree } from "./layouts";
+import { arrangeComponents, normalizeGraph } from "./normalize";
 
 function graph(n: number, pairs: number[][], isDirected = false): Graph {
   return {
@@ -210,6 +211,36 @@ describe("graph types", () => {
   });
 });
 
+describe("manual layouts", () => {
+  it("places an explicitly chosen tree root above all other vertices", () => {
+    const { vertices } = layoutTree(tree, "6");
+    expect(vertices[6].y).toBe(0);
+    expect(vertices.slice(0, 6).every((vertex) => vertex.y > 0)).toBe(true);
+    expect(layoutTree(tree, "missing")).toEqual(layoutTree(tree));
+  });
+
+  it("applies the supplied layout to each component and separates them horizontally", () => {
+    const input = graph(4, [
+      [0, 1],
+      [2, 3],
+    ]);
+    const result = arrangeComponents(input, (component) => ({
+      ...component,
+      vertices: component.vertices.map((vertex, index) => ({
+        ...vertex,
+        x: -50 + 40 * index,
+        y: 75,
+      })),
+    }));
+    expect(result.vertices.map(({ x, y }) => [x, y])).toEqual([
+      [0, 0],
+      [40, 0],
+      [140, 0],
+      [180, 0],
+    ]);
+  });
+});
+
 describe("normalizeGraph", () => {
   it("places a chain in traversal order on one horizontal line", () => {
     const result = normalizeGraph(chain);
@@ -255,8 +286,9 @@ describe("normalizeGraph", () => {
     const result = normalizeGraph(star);
     const center = result.vertices[2];
     for (const vertex of result.vertices) {
-      if (vertex.id !== center.id)
+      if (vertex.id !== center.id) {
         expect(Math.hypot(vertex.x - center.x, vertex.y - center.y)).toBeCloseTo(100);
+      }
     }
     const columns = normalizeGraph(bipartite).vertices;
     expect(new Set(columns.slice(0, 3).map((vertex) => vertex.x)).size).toBe(1);
