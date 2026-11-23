@@ -12,6 +12,27 @@ import { print } from "graphql";
 import { expect, it, vi } from "vitest";
 import TaskConditionsDemo from "./TaskConditionsDemo.vue";
 
+it("keeps the same condition elements when moving and removing duplicate plugins", async () => {
+  const wrapper = mount(TaskConditionsDemo);
+
+  try {
+    const add = wrapper.get('button[aria-label="Добавить: Число вершин"]');
+    await add.trigger("click");
+    await add.trigger("click");
+
+    const [first, second] = wrapper.findAll("fieldset");
+    await first.findAll("button")[1].trigger("click");
+    const [movedSecond, movedFirst] = wrapper.findAll("fieldset");
+    expect(movedSecond.element).toBe(second.element);
+    expect(movedFirst.element).toBe(first.element);
+
+    await second.findAll("button")[2].trigger("click");
+    expect(wrapper.get("fieldset").element).toBe(first.element);
+  } finally {
+    wrapper.unmount();
+  }
+});
+
 it("loads catalog pages on demand and adds a plugin from the second page", async () => {
   const link = vi.fn(
     (operation: Parameters<ApolloLink["request"]>[0]) =>

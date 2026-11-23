@@ -61,6 +61,22 @@ describe("graph layout", () => {
     expect(vertices.slice(0, 3).every((vertex) => vertex.y > vertices[3].y)).toBe(true);
   });
 
+  it("starts directed levels at the vertex without incoming edges", () => {
+    const graph = graphWith(
+      4,
+      [
+        [0, 1],
+        [1, 2],
+        [1, 3],
+      ],
+      true,
+    );
+    const { vertices } = layoutGraph(graph, "levels", null);
+    expect(vertices[0].y).toBeLessThan(vertices[1].y);
+    expect(vertices[1].y).toBeLessThan(vertices[2].y);
+    expect(vertices[2].y).toBe(vertices[3].y);
+  });
+
   it("puts vertices in a square grid", () => {
     const graph = graphWith(5, [], false);
     const positions = gridPositions(graph);

@@ -95,10 +95,27 @@ export function layoutGraph(graph: Graph, kind: LayoutKind, rootId: string | nul
       arranged = layoutBipartite(graph);
       break;
     case "levels":
-      arranged = arrangeComponents(graph, (component) => layoutTree(component, rootId));
+      arranged = arrangeComponents(graph, (component) => layoutLevels(component, rootId));
       break;
   }
   return keepCenter(graph, arranged);
+}
+
+function layoutLevels(component: Graph, rootId: string | null): Graph {
+  if (!component.isDirected || component.vertices.some((vertex) => vertex.id === rootId)) {
+    return layoutTree(component, rootId);
+  }
+
+  const targets = new Set<string>();
+  for (const edge of component.edges) {
+    targets.add(edge.target);
+  }
+  for (const vertex of component.vertices) {
+    if (!targets.has(vertex.id)) {
+      return layoutTree(component, vertex.id);
+    }
+  }
+  return layoutTree(component);
 }
 
 function keepCenter(before: Graph, after: Graph): Graph {

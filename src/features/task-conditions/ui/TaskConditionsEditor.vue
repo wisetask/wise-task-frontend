@@ -18,7 +18,7 @@ const conditions = defineModel<TaskCondition[]>({ required: true });
     Условий пока нет. Добавьте проверку из списка плагинов
   </p>
   <div v-else class="conditions">
-    <fieldset v-for="(condition, index) in conditions" :key="index" class="condition">
+    <fieldset v-for="(condition, index) in conditions" :key="condition.id" class="condition">
       <legend>{{ index + 1 }}. {{ condition.pluginName }}</legend>
       <div v-if="condition.pluginType === 'GRAPH_CHARACTERISTIC'" class="comparison">
         <label>

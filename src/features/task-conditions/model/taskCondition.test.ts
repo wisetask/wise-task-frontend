@@ -31,6 +31,7 @@ const conditions = Object.freeze([Object.freeze(vertices), Object.freeze(connect
 describe("task conditions", () => {
   it("initializes conditions according to plugin type", () => {
     expect(vertices).toEqual({
+      id: expect.any(String),
       pluginId: plugin.id,
       pluginName: plugin.name,
       pluginType: plugin.pluginType,
@@ -45,6 +46,10 @@ describe("task conditions", () => {
         value: "Выполняется",
       });
     }
+  });
+
+  it("assigns a distinct id to each condition created from the same plugin", () => {
+    expect(conditionFromPlugin(plugin).id).not.toBe(vertices.id);
   });
 
   it("adds, removes and changes conditions without mutating the list", () => {
