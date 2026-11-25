@@ -10,8 +10,13 @@ import { useUserStore } from "@/entities/user";
 const pinia = createPinia();
 const userStore = useUserStore(pinia);
 
+const AUTH_ROUTE_NAMES = ["sign-in", "sign-up"];
+
 setUnauthorizedHandler(() => {
   userStore.clearUser();
+  if (AUTH_ROUTE_NAMES.includes(String(router.currentRoute.value.name))) {
+    return;
+  }
   router.push({ name: "sign-in" });
 });
 

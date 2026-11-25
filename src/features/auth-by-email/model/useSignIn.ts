@@ -4,7 +4,10 @@ import { SignInMutation } from "../api/mutations";
 
 export function useSignIn() {
   const userStore = useUserStore();
-  const { mutate, loading, error } = useMutation(SignInMutation, { throws: "never" });
+  const { mutate, loading, error } = useMutation(SignInMutation, {
+    throws: "never",
+    context: { skipAuth: true },
+  });
 
   async function signIn(email: string, password: string): Promise<boolean> {
     const result = await mutate({ request: { email, password } });

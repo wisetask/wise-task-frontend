@@ -12,7 +12,10 @@ export interface SignUpData {
 
 export function useSignUp() {
   const userStore = useUserStore();
-  const { mutate, loading, error } = useMutation(SignUpMutation, { throws: "never" });
+  const { mutate, loading, error } = useMutation(SignUpMutation, {
+    throws: "never",
+    context: { skipAuth: true },
+  });
 
   async function signUp(data: SignUpData): Promise<boolean> {
     const result = await mutate({

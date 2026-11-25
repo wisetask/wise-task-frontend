@@ -19,13 +19,20 @@ import {
   selectedIds,
   type GraphSelection,
 } from "../lib/selection";
+import { allowEverything, rulesSummary, type EditorRules } from "../lib/rules";
 import { parseWeight, weightError } from "../lib/weight";
 import GraphColorPicker from "./GraphColorPicker.vue";
 
-const props = defineProps<{
-  graph: Graph;
-  selection: GraphSelection | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    graph: Graph;
+    selection: GraphSelection | null;
+    rules?: EditorRules;
+  }>(),
+  {
+    rules: () => allowEverything(),
+  },
+);
 
 const emit = defineEmits<{
   "update:graph": [graph: Graph];
@@ -89,6 +96,8 @@ const deleteText = computed(() => {
 });
 
 const weightProblem = ref("");
+
+const limits = computed(() => rulesSummary(props.rules));
 
 const labelPlaceholder = computed(() => (edge.value ? "Например, a" : ""));
 
@@ -158,27 +167,41 @@ function onDeleteClick() {
         :model-value="selected.label"
         label="Подпись"
         :placeholder="labelPlaceholder"
+        :disabled="!rules.canEditLabels"
         @update:model-value="onLabelInput"
       />
-      <GraphColorPicker :model-value="selected.color" @update:model-value="onColorChange" />
+      <GraphColorPicker
+        :model-value="selected.color"
+        :disabled="!rules.canColor"
+        @update:model-value="onColorChange"
+      />
       <UiTextField
         :key="'weight-' + selected.id"
         :model-value="String(selected.weight)"
         label="Вес"
         hint="Целое число, можно отрицательное"
         :error="weightProblem"
+        :disabled="!rules.canEditLabels"
         @update:model-value="onWeightInput"
       />
-      <UiButton variant="danger" size="sm" @click="onDeleteClick">{{ deleteText }}</UiButton>
+      <UiButton v-if="rules.canDelete" variant="danger" size="sm" @click="onDeleteClick">
+        {{ deleteText }}
+      </UiButton>
     </template>
 
     <template v-else-if="group">
-      <GraphColorPicker :model-value="groupColor" @update:model-value="onGroupColorChange" />
+      <GraphColorPicker
+        :model-value="groupColor"
+        :disabled="!rules.canColor"
+        @update:model-value="onGroupColorChange"
+      />
       <p class="graph-properties__empty">
         Потяните любую из выбранных вершин, чтобы сдвинуть всю группу. Ctrl+клик добавляет или
         убирает вершину из выбора.
       </p>
-      <UiButton variant="danger" size="sm" @click="onDeleteClick">{{ deleteText }}</UiButton>
+      <UiButton v-if="rules.canDelete" variant="danger" size="sm" @click="onDeleteClick">
+        {{ deleteText }}
+      </UiButton>
     </template>
 
     <template v-else>
@@ -190,6 +213,7 @@ function onDeleteClick() {
         <dt>Тип</dt>
         <dd>{{ graph.isDirected ? "ориентированный" : "неориентированный" }}</dd>
       </dl>
+      <p v-if="limits !== ''" class="graph-properties__empty">{{ limits }}</p>
     </template>
   </aside>
 </template>

@@ -17,11 +17,13 @@ type Documents = {
     "\n  query MyProfile {\n    getMyProfile {\n      id\n      email\n      firstName\n      lastName\n      patronymic\n      profileRole\n    }\n  }\n": typeof types.MyProfileDocument,
     "\n  mutation SignIn($request: SignInRequest!) {\n    signIn(signInRequest: $request) {\n      accessToken\n    }\n  }\n": typeof types.SignInDocument,
     "\n  mutation SignUp($request: SignUpRequest!) {\n    signUp(signUpRequest: $request) {\n      accessToken\n    }\n  }\n": typeof types.SignUpDocument,
+    "\n  query GetTaskConditionPlugins($page: Int!, $pageSize: Int!) {\n    getAllPlugins(\n      request: { filter: { isValid: true }, pagination: { page: $page, pageSize: $pageSize } }\n    ) {\n      items {\n        id\n        name\n        description\n        category\n        pluginType\n        graphType\n        isValid\n      }\n      pagination {\n        hasNext\n      }\n    }\n  }\n": typeof types.GetTaskConditionPluginsDocument,
 };
 const documents: Documents = {
     "\n  query MyProfile {\n    getMyProfile {\n      id\n      email\n      firstName\n      lastName\n      patronymic\n      profileRole\n    }\n  }\n": types.MyProfileDocument,
     "\n  mutation SignIn($request: SignInRequest!) {\n    signIn(signInRequest: $request) {\n      accessToken\n    }\n  }\n": types.SignInDocument,
     "\n  mutation SignUp($request: SignUpRequest!) {\n    signUp(signUpRequest: $request) {\n      accessToken\n    }\n  }\n": types.SignUpDocument,
+    "\n  query GetTaskConditionPlugins($page: Int!, $pageSize: Int!) {\n    getAllPlugins(\n      request: { filter: { isValid: true }, pagination: { page: $page, pageSize: $pageSize } }\n    ) {\n      items {\n        id\n        name\n        description\n        category\n        pluginType\n        graphType\n        isValid\n      }\n      pagination {\n        hasNext\n      }\n    }\n  }\n": types.GetTaskConditionPluginsDocument,
 };
 
 /**
@@ -50,6 +52,10 @@ export function graphql(source: "\n  mutation SignIn($request: SignInRequest!) {
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation SignUp($request: SignUpRequest!) {\n    signUp(signUpRequest: $request) {\n      accessToken\n    }\n  }\n"): (typeof documents)["\n  mutation SignUp($request: SignUpRequest!) {\n    signUp(signUpRequest: $request) {\n      accessToken\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetTaskConditionPlugins($page: Int!, $pageSize: Int!) {\n    getAllPlugins(\n      request: { filter: { isValid: true }, pagination: { page: $page, pageSize: $pageSize } }\n    ) {\n      items {\n        id\n        name\n        description\n        category\n        pluginType\n        graphType\n        isValid\n      }\n      pagination {\n        hasNext\n      }\n    }\n  }\n"): (typeof documents)["\n  query GetTaskConditionPlugins($page: Int!, $pageSize: Int!) {\n    getAllPlugins(\n      request: { filter: { isValid: true }, pagination: { page: $page, pageSize: $pageSize } }\n    ) {\n      items {\n        id\n        name\n        description\n        category\n        pluginType\n        graphType\n        isValid\n      }\n      pagination {\n        hasNext\n      }\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

@@ -44,6 +44,8 @@ export const useUserStore = defineStore("user", () => {
   }
 
   async function logIn(token: string): Promise<void> {
+    // Если до этого был вошедший пользователь, его данные не должны остаться в кэше.
+    await apolloClient.clearStore();
     setToken(token);
     await loadProfile();
   }

@@ -3,12 +3,14 @@
 Общие компоненты интерфейса. Импортируются из одного места:
 
 ```ts
-import { UiButton, UiCheckbox, UiTextField } from "@/shared/ui";
+import { UiButton, UiCheckbox, UiMenuButton, UiTextArea, UiTextField } from "@/shared/ui";
 ```
 
 - `UiButton` — кнопка. `variant`: `primary`, `secondary` (по умолчанию), `ghost`, `danger`; `size`: `md` или `sm`; `type`: `button` или `submit`; `loading` показывает крутилку и блокирует кнопку.
 - `UiTextField` — поле ввода с подписью: `v-model`, `label`, `type` (`text`, `email`, `password`), `inputmode` — какую клавиатуру показать на телефоне (`decimal` для чисел), `hint` — подсказка под полем, `error` — текст ошибки (поле подсвечивается красным).
+- `UiTextArea` — многострочное поле с подписью для длинного текста (описание задачи): `v-model`, `label`, `rows` — сколько строк видно сразу (по умолчанию 4, дальше можно растянуть мышью), `placeholder`, `hint`, `error`, `disabled`, `required`. Выглядит так же, как `UiTextField`.
 - `UiCheckbox` — галочка с подписью: `v-model`, `label`.
+- `UiMenuButton` — кнопка со стрелкой, которая открывает список действий (например, «Скачать ▾» → «Граф (.json)», «Картинка PNG»). Пропсы: `label`, `items` — массив `UiMenuItem` (`id`, `label` и необязательная серая подпись `hint`), `size`, `disabled`. Выбор приходит событием `select` с `id` пункта. Закрывается кликом мимо, `Esc` и `Tab`. С клавиатуры: стрелка вниз открывает список и ставит фокус на первый пункт, стрелки ходят по пунктам, `Enter` выбирает. Нажатия стрелок и `Esc` внутри меню не уходят дальше, поэтому не двигают вершины в редакторе графа. Как переходить по пунктам — `nextMenuIndex` в `menu.ts`.
 
 Цвета, отступы, скругления и размеры шрифта берутся из CSS-переменных в `src/app/styles.css`. Своих цветов в компонентах не пишем.
 

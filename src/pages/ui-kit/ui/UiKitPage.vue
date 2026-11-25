@@ -11,6 +11,7 @@ import {
   type Answers,
   type CellPosition,
 } from "@/widgets/relation-matrix";
+import TaskConditionsDemo from "./TaskConditionsDemo.vue";
 
 const name = ref("");
 const email = ref("");
@@ -143,6 +144,10 @@ function fakeSave() {
       <UiCheckbox v-model="showResult" label="Сразу показывать, верно или нет" />
       <p class="ui-kit__note">{{ pathsText }}</p>
       <p class="ui-kit__note">{{ progressText }}</p>
+    </section>
+    <section class="ui-kit__section">
+      <h2 class="ui-kit__heading">Условия задачи</h2>
+      <TaskConditionsDemo />
     </section>
   </main>
 </template>

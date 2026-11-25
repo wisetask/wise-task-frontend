@@ -1,8 +1,6 @@
 import type { ApolloError } from "@apollo/client/core";
 
-// перепишу как бек обновится
-
-const SIGN_IN_FAILED_CODES = ["NOT_FOUND", "UNAUTHENTICATED", "INVALID_ARGUMENT"];
+const SIGN_IN_FAILED = ["NOT_FOUND", "UNAUTHORIZED", "BAD_REQUEST"];
 
 export function getAuthErrorMessage(
   error: ApolloError | null,
@@ -12,17 +10,24 @@ export function getAuthErrorMessage(
     return "";
   }
 
-  const graphqlError = error.graphQLErrors[0];
-  if (!graphqlError) {
+  if (error.networkError) {
     return "Нет связи с сервером";
   }
 
-  const [code, ...rest] = graphqlError.message.split(": ");
-  const text = rest.join(": ");
+  const graphqlError = error.graphQLErrors[0];
+  const classification = graphqlError?.extensions?.classification;
 
-  if (action === "sign-in" && SIGN_IN_FAILED_CODES.includes(code)) {
+  if (
+    action === "sign-in" &&
+    typeof classification === "string" &&
+    SIGN_IN_FAILED.includes(classification)
+  ) {
     return "Неверная почта или пароль";
   }
 
-  return text || graphqlError.message;
+  if (action === "sign-up" && classification === "BAD_REQUEST") {
+    return graphqlError.message;
+  }
+
+  return "Что-то пошло не так, попробуйте позже";
 }

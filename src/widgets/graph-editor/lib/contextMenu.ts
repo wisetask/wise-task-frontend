@@ -1,5 +1,6 @@
 import { findEdge, findVertex, hasEdge, type Graph, type GraphColor } from "@/entities/graph";
 import { canLayout, type LayoutKind } from "./layout";
+import { allowEverything, canRunMenuAction, type EditorRules } from "./rules";
 import { commonColor, type GraphSelection } from "./selection";
 
 export type MenuTarget =
@@ -14,6 +15,7 @@ export type MenuAction =
   | "layout"
   | "add-loop"
   | "delete"
+  | "layout-auto"
   | "layout-circle"
   | "layout-grid"
   | "layout-levels"
@@ -40,6 +42,7 @@ interface LayoutItem {
 }
 
 const LAYOUT_ITEMS: LayoutItem[] = [
+  { action: "layout-auto", kind: "auto", label: "Автоматически" },
   { action: "layout-circle", kind: "circle", label: "По кругу" },
   { action: "layout-grid", kind: "grid", label: "Сеткой" },
   { action: "layout-levels", kind: "levels", label: "По уровням" },
@@ -59,7 +62,21 @@ export function layoutOfAction(action: MenuAction): LayoutKind | null {
   return null;
 }
 
-export function buildMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
+export function buildMenuItems(
+  graph: Graph,
+  target: MenuTarget,
+  rules: EditorRules = allowEverything(),
+): MenuItem[] {
+  const items: MenuItem[] = [];
+  for (const item of allMenuItems(graph, target)) {
+    if (canRunMenuAction(item.action, rules)) {
+      items.push(item);
+    }
+  }
+  return items;
+}
+
+function allMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
   if (target.kind === "vertex") {
     const items: MenuItem[] = [];
     if (!hasEdge(graph, target.id, target.id)) {
@@ -94,7 +111,13 @@ export function buildMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
   return items;
 }
 
-export function hasColorChoice(target: MenuTarget): boolean {
+export function hasColorChoice(
+  target: MenuTarget,
+  rules: EditorRules = allowEverything(),
+): boolean {
+  if (!rules.canColor) {
+    return false;
+  }
   return target.kind === "vertex" || target.kind === "edge" || target.kind === "group";
 }
 

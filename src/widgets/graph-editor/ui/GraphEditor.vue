@@ -5,6 +5,7 @@ import { useGraphHistory } from "@/features/graph-history";
 import { pasteShift, type GraphClipboard } from "../lib/clipboard";
 import type { Point } from "../lib/geometry";
 import { moveFromAction, toolFromAction, type HotkeyAction } from "../lib/hotkeys";
+import { allowEverything, canRunHotkey, canUseTool, type EditorRules } from "../lib/rules";
 import { isSelectionValid, type EditorTool, type GraphSelection } from "../lib/selection";
 import { useEditorKeys } from "../lib/useEditorKeys";
 import GraphCanvas from "./GraphCanvas.vue";
@@ -16,9 +17,11 @@ import GraphToolbar from "./GraphToolbar.vue";
 const props = withDefaults(
   defineProps<{
     readonly?: boolean;
+    rules?: EditorRules;
   }>(),
   {
     readonly: false,
+    rules: () => allowEverything(),
   },
 );
 
@@ -90,6 +93,9 @@ function runHotkey(action: HotkeyAction, isRepeat: boolean) {
   }
   if (action === "help") {
     helpOpen.value = true;
+    return;
+  }
+  if (!canRunHotkey(action, props.rules)) {
     return;
   }
   const newTool = toolFromAction(action);
@@ -166,6 +172,16 @@ function runHotkey(action: HotkeyAction, isRepeat: boolean) {
 watch(graph, forgetMissingSelection);
 
 watch(
+  () => canUseTool(tool.value, props.rules),
+  (isAllowed) => {
+    if (!isAllowed) {
+      tool.value = "select";
+    }
+  },
+  { immediate: true },
+);
+
+watch(
   () => props.readonly,
   () => {
     selection.value = null;
@@ -194,6 +210,7 @@ defineExpose({
       class="graph-editor__toolbar"
       :can-undo="canUndo"
       :can-redo="canRedo"
+      :rules="rules"
       @undo="undo"
       @redo="redo"
       @help="helpOpen = true"
@@ -207,6 +224,7 @@ defineExpose({
           :tool="tool"
           :readonly="readonly"
           :pan-mode="isSpaceHeld"
+          :rules="rules"
           @before-change="onBeforeChange"
         />
       </div>
@@ -231,6 +249,7 @@ defineExpose({
         v-model:graph="graph"
         v-model:selection="selection"
         class="graph-editor__properties"
+        :rules="rules"
         @before-change="onBeforeChange"
       />
     </div>

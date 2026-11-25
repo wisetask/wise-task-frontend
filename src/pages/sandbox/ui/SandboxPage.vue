@@ -11,12 +11,16 @@ import {
 import { downloadBlob } from "@/shared/lib/downloadBlob";
 import { downloadText } from "@/shared/lib/downloadText";
 import { svgToPng } from "@/shared/lib/svgToPng";
-import { UiButton, UiCheckbox } from "@/shared/ui";
+import { UiButton, UiCheckbox, UiMenuButton, type UiMenuItem } from "@/shared/ui";
 import {
+  allowEverything,
+  directedByRules,
   GraphEditor,
+  GraphRulesForm,
   graphToSvg,
   imageFileName,
   toolHint,
+  type EditorRules,
   type EditorTool,
 } from "@/widgets/graph-editor";
 import { browserStorage, loadGraph, saveGraph } from "../lib/savedGraph";
@@ -26,16 +30,42 @@ const savedGraph = loadGraph(storage);
 const graph = ref<Graph>(savedGraph === null ? createEmptyGraph(false) : savedGraph);
 const tool = ref<EditorTool>("vertex");
 const viewOnly = ref(false);
+const rules = ref<EditorRules>(allowEverything());
+const rulesOpen = ref(false);
 const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const notice = ref("");
 const noticeIsError = ref(false);
+
+const DOWNLOAD_ITEMS: UiMenuItem[] = [
+  { id: "json", label: "Граф (.json)" },
+  { id: "png", label: "Картинка PNG" },
+  { id: "svg", label: "Картинка SVG" },
+];
 
 const hint = computed(() => toolHint(tool.value, viewOnly.value));
 
 watch(graph, (value) => {
   saveGraph(storage, value);
 });
+
+watch(
+  () => rules.value.direction,
+  () => {
+    const directed = directedByRules(rules.value);
+    if (editor.value !== null && directed !== null && directed !== graph.value.isDirected) {
+      editor.value.replaceGraph(setDirected(graph.value, directed));
+    }
+  },
+);
+
+function withRulesDirection(value: Graph): Graph {
+  const directed = directedByRules(rules.value);
+  if (directed === null || directed === value.isDirected) {
+    return value;
+  }
+  return setDirected(value, directed);
+}
 
 function onDirectedChange(isDirected: boolean) {
   if (editor.value !== null) {
@@ -71,6 +101,16 @@ async function downloadPng() {
   }
 }
 
+function onDownload(id: string) {
+  if (id === "json") {
+    downloadGraph();
+  } else if (id === "png") {
+    downloadPng();
+  } else if (id === "svg") {
+    downloadSvg();
+  }
+}
+
 function chooseFile() {
   if (fileInput.value !== null) {
     fileInput.value.click();
@@ -89,7 +129,7 @@ async function onFileChosen(event: Event) {
     showNotice(result.error, true);
     return;
   }
-  editor.value.replaceGraph(result.graph);
+  editor.value.replaceGraph(withRulesDirection(result.graph));
   await nextTick();
   editor.value.fitView();
   if (result.skippedEdges > 0) {
@@ -126,18 +166,33 @@ function clearGraph() {
       <span v-else class="sandbox__hint">{{ hint }}</span>
       <UiCheckbox v-model="viewOnly" class="sandbox__toggle" label="Только просмотр" />
       <template v-if="!viewOnly">
+        <UiButton
+          size="sm"
+          class="sandbox__nowrap"
+          :aria-expanded="rulesOpen"
+          title="Проверить, как редактор ведёт себя с ограничениями задачи"
+          @click="rulesOpen = !rulesOpen"
+        >
+          Правила задачи
+        </UiButton>
         <UiCheckbox
+          v-if="rules.direction === 'any'"
           class="sandbox__nowrap"
           :model-value="graph.isDirected"
           label="Ориентированный"
           @update:model-value="onDirectedChange"
         />
-        <UiButton size="sm" @click="clearGraph">Очистить</UiButton>
-        <UiButton size="sm" @click="chooseFile">Открыть</UiButton>
+        <UiButton v-if="rules.canDelete" size="sm" @click="clearGraph">Очистить</UiButton>
+        <UiButton
+          size="sm"
+          class="sandbox__nowrap"
+          title="Открыть граф из файла .json, скачанного здесь раньше"
+          @click="chooseFile"
+        >
+          Открыть граф (.json)
+        </UiButton>
       </template>
-      <UiButton size="sm" @click="downloadGraph">Скачать</UiButton>
-      <UiButton size="sm" title="Скачать картинку графа в PNG" @click="downloadPng">PNG</UiButton>
-      <UiButton size="sm" title="Скачать картинку графа в SVG" @click="downloadSvg">SVG</UiButton>
+      <UiMenuButton label="Скачать" size="sm" :items="DOWNLOAD_ITEMS" @select="onDownload" />
       <input
         ref="fileInput"
         class="sandbox__file"
@@ -146,12 +201,16 @@ function clearGraph() {
         @change="onFileChosen"
       />
     </header>
+    <div v-if="rulesOpen && !viewOnly" class="sandbox__rules">
+      <GraphRulesForm v-model="rules" />
+    </div>
     <GraphEditor
       ref="editor"
       v-model:graph="graph"
       v-model:tool="tool"
       class="sandbox__editor"
       :readonly="viewOnly"
+      :rules="rules"
     />
   </main>
 </template>
@@ -200,6 +259,12 @@ function clearGraph() {
 
 .sandbox__nowrap {
   white-space: nowrap;
+}
+
+.sandbox__rules {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
 }
 
 .sandbox__editor {

@@ -10,6 +10,7 @@ import {
   submenuOnLeft,
   targetColor,
 } from "./contextMenu";
+import { allowEverything } from "./rules";
 
 function actionsOf(items: { action: string }[]): string[] {
   const actions: string[] = [];
@@ -94,6 +95,7 @@ describe("editor context menu", () => {
     const items = buildMenuItems(square, { kind: "canvas", x: 0, y: 0 });
     expect(actionsOf(items)).toEqual(["add-vertex", "layout", "fit-view", "reset-zoom"]);
     expect(actionsOf(items[1].submenu)).toEqual([
+      "layout-auto",
       "layout-circle",
       "layout-grid",
       "layout-levels",
@@ -119,5 +121,20 @@ describe("editor context menu", () => {
   it("knows which layout each menu item means", () => {
     expect(layoutOfAction("layout-levels")).toBe("levels");
     expect(layoutOfAction("fit-view")).toBeNull();
+  });
+
+  it("leaves out what the task rules forbid", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 100, 0);
+    const rules = allowEverything();
+    rules.canAdd = false;
+    rules.canMove = false;
+    const vertexItems = buildMenuItems(graph, { kind: "vertex", id: graph.vertices[0].id }, rules);
+    expect(actionsOf(vertexItems)).toEqual(["delete"]);
+    const canvasItems = buildMenuItems(graph, { kind: "canvas", x: 0, y: 0 }, rules);
+    expect(actionsOf(canvasItems)).toEqual(["fit-view", "reset-zoom"]);
+    rules.canColor = false;
+    expect(hasColorChoice({ kind: "vertex", id: graph.vertices[0].id }, rules)).toBe(false);
   });
 });
