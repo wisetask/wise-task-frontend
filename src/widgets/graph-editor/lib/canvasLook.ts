@@ -1,4 +1,4 @@
-import type { Graph, Vertex } from "@/entities/graph";
+import { splitIntoComponents, type Graph, type Vertex } from "@/entities/graph";
 import type { Point } from "./geometry";
 import type { EditorTool } from "./selection";
 
@@ -57,4 +57,17 @@ export function snapVertex(
     }
   }
   return best;
+}
+
+export const COMPONENT_COLORS = 6;
+
+export function componentOf(graph: Graph): Record<string, number> {
+  const result: Record<string, number> = {};
+  const parts = splitIntoComponents(graph);
+  for (let i = 0; i < parts.length; i++) {
+    for (const vertex of parts[i].vertices) {
+      result[vertex.id] = i;
+    }
+  }
+  return result;
 }

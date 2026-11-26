@@ -10,6 +10,7 @@ import {
   type VertexChanges,
 } from "@/entities/graph";
 import { UiButton, UiTextField } from "@/shared/ui";
+import { ALIGN_KINDS, ALIGN_TITLES, alignNeeds, alignVertices, type AlignKind } from "../lib/align";
 import { colorClass } from "../lib/colors";
 import { vertexSummary } from "../lib/contextMenu";
 import { createEditSession } from "../lib/editSession";
@@ -35,11 +36,13 @@ const props = withDefaults(
     rules?: EditorRules;
     analysis?: boolean;
     showDegrees?: boolean;
+    showComponents?: boolean;
   }>(),
   {
     rules: () => allowEverything(),
     analysis: false,
     showDegrees: false,
+    showComponents: false,
   },
 );
 
@@ -48,6 +51,8 @@ const emit = defineEmits<{
   "update:selection": [selection: GraphSelection | null];
   "before-change": [graph: Graph];
   "update:showDegrees": [value: boolean];
+  "update:showComponents": [value: boolean];
+  arrange: [graph: Graph];
   help: [];
   "run-algorithm": [kind: AlgorithmKind];
 }>();
@@ -103,6 +108,20 @@ const subtitle = computed(() => {
   }
   return "";
 });
+
+function canAlign(kind: AlignKind): boolean {
+  if (!props.rules.canMove || group.value === null) {
+    return false;
+  }
+  return group.value.vertexIds.length >= alignNeeds(kind);
+}
+
+function onAlign(kind: AlignKind) {
+  if (group.value === null) {
+    return;
+  }
+  emit("arrange", alignVertices(props.graph, group.value.vertexIds, kind));
+}
 
 function onWeightStep(delta: number) {
   if (!selected.value) {
@@ -329,9 +348,50 @@ function onDeleteClick() {
         :disabled="!rules.canColor"
         @update:model-value="onGroupColorChange"
       />
-      <p class="graph-properties__empty">
+      <div class="graph-properties__field">
+        <span class="graph-properties__label">Выровнять</span>
+        <div class="graph-properties__aligns">
+          <button
+            v-for="kind in ALIGN_KINDS"
+            :key="kind"
+            type="button"
+            class="graph-properties__align"
+            :disabled="!canAlign(kind)"
+            @click="onAlign(kind)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <template v-if="kind === 'row'">
+                <path d="M3 12 H21" />
+                <circle cx="6" cy="12" r="2.5" />
+                <circle cx="12" cy="12" r="2.5" />
+                <circle cx="18" cy="12" r="2.5" />
+              </template>
+              <template v-else-if="kind === 'column'">
+                <path d="M12 3 V21" />
+                <circle cx="12" cy="6" r="2.5" />
+                <circle cx="12" cy="12" r="2.5" />
+                <circle cx="12" cy="18" r="2.5" />
+              </template>
+              <template v-else-if="kind === 'spread-x'">
+                <path d="M3 4 V20 M21 4 V20" />
+                <circle cx="7" cy="12" r="2" />
+                <circle cx="12" cy="9" r="2" />
+                <circle cx="17" cy="14" r="2" />
+              </template>
+              <template v-else>
+                <path d="M4 3 H20 M4 21 H20" />
+                <circle cx="12" cy="7" r="2" />
+                <circle cx="9" cy="12" r="2" />
+                <circle cx="14" cy="17" r="2" />
+              </template>
+            </svg>
+            {{ ALIGN_TITLES[kind] }}
+          </button>
+        </div>
+      </div>
+      <p class="graph-properties__empty graph-properties__small">
         Потяните любую из выбранных вершин, чтобы сдвинуть всю группу. Ctrl+клик добавляет или
-        убирает вершину из выбора.
+        убирает вершину из выбора, Shift+2 — показать выбранное крупно.
       </p>
       <UiButton v-if="rules.canDelete" variant="danger" size="sm" @click="onDeleteClick">
         {{ deleteText }}
@@ -385,6 +445,18 @@ function onDeleteClick() {
           @click="emit('update:showDegrees', !showDegrees)"
         >
           <span>Показывать степени</span>
+          <span class="graph-properties__switch-track" aria-hidden="true">
+            <span class="graph-properties__switch-thumb" />
+          </span>
+        </button>
+        <button
+          type="button"
+          role="switch"
+          class="graph-properties__switch"
+          :aria-checked="showComponents"
+          @click="emit('update:showComponents', !showComponents)"
+        >
+          <span>Раскрасить компоненты</span>
           <span class="graph-properties__switch-track" aria-hidden="true">
             <span class="graph-properties__switch-thumb" />
           </span>
@@ -757,6 +829,56 @@ function onDeleteClick() {
 .graph-properties__algorithm:focus-visible .graph-properties__algorithm-play {
   opacity: 1;
   transform: none;
+}
+
+.graph-properties__aligns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.graph-properties__align {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-page);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.graph-properties__align:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.graph-properties__align:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.graph-properties__align:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.graph-properties__align svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  fill: var(--color-accent-muted);
+  stroke: var(--color-accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
 }
 
 .graph-properties__delete {

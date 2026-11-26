@@ -12,6 +12,7 @@ const props = defineProps<{
   lit?: boolean;
   appearDelay?: number;
   algoState?: string;
+  component?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -58,6 +59,7 @@ const arrow = computed(() => {
         'graph-edge--algo-tree': algoState === 'tree',
         'graph-edge--algo-active': algoState === 'active',
       },
+      component === null || component === undefined ? '' : 'graph-edge--part-' + (component % 6),
     ]"
     @click.stop="emit('pick', $event)"
     @contextmenu.prevent="emit('menu', $event)"
@@ -177,6 +179,30 @@ const arrow = computed(() => {
 .graph-edge--lit .graph-edge__line {
   stroke: var(--color-accent);
   stroke-width: 2.5;
+}
+
+.graph-edge--part-0 .graph-edge__line {
+  stroke: #7c5cff;
+}
+
+.graph-edge--part-1 .graph-edge__line {
+  stroke: #00b3a4;
+}
+
+.graph-edge--part-2 .graph-edge__line {
+  stroke: #ff8a3d;
+}
+
+.graph-edge--part-3 .graph-edge__line {
+  stroke: #e84393;
+}
+
+.graph-edge--part-4 .graph-edge__line {
+  stroke: #3fa9f5;
+}
+
+.graph-edge--part-5 .graph-edge__line {
+  stroke: #9bc53d;
 }
 
 .graph-edge--algo-tree .graph-edge__line {
