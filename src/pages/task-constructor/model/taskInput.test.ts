@@ -57,7 +57,6 @@ describe("task for the backend", () => {
     const input = toTaskGraphInput(coloringDraft());
     expect(input.name).toBe("Правильная раскраска");
     expect(input.taskType).toBe("GRAPH");
-    expect(input.graphType).toBe("DIRECT");
     expect(input.rule).toEqual({ isColor: true, isEdit: false, isMove: false, isDelete: false });
     expect(input.graph).not.toBeNull();
     if (input.graph !== null) {
@@ -66,6 +65,7 @@ describe("task for the backend", () => {
     }
     expect(input.condition).toEqual([]);
     expect(input.isHiddenMistake).toBe(false);
+    expect("graphType" in input).toBe(false);
   });
 
   it("sends no graph and allows everything when the student draws the graph", () => {
@@ -74,6 +74,5 @@ describe("task for the backend", () => {
     const input = toTaskGraphInput(draft);
     expect(input.graph).toBeNull();
     expect(input.rule).toEqual({ isColor: true, isEdit: true, isMove: true, isDelete: true });
-    expect(input.graphType).toBe("DIRECT");
   });
 });

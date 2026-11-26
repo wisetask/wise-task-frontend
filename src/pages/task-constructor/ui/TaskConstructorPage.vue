@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 import { setDirected } from "@/entities/graph";
+import { useUserStore } from "@/entities/user";
 import { UiButton, UiCheckbox, UiTextArea, UiTextField } from "@/shared/ui";
 import {
   DIRECTION_TITLES,
@@ -24,6 +26,8 @@ import {
   taskGraph,
   type ConstructorTab,
 } from "../model/taskDraft";
+import { useCreateTask, type CreatedTask } from "../model/useCreateTask";
+import { createErrorMessage } from "../lib/createError";
 import { browserStorage, clearDraft, loadDraft, saveDraft } from "../lib/savedDraft";
 
 const storage = browserStorage();
@@ -33,6 +37,13 @@ const isSaving = ref(storage !== null);
 const isClearing = ref(false);
 const activeTab = ref<ConstructorTab>("main");
 const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
+
+const userStore = useUserStore();
+const { createTask, loading: isCreating, error: createError } = useCreateTask();
+const createdTask = ref<CreatedTask | null>(null);
+const shownProblems = ref<string[]>([]);
+const needsSignIn = ref(false);
+const errorMessage = computed(() => createErrorMessage(createError.value));
 
 const tabs = computed(() => draftTabs(draft.value));
 const problems = computed(() => draftProblems(draft.value));
@@ -91,6 +102,12 @@ watch(
   },
 );
 
+watch(problems, (newProblems) => {
+  if (shownProblems.value.length > 0) {
+    shownProblems.value = newProblems;
+  }
+});
+
 watch(
   draft,
   (value) => {
@@ -114,11 +131,37 @@ function onTrialDirectedChange(isDirected: boolean) {
   trialGraph.value = setDirected(trialGraph.value, isDirected);
 }
 
+function hideNotices() {
+  createdTask.value = null;
+  shownProblems.value = [];
+  needsSignIn.value = false;
+}
+
 function startOver() {
   clearDraft(storage);
   draft.value = createTaskDraft();
   activeTab.value = "main";
   isClearing.value = false;
+  hideNotices();
+}
+
+async function onCreate() {
+  hideNotices();
+  if (problems.value.length > 0) {
+    shownProblems.value = problems.value;
+    activeTab.value = "main";
+    return;
+  }
+  if (!userStore.isLoggedIn) {
+    needsSignIn.value = true;
+    return;
+  }
+  const task = await createTask(draft.value);
+  if (task === null) {
+    return;
+  }
+  startOver();
+  createdTask.value = task;
 }
 
 function onDirectionChange(event: Event) {
@@ -166,13 +209,42 @@ function onDirectionChange(event: Event) {
           variant="primary"
           size="sm"
           class="constructor__save"
-          disabled
-          title="Сохранение появится, когда подключим вход"
+          :loading="isCreating"
+          @click="onCreate"
         >
           Создать задачу
         </UiButton>
       </div>
     </header>
+
+    <p
+      v-if="createdTask !== null"
+      class="constructor__notice constructor__notice--success"
+      role="status"
+    >
+      Задача «{{ createdTask.name }}» создана. Черновик очищен, можно собирать следующую.
+    </p>
+    <div
+      v-else-if="shownProblems.length > 0"
+      class="constructor__notice constructor__notice--error"
+      role="alert"
+    >
+      <span>Чтобы создать задачу, осталось:</span>
+      <ul class="constructor__notice-list">
+        <li v-for="problem in shownProblems" :key="problem">{{ problem }}</li>
+      </ul>
+    </div>
+    <p v-else-if="needsSignIn" class="constructor__notice constructor__notice--error" role="alert">
+      Создавать задачи можно только после входа. Черновик сохранится.
+      <RouterLink :to="{ name: 'sign-in', query: { redirect: '/constructor' } }">Войти</RouterLink>
+    </p>
+    <p
+      v-else-if="errorMessage !== ''"
+      class="constructor__notice constructor__notice--error"
+      role="alert"
+    >
+      {{ errorMessage }}
+    </p>
 
     <section
       v-if="activeTab === 'main'"
@@ -451,6 +523,26 @@ function onDirectionChange(event: Event) {
 .constructor__tab:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;
+}
+
+.constructor__notice {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-md);
+}
+
+.constructor__notice--success {
+  background: var(--graph-green-fill);
+}
+
+.constructor__notice--error {
+  background: var(--graph-red-fill);
+}
+
+.constructor__notice-list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
 }
 
 .constructor__panel {
