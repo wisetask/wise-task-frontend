@@ -10,6 +10,8 @@ interface DragCallbacks {
   getGroup: (vertexId: string) => string[];
   onStart: () => void;
   onMove: (graph: Graph) => void;
+  adjust?: (position: Point, group: string[], free: boolean) => Point;
+  onEnd?: () => void;
 }
 
 export function useVertexDrag(callbacks: DragCallbacks) {
@@ -25,7 +27,10 @@ export function useVertexDrag(callbacks: DragCallbacks) {
       }
       const point = callbacks.toWorld(event);
       const wanted = { x: point.x - grabOffset.x, y: point.y - grabOffset.y };
-      const position = callbacks.limit(wanted);
+      let position = callbacks.limit(wanted);
+      if (callbacks.adjust !== undefined) {
+        position = callbacks.adjust(position, group, event.altKey);
+      }
       const graph = callbacks.getGraph();
       const vertex = findVertex(graph, draggedVertexId.value);
       if (vertex === undefined) {
@@ -38,6 +43,9 @@ export function useVertexDrag(callbacks: DragCallbacks) {
     onEnd: () => {
       draggedVertexId.value = null;
       group = [];
+      if (callbacks.onEnd !== undefined) {
+        callbacks.onEnd();
+      }
     },
   });
 

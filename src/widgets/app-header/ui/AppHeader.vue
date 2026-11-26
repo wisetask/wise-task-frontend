@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
+import { MotionToggle } from "@/features/motion-switch";
 import { ThemeToggle } from "@/features/theme-switch";
 import { UiButton } from "@/shared/ui";
 import { isSectionActive, userInitials, visibleSections } from "../lib/sections";
@@ -111,7 +112,10 @@ onBeforeUnmount(() => {
       </RouterLink>
     </nav>
 
-    <ThemeToggle />
+    <div class="app-header__toggles">
+      <MotionToggle />
+      <ThemeToggle />
+    </div>
 
     <div ref="userArea" class="app-header__user">
       <UiButton v-if="user === null" variant="primary" @click="router.push('/sign-in')">
@@ -242,6 +246,12 @@ onBeforeUnmount(() => {
 }
 
 /* На узком экране разделы прокручиваются вбок и не налезают друг на друга */
+.app-header__toggles {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
+
 .app-header__nav {
   display: flex;
   flex: 0 1 auto;

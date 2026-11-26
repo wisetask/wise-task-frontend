@@ -8,10 +8,12 @@ withDefaults(
     label: string;
     items: UiMenuItem[];
     size?: "sm" | "md";
+    variant?: "primary" | "secondary";
     disabled?: boolean;
   }>(),
   {
     size: "md",
+    variant: "secondary",
     disabled: false,
   },
 );
@@ -124,6 +126,7 @@ onBeforeUnmount(() => {
     <UiButton
       class="ui-menu-button__trigger"
       :size="size"
+      :variant="variant"
       :disabled="disabled"
       aria-haspopup="menu"
       :aria-expanded="isOpen"

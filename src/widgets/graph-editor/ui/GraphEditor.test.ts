@@ -424,7 +424,7 @@ describe("graph editor", () => {
     expect(inputs.length).toBe(2);
     expect(inputs[0].attributes("disabled")).toBeDefined();
     expect(inputs[1].attributes("disabled")).toBeDefined();
-    expect(wrapper.find(".graph-properties .ui-button--danger").exists()).toBe(false);
+    expect(wrapper.find(".graph-properties__delete").exists()).toBe(false);
     expect(wrapper.find(".graph-swatches__option").attributes("disabled")).toBeUndefined();
     await wrapper.findAll(".graph-vertex")[0].trigger("dblclick");
     expect(wrapper.find(".graph-rename").exists()).toBe(false);

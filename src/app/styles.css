@@ -28,6 +28,7 @@
   --graph-green-stroke: #119b5f;
   --graph-blue-fill: #e0eaff;
   --graph-blue-stroke: #1257e6;
+  --graph-active: #e8890c;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -92,6 +93,7 @@
   --graph-green-stroke: #46d99a;
   --graph-blue-fill: #16305e;
   --graph-blue-stroke: #62d0ff;
+  --graph-active: #ffb547;
 
   --shadow-popover: 0 16px 40px rgb(0 0 0 / 45%);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
@@ -135,4 +137,11 @@ body {
   *::after {
     transition-duration: 1ms !important;
   }
+}
+
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
 }

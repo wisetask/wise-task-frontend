@@ -1,4 +1,5 @@
-import type { Graph } from "@/entities/graph";
+import type { Graph, Vertex } from "@/entities/graph";
+import type { Point } from "./geometry";
 import type { EditorTool } from "./selection";
 
 export interface LitParts {
@@ -35,4 +36,25 @@ export function emptyCanvasText(readonly: boolean, tool: EditorTool, canAdd: boo
     return "Кликните в любом месте, и появится первая вершина";
   }
   return "Нажмите 2 и кликните по холсту, чтобы поставить вершину";
+}
+
+export function snapVertex(
+  graph: Graph,
+  point: Point,
+  sourceId: string,
+  radius: number,
+): Vertex | null {
+  let best: Vertex | null = null;
+  let bestDistance = radius;
+  for (const vertex of graph.vertices) {
+    if (vertex.id === sourceId) {
+      continue;
+    }
+    const distance = Math.hypot(vertex.x - point.x, vertex.y - point.y);
+    if (distance <= bestDistance) {
+      best = vertex;
+      bestDistance = distance;
+    }
+  }
+  return best;
 }
