@@ -1,7 +1,7 @@
 import { graphql } from "@/shared/api";
 
-export const GetTaskGraphQuery = graphql(`
-  query GetTaskGraph($id: ID!) {
+export const GetFullGraphQuery = graphql(`
+  query GetFullGraph($id: ID!) {
     getGraphById(id: $id) {
       id
       isDirect

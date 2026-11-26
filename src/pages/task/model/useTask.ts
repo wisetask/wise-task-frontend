@@ -1,9 +1,8 @@
 import { ref, shallowRef } from "vue";
-import { apolloClient } from "@/shared/api";
 import type { BackendGraph } from "@/entities/graph";
-import { GetTaskGraphQuery } from "../api/getGraph";
+import { apolloClient } from "@/shared/api";
+import { loadFullGraph, toTaskView, type TaskView } from "@/widgets/task-view";
 import { GetTaskQuery } from "../api/getTask";
-import { graphToLoad, toTaskView, type TaskView } from "./taskView";
 
 export function useTask() {
   const view = shallowRef<TaskView | null>(null);
@@ -28,20 +27,15 @@ export function useTask() {
       if (request !== lastRequest) {
         return;
       }
-      let loadedGraph: BackendGraph | null = null;
-      const graphId = graphToLoad(data.getTask);
-      if (graphId !== null) {
-        const graphResponse = await apolloClient.query({
-          query: GetTaskGraphQuery,
-          variables: { id: graphId },
-          fetchPolicy: "network-only",
-        });
-        if (request !== lastRequest) {
-          return;
-        }
-        loadedGraph = graphResponse.data.getGraphById;
+      const task = data.getTask;
+      let taskGraph: BackendGraph | null = null;
+      if (task.__typename === "TaskGraph") {
+        taskGraph = await loadFullGraph(task.graph);
       }
-      const result = toTaskView(data.getTask, loadedGraph);
+      if (request !== lastRequest) {
+        return;
+      }
+      const result = toTaskView(task, taskGraph);
       if (result === null) {
         isUnsupported.value = true;
       } else {
