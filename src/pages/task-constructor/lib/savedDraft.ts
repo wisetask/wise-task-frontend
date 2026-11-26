@@ -15,7 +15,6 @@ interface SavedDraft {
   category: string;
   description: string;
   isPublic: boolean;
-  isHiddenMistake: boolean;
   hasGraph: boolean;
   graph: string;
   rules: EditorRules;
@@ -58,7 +57,6 @@ export function draftToText(draft: TaskDraft): string {
     category: draft.category,
     description: draft.description,
     isPublic: draft.isPublic,
-    isHiddenMistake: draft.isHiddenMistake,
     hasGraph: draft.hasGraph,
     graph: graphToFileText(draft.graph),
     rules: draft.rules,
@@ -82,7 +80,7 @@ export function draftFromText(text: string): TaskDraft | null {
       return null;
     }
   }
-  const switches = ["isPublic", "isHiddenMistake", "hasGraph"];
+  const switches = ["isPublic", "hasGraph"];
   for (const key of switches) {
     if (typeof data[key] !== "boolean") {
       return null;
@@ -101,7 +99,6 @@ export function draftFromText(text: string): TaskDraft | null {
     category: data.category as string,
     description: data.description as string,
     isPublic: data.isPublic === true,
-    isHiddenMistake: data.isHiddenMistake === true,
     hasGraph: data.hasGraph === true,
     graph: graph.graph,
     rules: rules,

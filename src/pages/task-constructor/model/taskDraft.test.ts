@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { addEdge, addVertex } from "@/entities/graph";
 import {
+  answerStartsFromTask,
+  canPickAnswerDirection,
   createTaskDraft,
   draftProblems,
   draftReadiness,
@@ -10,6 +12,7 @@ import {
   studentHints,
   studentRules,
   studentStartGraph,
+  taskGraph,
   type TaskDraft,
 } from "./taskDraft";
 
@@ -108,7 +111,7 @@ describe("task draft", () => {
     expect(studentRules(draft).canAdd).toBe(false);
   });
 
-  it("starts the student with the task graph or an empty one of the right kind", () => {
+  it("starts the answer from a copy only when the student cannot add", () => {
     const draft = createTaskDraft();
     draft.rules.direction = "directed";
     let start = studentStartGraph(draft);
@@ -116,9 +119,39 @@ describe("task draft", () => {
     expect(start.isDirected).toBe(true);
     draft.hasGraph = true;
     draft.graph = addVertex(draft.graph, 5, 5);
+    expect(answerStartsFromTask(draft)).toBe(false);
+    expect(studentStartGraph(draft).vertices.length).toBe(0);
+    draft.rules.canAdd = false;
+    expect(answerStartsFromTask(draft)).toBe(true);
     start = studentStartGraph(draft);
     expect(start.vertices.length).toBe(1);
     expect(start.isDirected).toBe(true);
+  });
+
+  it("shows the task graph in the condition only when it is given", () => {
+    const draft = createTaskDraft();
+    draft.graph = addVertex(draft.graph, 5, 5);
+    expect(taskGraph(draft)).toBeNull();
+    draft.hasGraph = true;
+    draft.rules.direction = "directed";
+    const graph = taskGraph(draft);
+    expect(graph).not.toBeNull();
+    if (graph !== null) {
+      expect(graph.vertices.length).toBe(1);
+      expect(graph.isDirected).toBe(true);
+    }
+  });
+
+  it("lets the student pick the kind only for an answer from scratch", () => {
+    const draft = createTaskDraft();
+    expect(canPickAnswerDirection(draft)).toBe(true);
+    draft.hasGraph = true;
+    expect(canPickAnswerDirection(draft)).toBe(true);
+    draft.rules.canAdd = false;
+    expect(canPickAnswerDirection(draft)).toBe(false);
+    draft.rules.canAdd = true;
+    draft.rules.direction = "undirected";
+    expect(canPickAnswerDirection(draft)).toBe(false);
   });
 
   it("explains the limits to the student", () => {
@@ -128,8 +161,11 @@ describe("task draft", () => {
     draft.rules.direction = "undirected";
     draft.rules.canMove = false;
     expect(studentHints(draft)).toEqual([
-      "Граф может быть только неориентированным.",
+      "Ответ строится на пустом поле, граф задачи остаётся в условии.",
+      "Граф в ответе может быть только неориентированным.",
       "В этой задаче нельзя двигать вершины.",
     ]);
+    draft.rules.canAdd = false;
+    expect(studentHints(draft)[0]).toBe("Ответ начинается с копии графа задачи.");
   });
 });

@@ -60,13 +60,22 @@ describe("task constructor page", () => {
     expect(wrapper.find(".constructor__trial-bar").exists()).toBe(true);
     expect(wrapper.findAll(".graph-toolbar__button[aria-pressed]").length).toBe(2);
     expect(wrapper.find(".constructor__task-hints").text()).toContain("нельзя добавлять");
+    expect(wrapper.find(".constructor__task-hints").text()).toContain("копии графа задачи");
+    expect(wrapper.find(".constructor__task-graph").text()).toContain("Граф задачи");
+    expect(wrapper.find(".constructor__answer").text()).toContain("Ваш ответ");
+  });
+
+  it("has no switch for showing only the first mistake", () => {
+    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    expect(wrapper.text()).not.toContain("первую ошибку");
   });
 
   it("lets the student pick the kind when the graph is drawn from scratch", async () => {
     const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
     await wrapper.findAll('[role="tab"]')[2].trigger("click");
     expect(wrapper.find(".constructor__task").text()).toContain("Граф студент рисует сам.");
-    expect(wrapper.find(".constructor__task").text()).toContain("Ориентированный граф");
+    expect(wrapper.find(".constructor__task-graph").exists()).toBe(false);
+    expect(wrapper.find(".constructor__answer").text()).toContain("Ориентированный граф");
   });
 
   it("keeps the draft after the page is opened again", async () => {

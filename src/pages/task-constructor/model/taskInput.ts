@@ -86,7 +86,7 @@ export function toTaskGraphInput(draft: TaskDraft): TaskGraphInput {
     category: draft.category.trim(),
     taskType: "GRAPH",
     isPublic: draft.isPublic,
-    isHiddenMistake: draft.isHiddenMistake,
+    isHiddenMistake: false,
     graph: graph,
     rule: rule,
     condition: [],
