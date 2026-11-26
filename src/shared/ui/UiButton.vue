@@ -1,5 +1,7 @@
 <script setup lang="ts">
-withDefaults(
+import { ref } from "vue";
+
+const props = withDefaults(
   defineProps<{
     variant?: "primary" | "secondary" | "ghost" | "danger";
     size?: "sm" | "md";
@@ -15,6 +17,32 @@ withDefaults(
     loading: false,
   },
 );
+
+interface Ping {
+  id: number;
+  x: number;
+  y: number;
+}
+
+const pings = ref<Ping[]>([]);
+let pingCount = 0;
+
+function onPointerDown(event: PointerEvent) {
+  if (props.disabled || props.loading) {
+    return;
+  }
+  const button = event.currentTarget;
+  if (!(button instanceof HTMLElement)) {
+    return;
+  }
+  const rect = button.getBoundingClientRect();
+  pingCount = pingCount + 1;
+  pings.value.push({ id: pingCount, x: event.clientX - rect.left, y: event.clientY - rect.top });
+}
+
+function removePing(id: number) {
+  pings.value = pings.value.filter((ping) => ping.id !== id);
+}
 </script>
 
 <template>
@@ -24,7 +52,16 @@ withDefaults(
     :class="['ui-button--' + variant, 'ui-button--' + size]"
     :disabled="disabled || loading"
     :aria-busy="loading"
+    @pointerdown="onPointerDown"
   >
+    <span
+      v-for="ping in pings"
+      :key="ping.id"
+      class="ui-button__ping"
+      :style="{ left: ping.x + 'px', top: ping.y + 'px' }"
+      aria-hidden="true"
+      @animationend.self="removePing(ping.id)"
+    />
     <span v-if="loading" class="ui-button__spinner" aria-hidden="true" />
     <slot />
   </button>
@@ -32,6 +69,9 @@ withDefaults(
 
 <style scoped>
 .ui-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -39,9 +79,24 @@ withDefaults(
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   font: inherit;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.ui-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.ui-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 60ms;
 }
 
 .ui-button:focus-visible {
@@ -73,15 +128,17 @@ withDefaults(
 
 .ui-button--primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
+  box-shadow: var(--shadow-accent);
 }
 
 .ui-button--secondary {
   border-color: var(--color-border);
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
 .ui-button--secondary:hover:not(:disabled) {
+  border-color: var(--color-accent);
   background: var(--color-surface-hover);
 }
 
@@ -103,6 +160,54 @@ withDefaults(
   background: var(--color-danger-hover);
 }
 
+.ui-button__ping {
+  position: absolute;
+  z-index: -1;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  animation: ui-button-vertex 520ms var(--ease-out) forwards;
+}
+
+.ui-button__ping::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  animation: ui-button-ring 520ms var(--ease-out) forwards;
+}
+
+@keyframes ui-button-vertex {
+  0% {
+    opacity: 0.45;
+    transform: scale(0);
+  }
+  35% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes ui-button-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(8);
+  }
+}
+
 .ui-button__spinner {
   width: 14px;
   height: 14px;
@@ -119,6 +224,16 @@ withDefaults(
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ui-button:hover:not(:disabled),
+  .ui-button:active:not(:disabled) {
+    transform: none;
+  }
+
+  .ui-button__ping,
+  .ui-button__ping::after {
+    animation-duration: 1ms;
+  }
+
   .ui-button__spinner {
     animation-duration: 2s;
   }
