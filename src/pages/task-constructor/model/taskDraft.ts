@@ -132,7 +132,7 @@ export function taskGraph(draft: TaskDraft): Graph | null {
 }
 
 export function answerStartsFromTask(draft: TaskDraft): boolean {
-  return draft.hasGraph && !draft.rules.canAdd;
+  return draft.hasGraph;
 }
 
 export function studentStartGraph(draft: TaskDraft): Graph {
@@ -150,10 +150,8 @@ export function studentHints(draft: TaskDraft): string[] {
   const hints: string[] = [];
   if (!draft.hasGraph) {
     hints.push("Граф студент рисует сам.");
-  } else if (answerStartsFromTask(draft)) {
-    hints.push("Ответ начинается с копии графа задачи.");
   } else {
-    hints.push("Ответ строится на пустом поле, граф задачи остаётся в условии.");
+    hints.push("Ответ начинается с копии графа задачи.");
   }
   if (draft.rules.direction === "directed") {
     hints.push("Граф в ответе может быть только ориентированным.");

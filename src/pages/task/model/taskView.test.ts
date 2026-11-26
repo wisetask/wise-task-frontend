@@ -63,7 +63,7 @@ describe("task view", () => {
     expect(view.rules.canColor).toBe(true);
     expect(view.checks.length).toBe(2);
     expect(view.checks[0].mistakeText).toBe("Соседние вершины одного цвета");
-    expect(view.checks[1].text).toBe("Число цветов <= 2");
+    expect(view.checks[1].text).toBe("Число цветов");
   });
 
   it("loads the graph separately when the task gives only its id", () => {
@@ -87,30 +87,28 @@ describe("task view", () => {
     expect(toTaskView(task)).toBeNull();
   });
 
-  it("names the checks for the student", () => {
-    const property = {
-      plugin: { id: "p", name: "Граф связный" },
-      value: "false",
-      pluginType: "GRAPH_PROPERTY",
+  it("names the checks without giving away the expected values", () => {
+    const characteristic = {
+      plugin: { id: "p", name: "Хроматический индекс" },
+      value: "5",
+      sign: "=",
+      pluginType: "GRAPH_CHARACTERISTIC",
     };
-    expect(checkText(property)).toBe("Граф связный — не выполняется");
-    property.value = "true";
-    expect(checkText(property)).toBe("Граф связный");
+    expect(checkText(characteristic)).toBe("Хроматический индекс");
+    expect(checkText({ plugin: null, value: "true", pluginType: "GRAPH_PROPERTY" })).toBe(
+      "Проверка",
+    );
   });
 
-  it("starts the answer from a copy only when the student cannot add", () => {
+  it("starts the answer from a copy of the task graph even if adding is allowed", () => {
     const view = toTaskView(coloringTask());
     if (view === null) {
       return;
     }
+    view.rules.canAdd = true;
     expect(answerStartsFromTask(view)).toBe(true);
     expect(startAnswer(view).vertices.length).toBe(2);
     expect(canPickDirection(view)).toBe(false);
-    view.rules.canAdd = true;
-    const empty = startAnswer(view);
-    expect(empty.vertices.length).toBe(0);
-    expect(empty.isDirected).toBe(true);
-    expect(canPickDirection(view)).toBe(true);
   });
 
   it("gives an empty answer when the task has no graph", () => {
@@ -121,6 +119,7 @@ describe("task view", () => {
       return;
     }
     expect(startAnswer(view).vertices.length).toBe(0);
+    expect(canPickDirection(view)).toBe(true);
     expect(taskHints(view)).toEqual(["Граф нарисуйте сами."]);
   });
 

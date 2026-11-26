@@ -111,7 +111,7 @@ describe("task draft", () => {
     expect(studentRules(draft).canAdd).toBe(false);
   });
 
-  it("starts the answer from a copy only when the student cannot add", () => {
+  it("starts the answer from a copy of the task graph", () => {
     const draft = createTaskDraft();
     draft.rules.direction = "directed";
     let start = studentStartGraph(draft);
@@ -119,9 +119,6 @@ describe("task draft", () => {
     expect(start.isDirected).toBe(true);
     draft.hasGraph = true;
     draft.graph = addVertex(draft.graph, 5, 5);
-    expect(answerStartsFromTask(draft)).toBe(false);
-    expect(studentStartGraph(draft).vertices.length).toBe(0);
-    draft.rules.canAdd = false;
     expect(answerStartsFromTask(draft)).toBe(true);
     start = studentStartGraph(draft);
     expect(start.vertices.length).toBe(1);
@@ -142,15 +139,13 @@ describe("task draft", () => {
     }
   });
 
-  it("lets the student pick the kind only for an answer from scratch", () => {
+  it("lets the student pick the kind only for a graph drawn from scratch", () => {
     const draft = createTaskDraft();
     expect(canPickAnswerDirection(draft)).toBe(true);
-    draft.hasGraph = true;
-    expect(canPickAnswerDirection(draft)).toBe(true);
-    draft.rules.canAdd = false;
-    expect(canPickAnswerDirection(draft)).toBe(false);
-    draft.rules.canAdd = true;
     draft.rules.direction = "undirected";
+    expect(canPickAnswerDirection(draft)).toBe(false);
+    draft.rules.direction = "any";
+    draft.hasGraph = true;
     expect(canPickAnswerDirection(draft)).toBe(false);
   });
 
@@ -161,11 +156,9 @@ describe("task draft", () => {
     draft.rules.direction = "undirected";
     draft.rules.canMove = false;
     expect(studentHints(draft)).toEqual([
-      "Ответ строится на пустом поле, граф задачи остаётся в условии.",
+      "Ответ начинается с копии графа задачи.",
       "Граф в ответе может быть только неориентированным.",
       "В этой задаче нельзя двигать вершины.",
     ]);
-    draft.rules.canAdd = false;
-    expect(studentHints(draft)[0]).toBe("Ответ начинается с копии графа задачи.");
   });
 });

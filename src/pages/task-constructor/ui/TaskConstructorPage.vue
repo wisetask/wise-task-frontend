@@ -290,8 +290,8 @@ function onDirectionChange(event: Event) {
           <div class="constructor__checks">
             <UiCheckbox v-model="draft.hasGraph" label="Граф задан" />
             <p class="constructor__hint">
-              Граф будет частью условия: студент увидит его, но изменить не сможет. Нарисовать граф
-              и решить, что можно делать в ответе, — на вкладке «Граф».
+              Граф будет в условии, а ответ студента начнётся с копии этого графа. Нарисовать граф и
+              решить, что студент может делать с копией, — на вкладке «Граф».
             </p>
             <UiCheckbox v-model="draft.isPublic" label="Публичная задача" />
           </div>
@@ -348,8 +348,8 @@ function onDirectionChange(event: Event) {
           title="В своём ответе студент может:"
         />
         <p class="constructor__rules-hint">
-          Этот граф студент увидит в условии и не сможет изменить. Если запретить добавлять, ответ
-          начнётся с копии графа, иначе — с пустого поля.
+          Этот граф студент увидит в условии без изменений, а свой ответ начнёт с его копии. Галочки
+          задают, что можно делать с копией.
         </p>
       </div>
       <GraphEditor ref="editor" v-model:graph="draft.graph" class="constructor__editor" />
