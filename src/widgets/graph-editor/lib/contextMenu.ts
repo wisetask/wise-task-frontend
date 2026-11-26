@@ -114,19 +114,22 @@ function degreeOf(graph: Graph, id: string): number {
   return degree;
 }
 
+export function vertexSummary(graph: Graph, id: string): string {
+  const summary = "степень " + degreeOf(graph, id);
+  const names = neighborNames(graph, id);
+  if (names.length === 0) {
+    return summary + " · нет соседей";
+  }
+  let text = summary + " · соседи " + names.slice(0, MAX_NEIGHBORS).join(", ");
+  if (names.length > MAX_NEIGHBORS) {
+    text = text + " и ещё " + (names.length - MAX_NEIGHBORS);
+  }
+  return text;
+}
+
 export function menuTitle(graph: Graph, target: MenuTarget): string {
   if (target.kind === "vertex") {
-    let title = "Вершина " + vertexName(graph, target.id);
-    title = title + " · степень " + degreeOf(graph, target.id);
-    const names = neighborNames(graph, target.id);
-    if (names.length === 0) {
-      return title + " · нет соседей";
-    }
-    title = title + " · соседи " + names.slice(0, MAX_NEIGHBORS).join(", ");
-    if (names.length > MAX_NEIGHBORS) {
-      title = title + " и ещё " + (names.length - MAX_NEIGHBORS);
-    }
-    return title;
+    return "Вершина " + vertexName(graph, target.id) + " · " + vertexSummary(graph, target.id);
   }
   if (target.kind === "edge") {
     const edge = findEdge(graph, target.id);

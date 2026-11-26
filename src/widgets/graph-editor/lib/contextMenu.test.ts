@@ -8,6 +8,7 @@ import {
   menuHint,
   menuTitle,
   neighborNames,
+  vertexSummary,
   layoutOfAction,
   MENU_WIDTH,
   menuPosition,
@@ -164,6 +165,7 @@ describe("editor context menu", () => {
       "Вершина 2 · степень 1 · соседи 1",
     );
     expect(menuTitle(graph, { kind: "canvas", x: 0, y: 0 })).toBe("");
+    expect(vertexSummary(graph, graph.vertices[2].id)).toBe("степень 1 · соседи 1");
   });
 
   it("names an edge by its ends", () => {

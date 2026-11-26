@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { Vertex } from "@/entities/graph";
 import { colorClass } from "../lib/colors";
 import { VERTEX_RADIUS } from "../lib/geometry";
@@ -16,7 +16,43 @@ const props = defineProps<{
   waveStep?: number | null;
   waveKey?: number;
   lit?: boolean;
+  snapped?: boolean;
+  glow?: boolean;
+  appearDelay?: number;
+  algoState?: string;
+  algoLabel?: string;
+  labelOverride?: string;
 }>();
+
+const paintKey = ref(0);
+
+watch(
+  () => props.vertex.color,
+  () => {
+    paintKey.value = paintKey.value + 1;
+  },
+);
+
+const shownLabel = computed(() => {
+  if (props.labelOverride !== undefined && props.labelOverride !== "") {
+    return props.labelOverride;
+  }
+  return props.vertex.label;
+});
+
+const algoLabelWidth = computed(() => {
+  if (props.algoLabel === undefined) {
+    return 0;
+  }
+  return 14 + props.algoLabel.length * 7;
+});
+
+const appearStyle = computed(() => {
+  if (props.appearDelay === undefined || props.appearDelay === 0) {
+    return undefined;
+  }
+  return { animationDelay: props.appearDelay + "ms" };
+});
 
 const waving = computed(() => props.waveStep !== null && props.waveStep !== undefined);
 
@@ -44,15 +80,33 @@ const emit = defineEmits<{
         'graph-vertex--selected': selected || highlighted,
         'graph-vertex--draggable': draggable,
         'graph-vertex--dragged': dragged,
+        'graph-vertex--snapped': snapped,
+        ['graph-vertex--algo-' + algoState]: algoState !== undefined && algoState !== '',
       },
     ]"
+    :style="appearStyle"
     @pointerdown="emit('grab', $event)"
     @click.stop="emit('pick', $event)"
     @contextmenu.prevent="emit('menu', $event)"
     @dblclick.stop="emit('rename')"
   >
     <circle
-      v-if="selected || lit"
+      v-if="paintKey > 0"
+      :key="'paint-' + paintKey"
+      :cx="vertex.x"
+      :cy="vertex.y"
+      :r="VERTEX_RADIUS"
+      class="graph-vertex__paint"
+    />
+    <circle
+      v-if="glow"
+      :cx="vertex.x"
+      :cy="vertex.y"
+      :r="VERTEX_RADIUS + 16"
+      class="graph-vertex__island"
+    />
+    <circle
+      v-if="selected || lit || snapped"
       :cx="vertex.x"
       :cy="vertex.y"
       :r="VERTEX_RADIUS + 6"
@@ -66,6 +120,13 @@ const emit = defineEmits<{
       :r="VERTEX_RADIUS"
       class="graph-vertex__ring"
     />
+    <circle
+      v-if="algoState === 'current'"
+      :cx="vertex.x"
+      :cy="vertex.y"
+      :r="VERTEX_RADIUS + 8"
+      class="graph-vertex__algo-ring"
+    />
     <g
       :key="'body-' + waveKey"
       class="graph-vertex__body"
@@ -74,7 +135,23 @@ const emit = defineEmits<{
     >
       <circle :cx="vertex.x" :cy="vertex.y" :r="VERTEX_RADIUS" :style="waveStyle" />
       <text :x="vertex.x" :y="vertex.y + 5" text-anchor="middle" class="graph-vertex__label">
-        {{ vertex.label }}
+        {{ shownLabel }}
+      </text>
+    </g>
+    <g
+      v-if="algoLabel !== undefined && algoLabel !== ''"
+      :key="'algo-' + algoLabel"
+      class="graph-vertex__algo-label"
+    >
+      <rect
+        :x="vertex.x - algoLabelWidth / 2"
+        :y="vertex.y - VERTEX_RADIUS - 26"
+        :width="algoLabelWidth"
+        height="18"
+        rx="9"
+      />
+      <text :x="vertex.x" :y="vertex.y - VERTEX_RADIUS - 13" text-anchor="middle">
+        {{ algoLabel }}
       </text>
     </g>
     <g v-if="degree !== null && degree !== undefined" class="graph-vertex__degree">
@@ -109,7 +186,7 @@ const emit = defineEmits<{
   cursor: pointer;
   transform-box: fill-box;
   transform-origin: center;
-  animation: graph-vertex-pop 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: graph-vertex-pop 650ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 .graph-vertex .graph-vertex__halo {
@@ -202,14 +279,150 @@ const emit = defineEmits<{
 .graph-vertex__body {
   transform-box: fill-box;
   transform-origin: center;
+  transition: transform 180ms var(--ease-out);
+}
+
+.graph-vertex .graph-vertex__body circle {
+  transition:
+    fill var(--duration) var(--ease-out),
+    stroke var(--duration) var(--ease-out);
+}
+
+.graph-vertex--algo-visited .graph-vertex__body circle {
+  fill: var(--color-accent-muted);
+  stroke: var(--color-accent);
+  stroke-width: 3;
+}
+
+.graph-vertex--algo-frontier .graph-vertex__body circle {
+  stroke: var(--graph-active);
+  stroke-width: 3;
+  stroke-dasharray: 5 4;
+  animation: graph-vertex-march 1s linear infinite;
+}
+
+.graph-vertex--algo-current .graph-vertex__body circle {
+  fill: var(--graph-active);
+  stroke: var(--graph-active);
+  stroke-width: 3;
+}
+
+.graph-vertex--algo-current .graph-vertex__label {
+  fill: #ffffff;
+  font-weight: 700;
+}
+
+.graph-vertex .graph-vertex__algo-ring {
+  fill: none;
+  stroke: var(--graph-active);
+  stroke-width: 2;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-vertex-algo-ring 1.2s var(--ease-out) infinite;
+}
+
+.graph-vertex__algo-label {
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: graph-degree-in var(--duration) var(--ease-spring) both;
+}
+
+.graph-vertex .graph-vertex__algo-label rect {
+  fill: var(--color-surface);
+  stroke: var(--graph-active);
+  stroke-width: 1.5;
+}
+
+.graph-vertex__algo-label text {
+  fill: var(--color-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@keyframes graph-vertex-march {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+@keyframes graph-vertex-algo-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.graph-vertex--snapped .graph-vertex__body {
+  transform: scale(1.18);
+}
+
+.graph-vertex .graph-vertex__paint {
+  fill: var(--graph-vertex-stroke);
+  stroke: none;
+  opacity: 0;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-vertex-paint 650ms var(--ease-out);
+}
+
+.graph-vertex--red .graph-vertex__paint {
+  fill: var(--graph-red-stroke);
+}
+
+.graph-vertex--green .graph-vertex__paint {
+  fill: var(--graph-green-stroke);
+}
+
+.graph-vertex--blue .graph-vertex__paint {
+  fill: var(--graph-blue-stroke);
+}
+
+@keyframes graph-vertex-paint {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+.graph-vertex .graph-vertex__island {
+  fill: var(--color-success);
+  fill-opacity: 0.18;
+  stroke: var(--color-success);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-vertex-island 1.4s ease-in-out infinite;
+}
+
+@keyframes graph-vertex-island {
+  0%,
+  100% {
+    transform: scale(0.92);
+  }
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 .graph-vertex__body--wave {
-  animation: graph-vertex-jump 700ms var(--ease-out) both;
+  animation: graph-vertex-jump 700ms var(--ease-out) backwards;
 }
 
 .graph-vertex__body--wave circle {
-  animation: graph-vertex-flash 700ms var(--ease-out) both;
+  animation: graph-vertex-flash 700ms var(--ease-out) backwards;
 }
 
 @keyframes graph-vertex-jump {
@@ -240,6 +453,10 @@ const emit = defineEmits<{
 @media (prefers-reduced-motion: reduce) {
   .graph-vertex,
   .graph-vertex .graph-vertex__ring,
+  .graph-vertex .graph-vertex__algo-ring,
+  .graph-vertex--algo-frontier .graph-vertex__body circle,
+  .graph-vertex__algo-label,
+  .graph-vertex .graph-vertex__island,
   .graph-vertex__body--wave,
   .graph-vertex__body--wave circle,
   .graph-vertex__degree {
