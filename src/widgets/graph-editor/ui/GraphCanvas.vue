@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
 import { findVertex, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
+import { emptyCanvasText, litParts } from "../lib/canvasLook";
+import type { VertexWave } from "../lib/celebrations";
 import { copySelection, type GraphClipboard } from "../lib/clipboard";
-import { layoutOfAction, type MenuAction, type MenuTarget } from "../lib/contextMenu";
+import { layoutOfAction, menuTitle, type MenuAction, type MenuTarget } from "../lib/contextMenu";
+import { degreeMap } from "../lib/degrees";
 import { buildEdgeShapes, vertexAt, VERTEX_RADIUS, type Point } from "../lib/geometry";
 import { toCanvasPoint, wantsToggle } from "../lib/pointer";
 import { canRename, currentLabel, newLabel, renamePoint, type RenameTarget } from "../lib/rename";
@@ -37,6 +40,8 @@ const props = withDefaults(
     readonly?: boolean;
     panMode?: boolean;
     rules?: EditorRules;
+    showDegrees?: boolean;
+    wave?: VertexWave | null;
   }>(),
   {
     tool: "select",
@@ -44,6 +49,8 @@ const props = withDefaults(
     readonly: false,
     panMode: false,
     rules: () => allowEverything(),
+    showDegrees: false,
+    wave: null,
   },
 );
 
@@ -55,6 +62,70 @@ const emit = defineEmits<{
 
 const svgElement = ref<SVGSVGElement | null>(null);
 const edgeSourceId = ref<string | null>(null);
+const hoveredVertexId = ref<string | null>(null);
+const gridId = "graph-grid-" + useId();
+
+interface Ghost {
+  key: number;
+  x: number;
+  y: number;
+}
+
+const MAX_GHOSTS = 40;
+const ghosts = ref<Ghost[]>([]);
+let ghostCount = 0;
+const ghostTimers: number[] = [];
+
+const lit = computed(() => litParts(props.graph, hoveredVertexId.value));
+
+const emptyText = computed(() => emptyCanvasText(props.readonly, props.tool, props.rules.canAdd));
+
+function onVertexEnter(id: string) {
+  hoveredVertexId.value = id;
+}
+
+function onVertexLeave(id: string) {
+  if (hoveredVertexId.value === id) {
+    hoveredVertexId.value = null;
+  }
+}
+
+function addGhosts(now: Graph, before: Graph) {
+  const added: Ghost[] = [];
+  for (const vertex of before.vertices) {
+    if (added.length >= MAX_GHOSTS) {
+      break;
+    }
+    if (findVertex(now, vertex.id) === undefined) {
+      ghostCount = ghostCount + 1;
+      added.push({ key: ghostCount, x: vertex.x, y: vertex.y });
+    }
+  }
+  if (added.length === 0) {
+    return;
+  }
+  ghosts.value = ghosts.value.concat(added);
+  const lastKey = ghostCount;
+  const timer = window.setTimeout(() => {
+    ghosts.value = ghosts.value.filter((ghost) => ghost.key > lastKey);
+  }, 500);
+  ghostTimers.push(timer);
+}
+
+watch(
+  () => props.graph,
+  (now, before) => {
+    if (before !== undefined && now.vertices.length < before.vertices.length) {
+      addGhosts(now, before);
+    }
+  },
+);
+
+onBeforeUnmount(() => {
+  for (const timer of ghostTimers) {
+    window.clearTimeout(timer);
+  }
+});
 const cursorPoint = ref<Point | null>(null);
 const pointerPoint = ref<Point | null>(null);
 const renaming = ref<RenameTarget | null>(null);
@@ -126,6 +197,7 @@ const box = boxSelect.box;
 const {
   menu,
   items: menuItems,
+  title: menuHeader,
   showColors: menuShowsColors,
   currentColor: menuColor,
   open: openMenuAt,
@@ -138,6 +210,32 @@ const {
 );
 
 const edgeShapes = computed(() => buildEdgeShapes(props.graph, VERTEX_RADIUS));
+
+const degrees = computed(() => {
+  if (!props.showDegrees) {
+    return null;
+  }
+  return degreeMap(props.graph);
+});
+
+function waveStepOf(id: string): number | null {
+  if (props.wave === null) {
+    return null;
+  }
+  const step = props.wave.steps[id];
+  return step === undefined ? null : step;
+}
+
+function degreeOfVertex(id: string): number | null {
+  if (degrees.value === null) {
+    return null;
+  }
+  return degrees.value[id] ?? 0;
+}
+
+function edgeTitle(id: string): string {
+  return menuTitle(props.graph, { kind: "edge", id: id });
+}
 
 const edgeSource = computed(() => {
   if (edgeSourceId.value === null) {
@@ -469,6 +567,8 @@ function onMenuChoose(action: MenuAction) {
   }
   if (layoutOfAction(action) !== null) {
     arrange(action);
+  } else if (action === "rename" && (target.kind === "vertex" || target.kind === "edge")) {
+    startRename(target.kind, target.id);
   } else if (action === "reset-zoom") {
     resetZoom();
   } else if (action === "fit-view") {
@@ -577,6 +677,19 @@ defineExpose({
     >
       <GraphArrowMarkers />
 
+      <defs>
+        <pattern
+          :id="gridId"
+          width="28"
+          height="28"
+          patternUnits="userSpaceOnUse"
+          :patternTransform="transform"
+        >
+          <circle cx="14" cy="14" r="1.3" class="graph-canvas__dot" />
+        </pattern>
+      </defs>
+      <rect class="graph-canvas__grid" width="100%" height="100%" :fill="'url(#' + gridId + ')'" />
+
       <g :transform="transform">
         <line
           v-if="edgeSource && cursorPoint"
@@ -593,6 +706,8 @@ defineExpose({
           :shape="shape"
           :selected="isSelected(selection, 'edge', shape.id)"
           :directed="graph.isDirected"
+          :title="edgeTitle(shape.id)"
+          :lit="lit.edgeIds.includes(shape.id)"
           @pick="onEdgeClick($event, shape.id)"
           @rename="startRename('edge', shape.id)"
           @menu="onItemMenu($event, 'edge', shape.id)"
@@ -606,10 +721,25 @@ defineExpose({
           :highlighted="vertex.id === edgeSourceId"
           :dragged="vertex.id === draggedVertexId"
           :draggable="verticesDraggable"
+          :degree="degreeOfVertex(vertex.id)"
+          :wave-step="waveStepOf(vertex.id)"
+          :wave-key="wave === null ? 0 : wave.key"
+          :lit="lit.vertexIds.includes(vertex.id)"
+          @pointerenter="onVertexEnter(vertex.id)"
+          @pointerleave="onVertexLeave(vertex.id)"
           @grab="onVertexPointerDown($event, vertex)"
           @pick="onVertexClick($event, vertex.id)"
           @rename="startRename('vertex', vertex.id)"
           @menu="onItemMenu($event, 'vertex', vertex.id)"
+        />
+
+        <circle
+          v-for="ghost in ghosts"
+          :key="ghost.key"
+          :cx="ghost.x"
+          :cy="ghost.y"
+          :r="VERTEX_RADIUS"
+          class="graph-canvas__ghost"
         />
 
         <rect
@@ -622,6 +752,23 @@ defineExpose({
         />
       </g>
     </svg>
+
+    <Transition name="graph-canvas-empty">
+      <div v-if="graph.vertices.length === 0" class="graph-canvas__empty">
+        <svg class="graph-canvas__empty-art" viewBox="0 0 160 110" aria-hidden="true">
+          <path class="graph-canvas__empty-edge" style="--i: 0" d="M30 70 L80 25" pathLength="1" />
+          <path class="graph-canvas__empty-edge" style="--i: 1" d="M80 25 L130 60" pathLength="1" />
+          <path class="graph-canvas__empty-edge" style="--i: 2" d="M130 60 L75 92" pathLength="1" />
+          <path class="graph-canvas__empty-edge" style="--i: 3" d="M75 92 L30 70" pathLength="1" />
+          <path class="graph-canvas__empty-edge" style="--i: 4" d="M80 25 L75 92" pathLength="1" />
+          <circle class="graph-canvas__empty-node" style="--i: 0" cx="30" cy="70" r="9" />
+          <circle class="graph-canvas__empty-node" style="--i: 1" cx="80" cy="25" r="9" />
+          <circle class="graph-canvas__empty-node" style="--i: 2" cx="130" cy="60" r="9" />
+          <circle class="graph-canvas__empty-node" style="--i: 3" cx="75" cy="92" r="9" />
+        </svg>
+        <p class="graph-canvas__empty-text">{{ emptyText }}</p>
+      </div>
+    </Transition>
 
     <GraphRenameField
       v-if="renameField"
@@ -646,6 +793,7 @@ defineExpose({
       :left="menu.left"
       :top="menu.top"
       :items="menuItems"
+      :title="menuHeader"
       :submenu-on-left="menu.submenuOnLeft"
       :show-colors="menuShowsColors"
       :current-color="menuColor"
@@ -668,7 +816,13 @@ defineExpose({
   display: block;
   width: 100%;
   height: 100%;
-  background: var(--graph-canvas-bg);
+  background:
+    radial-gradient(
+      ellipse at 50% 35%,
+      color-mix(in srgb, var(--color-accent) 7%, transparent),
+      transparent 65%
+    ),
+    var(--graph-canvas-bg);
   user-select: none;
   touch-action: none;
 }
@@ -715,6 +869,7 @@ defineExpose({
   stroke-dasharray: 4 3;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
+  animation: graph-canvas-ants-box 500ms linear infinite;
 }
 
 .graph-canvas__preview {
@@ -722,5 +877,170 @@ defineExpose({
   stroke-width: 2;
   stroke-dasharray: 6 4;
   pointer-events: none;
+  animation: graph-canvas-ants-line 500ms linear infinite;
+}
+
+.graph-canvas__grid {
+  pointer-events: none;
+}
+
+.graph-canvas__dot {
+  fill: var(--graph-edge);
+  opacity: 0.25;
+}
+
+.graph-canvas__ghost {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-canvas-ghost 450ms var(--ease-out) both;
+}
+
+.graph-canvas__empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: min(320px, 80%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.graph-canvas__empty-art {
+  width: 160px;
+  height: 110px;
+}
+
+.graph-canvas__empty-edge {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.7;
+  animation: graph-canvas-empty-edge 6s var(--ease-out) infinite;
+  animation-delay: calc(1.3s + var(--i) * 0.3s);
+}
+
+.graph-canvas__empty-node {
+  fill: var(--graph-vertex-fill);
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-canvas-empty-node 6s var(--ease-spring) infinite;
+  animation-delay: calc(var(--i) * 0.35s);
+}
+
+.graph-canvas__empty-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.graph-canvas-empty-enter-active,
+.graph-canvas-empty-leave-active {
+  transition:
+    opacity var(--duration) var(--ease-out),
+    transform var(--duration) var(--ease-out);
+}
+
+.graph-canvas-empty-enter-from,
+.graph-canvas-empty-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+}
+
+@keyframes graph-canvas-ants-box {
+  to {
+    stroke-dashoffset: -7;
+  }
+}
+
+@keyframes graph-canvas-ants-line {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+@keyframes graph-canvas-ghost {
+  from {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes graph-canvas-empty-node {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  8% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  12% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes graph-canvas-empty-edge {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.7;
+  }
+  18% {
+    stroke-dashoffset: 0;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 0.7;
+  }
+  82%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-canvas__box,
+  .graph-canvas__preview,
+  .graph-canvas__ghost {
+    animation: none;
+  }
+
+  .graph-canvas__ghost {
+    display: none;
+  }
+
+  .graph-canvas__empty-edge,
+  .graph-canvas__empty-node {
+    opacity: 1;
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 </style>

@@ -23,11 +23,13 @@ const items = computed(() => buildStatsItems(graphStatistics(props.graph)));
 .graph-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
+  gap: var(--space-1) var(--space-5);
   margin: 0;
   padding: var(--space-2) var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
   font-size: var(--font-size-sm);
 }
 
@@ -40,13 +42,9 @@ const items = computed(() => buildStatsItems(graphStatistics(props.graph)));
   color: var(--color-text-muted);
 }
 
-.graph-stats__label::after {
-  content: ":";
-}
-
 .graph-stats__value {
   margin: 0;
-  font-weight: 600;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 </style>

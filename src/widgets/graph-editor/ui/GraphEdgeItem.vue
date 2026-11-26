@@ -7,6 +7,8 @@ const props = defineProps<{
   shape: EdgeShape;
   selected: boolean;
   directed: boolean;
+  title?: string;
+  lit?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -26,13 +28,17 @@ const arrow = computed(() => {
 <template>
   <g
     class="graph-edge"
-    :class="['graph-edge--' + colorClass(shape.color), { 'graph-edge--selected': selected }]"
+    :class="[
+      'graph-edge--' + colorClass(shape.color),
+      { 'graph-edge--selected': selected, 'graph-edge--lit': lit },
+    ]"
     @click.stop="emit('pick', $event)"
     @contextmenu.prevent="emit('menu', $event)"
     @dblclick.stop="emit('rename')"
   >
+    <title v-if="title">{{ title }}</title>
     <path :d="shape.path" class="graph-edge__hit" />
-    <path :d="shape.path" class="graph-edge__line" :marker-end="arrow" />
+    <path :d="shape.path" class="graph-edge__line" pathLength="1" :marker-end="arrow" />
     <text
       v-if="shape.text !== ''"
       :x="shape.labelX"
@@ -61,7 +67,12 @@ const arrow = computed(() => {
   fill: none;
   stroke: var(--graph-edge);
   stroke-width: 2;
+  stroke-dasharray: 1;
   pointer-events: none;
+  transition:
+    stroke var(--duration-fast) var(--ease-out),
+    stroke-width var(--duration-fast) var(--ease-out);
+  animation: graph-edge-draw 450ms var(--ease-out) both;
 }
 
 .graph-edge--red .graph-edge__line {
@@ -80,9 +91,29 @@ const arrow = computed(() => {
   stroke-width: 3;
 }
 
+.graph-edge--lit .graph-edge__line {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+
 .graph-edge--selected .graph-edge__line {
   stroke: var(--color-accent);
   stroke-width: 3;
+}
+
+@keyframes graph-edge-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-edge__line {
+    animation: none;
+  }
 }
 
 .graph-edge__text {

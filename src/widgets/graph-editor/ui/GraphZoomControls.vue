@@ -99,8 +99,9 @@ const percentTitle =
 <style scoped>
 .graph-zoom {
   position: absolute;
-  right: var(--space-3);
-  bottom: var(--space-3);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -108,6 +109,7 @@ const percentTitle =
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .graph-zoom__icon {

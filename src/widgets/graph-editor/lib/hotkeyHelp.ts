@@ -130,3 +130,24 @@ export function hotkeyHelp(hotkeys: Hotkey[]): HelpSection[] {
   sections.push(MOUSE_HELP);
   return sections;
 }
+
+export function filterHelp(sections: HelpSection[], query: string): HelpSection[] {
+  const text = query.trim().toLowerCase();
+  if (text === "") {
+    return sections;
+  }
+  const result: HelpSection[] = [];
+  for (const section of sections) {
+    const rows: HelpRow[] = [];
+    for (const row of section.rows) {
+      const keysText = row.keys.join(" ").toLowerCase();
+      if (row.title.toLowerCase().includes(text) || keysText.includes(text)) {
+        rows.push(row);
+      }
+    }
+    if (rows.length > 0) {
+      result.push({ title: section.title, rows: rows });
+    }
+  }
+  return result;
+}

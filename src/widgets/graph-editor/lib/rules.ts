@@ -107,6 +107,9 @@ export function canRunMenuAction(action: MenuAction, rules: EditorRules): boolea
   if (action === "delete") {
     return rules.canDelete;
   }
+  if (action === "rename") {
+    return rules.canEditLabels;
+  }
   if (action.startsWith("layout")) {
     return rules.canMove;
   }
