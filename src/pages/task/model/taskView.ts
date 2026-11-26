@@ -68,17 +68,10 @@ export function rulesFromBackend(rule: BackendRule | undefined): EditorRules {
 }
 
 export function checkText(condition: BackendCondition): string {
-  let name = "Проверка";
   if (condition.plugin) {
-    name = condition.plugin.name;
+    return condition.plugin.name;
   }
-  if (condition.pluginType === "GRAPH_PROPERTY" && condition.value === "false") {
-    return name + " — не выполняется";
-  }
-  if (condition.pluginType === "GRAPH_CHARACTERISTIC" && condition.sign) {
-    return name + " " + condition.sign + " " + condition.value;
-  }
-  return name;
+  return "Проверка";
 }
 
 export function graphToLoad(task: BackendTask): string | null {
@@ -142,7 +135,7 @@ export function toTaskView(
 }
 
 export function answerStartsFromTask(view: TaskView): boolean {
-  return view.graph !== null && !view.rules.canAdd;
+  return view.graph !== null;
 }
 
 export function startAnswer(view: TaskView): Graph {
@@ -164,10 +157,8 @@ export function taskHints(view: TaskView): string[] {
   const hints: string[] = [];
   if (view.graph === null) {
     hints.push("Граф нарисуйте сами.");
-  } else if (answerStartsFromTask(view)) {
-    hints.push("Ответ начинается с копии графа задачи.");
   } else {
-    hints.push("Постройте ответ на пустом поле, граф задачи остаётся в условии.");
+    hints.push("Ответ начинается с копии графа задачи.");
   }
   if (view.graph !== null) {
     const summary = rulesSummary(view.rules);
