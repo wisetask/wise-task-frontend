@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { pathsOfLength, power } from "@/entities/relation";
-import { UiButton, UiCheckbox, UiTextField } from "@/shared/ui";
+import {
+  UiButton,
+  UiCheckbox,
+  UiSegmented,
+  UiTextField,
+  type UiSegmentedOption,
+} from "@/shared/ui";
 import {
   countFilled,
   countMistakes,
@@ -17,6 +23,13 @@ const name = ref("");
 const email = ref("");
 const password = ref("");
 const remember = ref(true);
+const mode = ref("edit");
+
+const MODE_OPTIONS: UiSegmentedOption[] = [
+  { value: "edit", label: "Правка" },
+  { value: "view", label: "Просмотр" },
+  { value: "check", label: "Проверка" },
+];
 const isSaving = ref(false);
 
 const emailError = computed(() => {
@@ -121,6 +134,14 @@ function fakeSave() {
       <div class="ui-kit__row">
         <UiCheckbox v-model="remember" label="Запомнить меня" />
         <UiCheckbox :model-value="true" label="Недоступная галочка" disabled />
+      </div>
+    </section>
+
+    <section class="ui-kit__section">
+      <h2 class="ui-kit__heading">Переключатель вариантов</h2>
+      <div class="ui-kit__row">
+        <UiSegmented v-model="mode" :options="MODE_OPTIONS" label="Режим" />
+        <UiSegmented v-model="mode" :options="MODE_OPTIONS" label="Недоступный режим" disabled />
       </div>
     </section>
 

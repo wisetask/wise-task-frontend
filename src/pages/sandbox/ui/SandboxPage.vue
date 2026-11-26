@@ -11,7 +11,13 @@ import {
 import { downloadBlob } from "@/shared/lib/downloadBlob";
 import { downloadText } from "@/shared/lib/downloadText";
 import { svgToPng } from "@/shared/lib/svgToPng";
-import { UiButton, UiCheckbox, UiMenuButton, type UiMenuItem } from "@/shared/ui";
+import {
+  UiButton,
+  UiMenuButton,
+  UiSegmented,
+  type UiMenuItem,
+  type UiSegmentedOption,
+} from "@/shared/ui";
 import {
   allowEverything,
   directedByRules,
@@ -29,7 +35,8 @@ const storage = browserStorage();
 const savedGraph = loadGraph(storage);
 const graph = ref<Graph>(savedGraph === null ? createEmptyGraph(false) : savedGraph);
 const tool = ref<EditorTool>("vertex");
-const viewOnly = ref(false);
+const mode = ref("edit");
+const viewOnly = computed(() => mode.value === "view");
 const rules = ref<EditorRules>(allowEverything());
 const rulesOpen = ref(false);
 const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
@@ -42,6 +49,18 @@ const DOWNLOAD_ITEMS: UiMenuItem[] = [
   { id: "png", label: "Картинка PNG" },
   { id: "svg", label: "Картинка SVG" },
 ];
+
+const MODE_OPTIONS: UiSegmentedOption[] = [
+  { value: "edit", label: "Правка" },
+  { value: "view", label: "Просмотр" },
+];
+
+const DIRECTION_OPTIONS: UiSegmentedOption[] = [
+  { value: "undirected", label: "Неориентированный" },
+  { value: "directed", label: "Ориентированный" },
+];
+
+const direction = computed(() => (graph.value.isDirected ? "directed" : "undirected"));
 
 const hint = computed(() => toolHint(tool.value, viewOnly.value));
 
@@ -67,8 +86,9 @@ function withRulesDirection(value: Graph): Graph {
   return setDirected(value, directed);
 }
 
-function onDirectedChange(isDirected: boolean) {
-  if (editor.value !== null) {
+function onDirectionChoose(value: string) {
+  const isDirected = value === "directed";
+  if (editor.value !== null && isDirected !== graph.value.isDirected) {
     editor.value.replaceGraph(setDirected(graph.value, isDirected));
   }
 }
@@ -154,45 +174,51 @@ function clearGraph() {
 <template>
   <main class="sandbox">
     <header class="sandbox__header">
-      <h1 class="sandbox__title">Песочница редактора</h1>
-      <span
-        v-if="notice !== ''"
-        class="sandbox__hint"
-        :class="{ 'sandbox__hint--error': noticeIsError }"
-        role="status"
-      >
-        {{ notice }}
-      </span>
-      <span v-else class="sandbox__hint">{{ hint }}</span>
-      <UiCheckbox v-model="viewOnly" class="sandbox__toggle" label="Только просмотр" />
-      <template v-if="!viewOnly">
-        <UiButton
-          size="sm"
-          class="sandbox__nowrap"
-          :aria-expanded="rulesOpen"
-          title="Проверить, как редактор ведёт себя с ограничениями задачи"
-          @click="rulesOpen = !rulesOpen"
+      <div class="sandbox__heading">
+        <h1 class="sandbox__title">Песочница редактора</h1>
+        <p
+          v-if="notice !== ''"
+          class="sandbox__hint"
+          :class="{ 'sandbox__hint--error': noticeIsError }"
+          role="status"
         >
-          Правила задачи
-        </UiButton>
-        <UiCheckbox
-          v-if="rules.direction === 'any'"
-          class="sandbox__nowrap"
-          :model-value="graph.isDirected"
-          label="Ориентированный"
-          @update:model-value="onDirectedChange"
+          {{ notice }}
+        </p>
+        <p v-else :key="hint" class="sandbox__hint">{{ hint }}</p>
+      </div>
+      <div class="sandbox__controls">
+        <UiSegmented v-model="mode" :options="MODE_OPTIONS" label="Режим редактора" />
+        <UiSegmented
+          v-if="!viewOnly && rules.direction === 'any'"
+          :model-value="direction"
+          :options="DIRECTION_OPTIONS"
+          label="Тип графа"
+          @update:model-value="onDirectionChoose"
         />
-        <UiButton v-if="rules.canDelete" size="sm" @click="clearGraph">Очистить</UiButton>
-        <UiButton
-          size="sm"
-          class="sandbox__nowrap"
-          title="Открыть граф из файла .json, скачанного здесь раньше"
-          @click="chooseFile"
-        >
-          Открыть граф (.json)
-        </UiButton>
-      </template>
-      <UiMenuButton label="Скачать" size="sm" :items="DOWNLOAD_ITEMS" @select="onDownload" />
+        <span class="sandbox__divider" aria-hidden="true" />
+        <template v-if="!viewOnly">
+          <UiButton
+            size="sm"
+            variant="ghost"
+            :aria-expanded="rulesOpen"
+            title="Проверить, как редактор ведёт себя с ограничениями задачи"
+            @click="rulesOpen = !rulesOpen"
+          >
+            Правила задачи
+          </UiButton>
+          <UiButton v-if="rules.canDelete" size="sm" variant="ghost" @click="clearGraph">
+            Очистить
+          </UiButton>
+          <UiButton
+            size="sm"
+            title="Открыть граф из файла .json, скачанного здесь раньше"
+            @click="chooseFile"
+          >
+            Открыть .json
+          </UiButton>
+        </template>
+        <UiMenuButton label="Скачать" size="sm" :items="DOWNLOAD_ITEMS" @select="onDownload" />
+      </div>
       <input
         ref="fileInput"
         class="sandbox__file"
@@ -211,6 +237,7 @@ function clearGraph() {
       class="sandbox__editor"
       :readonly="viewOnly"
       :rules="rules"
+      analysis
     />
   </main>
 </template>
@@ -225,9 +252,18 @@ function clearGraph() {
 .sandbox__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.sandbox__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .sandbox__title {
@@ -237,28 +273,35 @@ function clearGraph() {
 }
 
 .sandbox__hint {
+  margin: 0;
   overflow: hidden;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
+  animation: sandbox-hint-in var(--duration) var(--ease-out);
 }
 
 .sandbox__hint--error {
   color: var(--color-danger);
 }
 
+.sandbox__controls {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sandbox__divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 var(--space-1);
+  background: var(--color-border);
+}
+
 .sandbox__file {
   display: none;
-}
-
-.sandbox__toggle {
-  margin-left: auto;
-  white-space: nowrap;
-}
-
-.sandbox__nowrap {
-  white-space: nowrap;
 }
 
 .sandbox__rules {
@@ -270,5 +313,16 @@ function clearGraph() {
 .sandbox__editor {
   flex: 1;
   min-height: 0;
+}
+
+@keyframes sandbox-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 </style>

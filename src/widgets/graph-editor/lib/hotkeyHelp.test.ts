@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionKeys, hotkeyHelp, MOUSE_HELP, type HelpSection } from "./hotkeyHelp";
+import { actionKeys, filterHelp, hotkeyHelp, MOUSE_HELP, type HelpSection } from "./hotkeyHelp";
 import { DEFAULT_HOTKEYS, type Hotkey } from "./hotkeys";
 
 function rowKeys(sections: HelpSection[], title: string): string[] {
@@ -46,5 +46,17 @@ describe("hotkey help", () => {
     expect(sections.length).toBe(2);
     expect(sections[0].rows).toEqual([{ title: "Отменить", keys: ["U"] }]);
     expect(sections[1]).toBe(MOUSE_HELP);
+  });
+});
+
+describe("filterHelp", () => {
+  it("keeps only matching rows and drops empty sections", () => {
+    const sections = hotkeyHelp(DEFAULT_HOTKEYS);
+    expect(filterHelp(sections, "  ")).toBe(sections);
+    const found = filterHelp(sections, "ОТМЕН");
+    expect(found.length).toBe(1);
+    expect(found[0].rows[0].title).toBe("Отменить");
+    expect(filterHelp(sections, "ctrl+z").length).toBe(1);
+    expect(filterHelp(sections, "нет такого")).toEqual([]);
   });
 });

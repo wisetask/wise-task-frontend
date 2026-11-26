@@ -4,6 +4,10 @@ import { makeSelection } from "./selection";
 import {
   buildMenuItems,
   hasColorChoice,
+  menuHeight,
+  menuHint,
+  menuTitle,
+  neighborNames,
   layoutOfAction,
   MENU_WIDTH,
   menuPosition,
@@ -21,11 +25,12 @@ function actionsOf(items: { action: string }[]): string[] {
 }
 
 describe("editor context menu", () => {
-  it("offers a loop and deletion for a vertex", () => {
+  it("offers renaming, a loop and deletion for a vertex", () => {
     let graph = createEmptyGraph(false);
     graph = addVertex(graph, 0, 0);
     const id = graph.vertices[0].id;
     expect(actionsOf(buildMenuItems(graph, { kind: "vertex", id: id }))).toEqual([
+      "rename",
       "add-loop",
       "delete",
     ]);
@@ -36,7 +41,10 @@ describe("editor context menu", () => {
     graph = addVertex(graph, 0, 0);
     const id = graph.vertices[0].id;
     graph = addEdge(graph, id, id);
-    expect(actionsOf(buildMenuItems(graph, { kind: "vertex", id: id }))).toEqual(["delete"]);
+    expect(actionsOf(buildMenuItems(graph, { kind: "vertex", id: id }))).toEqual([
+      "rename",
+      "delete",
+    ]);
   });
 
   it("offers a vertex and zoom reset on an empty place", () => {
@@ -130,11 +138,46 @@ describe("editor context menu", () => {
     const rules = allowEverything();
     rules.canAdd = false;
     rules.canMove = false;
+    rules.canEditLabels = false;
     const vertexItems = buildMenuItems(graph, { kind: "vertex", id: graph.vertices[0].id }, rules);
     expect(actionsOf(vertexItems)).toEqual(["delete"]);
     const canvasItems = buildMenuItems(graph, { kind: "canvas", x: 0, y: 0 }, rules);
     expect(actionsOf(canvasItems)).toEqual(["fit-view", "reset-zoom"]);
     rules.canColor = false;
     expect(hasColorChoice({ kind: "vertex", id: graph.vertices[0].id }, rules)).toBe(false);
+  });
+
+  it("names the vertex, its degree and neighbours in the menu title", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 50, 0);
+    graph = addVertex(graph, 100, 0);
+    const first = graph.vertices[0].id;
+    graph = addEdge(graph, first, graph.vertices[1].id);
+    graph = addEdge(graph, first, graph.vertices[2].id);
+    graph = addEdge(graph, first, first);
+    expect(neighborNames(graph, first)).toEqual(["2", "3"]);
+    expect(menuTitle(graph, { kind: "vertex", id: first })).toBe(
+      "Вершина 1 · степень 4 · соседи 2, 3",
+    );
+    expect(menuTitle(graph, { kind: "vertex", id: graph.vertices[1].id })).toBe(
+      "Вершина 2 · степень 1 · соседи 1",
+    );
+    expect(menuTitle(graph, { kind: "canvas", x: 0, y: 0 })).toBe("");
+  });
+
+  it("names an edge by its ends", () => {
+    let graph = createEmptyGraph(true);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 50, 0);
+    graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
+    expect(menuTitle(graph, { kind: "edge", id: graph.edges[0].id })).toBe("Ребро 1 → 2");
+  });
+
+  it("shows hotkeys next to menu items", () => {
+    expect(menuHint("delete")).toBe("Delete");
+    expect(menuHint("rename")).toBe("F2");
+    expect(menuHint("add-loop")).toBe("");
+    expect(menuHeight(2, false, true)).toBeGreaterThan(menuHeight(2, false));
   });
 });

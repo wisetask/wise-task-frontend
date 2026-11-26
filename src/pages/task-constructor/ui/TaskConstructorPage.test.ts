@@ -44,7 +44,7 @@ describe("task constructor page", () => {
     await wrapper.find('input[type="checkbox"]').setValue(true);
     await wrapper.find("select").setValue("directed");
     await wrapper.findAll('[role="tab"]')[1].trigger("click");
-    const summary = wrapper.find(".graph-properties__summary").text();
+    const summary = wrapper.find(".graph-properties__type").text();
     expect(summary).toContain("ориентированный");
     expect(summary).not.toContain("неориентированный");
   });
