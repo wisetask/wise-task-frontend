@@ -12,9 +12,11 @@ export function setUnauthorizedHandler(handler: () => void) {
 
 const httpLink = new HttpLink({ uri: env.graphqlUrl });
 
-const authLink = setContext((_, { headers }) => {
+// Вход и регистрация бэк принимает только без токена: с токеном отвечает Access Denied.
+// Такие запросы передают context: { skipAuth: true }.
+const authLink = setContext((_, { headers, skipAuth }) => {
   const token = getToken();
-  if (!token) {
+  if (!token || skipAuth) {
     return { headers };
   }
 
@@ -30,7 +32,7 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   const isHttp401 =
     networkError != null && "statusCode" in networkError && networkError.statusCode === 401;
   const isGraphqlUnauthorized = graphQLErrors?.some(
-    (error) => error.extensions?.errorType === "Unauthorized",
+    (error) => error.extensions?.classification === "UNAUTHORIZED",
   );
 
   if (isHttp401 || isGraphqlUnauthorized) {
