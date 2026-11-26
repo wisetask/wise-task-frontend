@@ -1,4 +1,5 @@
 import { toGraphInput, type GraphInput } from "@/entities/graph";
+import type { PluginType } from "@/shared/api";
 import { allowEverything, type EditorRules, type GraphDirection } from "@/widgets/graph-editor";
 import { graphForRules, type TaskDraft } from "./taskDraft";
 
@@ -16,11 +17,12 @@ export interface PluginInfoInput {
   value: string;
   mistakeText: string | null;
   sign: string | null;
-  pluginType: string;
+  pluginType: PluginType;
   order: number;
 }
 
 export interface TaskGraphInput {
+  id?: string;
   name: string;
   description: string;
   category: string;
@@ -30,7 +32,6 @@ export interface TaskGraphInput {
   graph: GraphInput | null;
   rule: RuleInput;
   condition: PluginInfoInput[];
-  graphType: GraphTypeInput;
 }
 
 export function graphTypeInput(direction: GraphDirection): GraphTypeInput {
@@ -90,6 +91,5 @@ export function toTaskGraphInput(draft: TaskDraft): TaskGraphInput {
     graph: graph,
     rule: rule,
     condition: [],
-    graphType: graphTypeInput(draft.rules.direction),
   };
 }

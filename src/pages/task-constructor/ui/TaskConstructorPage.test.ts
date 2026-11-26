@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { enableAutoUnmount, mount, RouterLinkStub } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import TaskConstructorPage from "./TaskConstructorPage.vue";
 
 enableAutoUnmount(afterEach);
@@ -8,6 +9,16 @@ enableAutoUnmount(afterEach);
 beforeEach(() => {
   window.localStorage.clear();
 });
+
+function mountPage() {
+  return mount(TaskConstructorPage, {
+    attachTo: document.body,
+    global: {
+      plugins: [createPinia()],
+      stubs: { RouterLink: RouterLinkStub },
+    },
+  });
+}
 
 function tabTitles(wrapper: ReturnType<typeof mount>): string[] {
   const titles: string[] = [];
@@ -19,7 +30,7 @@ function tabTitles(wrapper: ReturnType<typeof mount>): string[] {
 
 describe("task constructor page", () => {
   it("adds the graph tab when the graph is given", async () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    const wrapper = mountPage();
     expect(tabTitles(wrapper)).toEqual(["Основное", "Условия", "Как увидит студент"]);
     await wrapper.find('input[type="checkbox"]').setValue(true);
     expect(tabTitles(wrapper)).toEqual(["Основное", "Граф", "Условия", "Как увидит студент"]);
@@ -29,7 +40,7 @@ describe("task constructor page", () => {
   });
 
   it("makes the given graph directed when the task asks for it", async () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    const wrapper = mountPage();
     await wrapper.find('input[type="checkbox"]').setValue(true);
     await wrapper.find("select").setValue("directed");
     await wrapper.findAll('[role="tab"]')[1].trigger("click");
@@ -38,19 +49,44 @@ describe("task constructor page", () => {
     expect(summary).not.toContain("неориентированный");
   });
 
-  it("shows what is ready and keeps saving off for now", async () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+  it("shows what is ready", async () => {
+    const wrapper = mountPage();
     const readiness = () => wrapper.find(".constructor__readiness").text();
     expect(readiness()).toContain("Введите название задачи");
     expect(readiness()).toContain("Осталось заполнить: 3.");
     await wrapper.find("input").setValue("Дерево");
     expect(readiness()).not.toContain("Введите название задачи");
     expect(readiness()).toContain("Осталось заполнить: 2.");
-    expect(wrapper.find(".constructor__save").attributes("disabled")).toBeDefined();
+  });
+
+  it("lists what is missing instead of creating an unfinished task", async () => {
+    const wrapper = mountPage();
+    await wrapper.findAll('[role="tab"]')[1].trigger("click");
+    await wrapper.find(".constructor__save").trigger("click");
+    const notice = wrapper.find(".constructor__notice").text();
+    expect(notice).toContain("Чтобы создать задачу, осталось:");
+    expect(notice).toContain("Введите название задачи");
+    expect(wrapper.find(".constructor__readiness").exists()).toBe(true);
+    await wrapper.find("input").setValue("Дерево");
+    expect(wrapper.find(".constructor__notice").text()).not.toContain("Введите название задачи");
+  });
+
+  it("asks to sign in before creating", async () => {
+    const wrapper = mountPage();
+    const inputs = wrapper.findAll("input");
+    await inputs[0].setValue("Дерево");
+    await inputs[1].setValue("Деревья");
+    await wrapper.find("textarea").setValue("Нарисуйте дерево");
+    await wrapper.find(".constructor__save").trigger("click");
+    expect(wrapper.find(".constructor__notice").text()).toContain("только после входа");
+    expect(wrapper.findComponent(RouterLinkStub).props("to")).toEqual({
+      name: "sign-in",
+      query: { redirect: "/constructor" },
+    });
   });
 
   it("lets the author try the task with the student rules", async () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    const wrapper = mountPage();
     await wrapper.find('input[type="checkbox"]').setValue(true);
     await wrapper.findAll('[role="tab"]')[1].trigger("click");
     const ruleBoxes = wrapper.findAll('.graph-rules input[type="checkbox"]');
@@ -66,12 +102,12 @@ describe("task constructor page", () => {
   });
 
   it("has no switch for showing only the first mistake", () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    const wrapper = mountPage();
     expect(wrapper.text()).not.toContain("первую ошибку");
   });
 
   it("lets the student pick the kind when the graph is drawn from scratch", async () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    const wrapper = mountPage();
     await wrapper.findAll('[role="tab"]')[2].trigger("click");
     expect(wrapper.find(".constructor__task").text()).toContain("Граф студент рисует сам.");
     expect(wrapper.find(".constructor__task-graph").exists()).toBe(false);
@@ -79,16 +115,16 @@ describe("task constructor page", () => {
   });
 
   it("keeps the draft after the page is opened again", async () => {
-    const first = mount(TaskConstructorPage, { attachTo: document.body });
+    const first = mountPage();
     await first.find("input").setValue("Дерево");
     first.unmount();
-    const second = mount(TaskConstructorPage, { attachTo: document.body });
+    const second = mountPage();
     expect((second.find("input").element as HTMLInputElement).value).toBe("Дерево");
     expect(second.find(".constructor__title").text()).toBe("Дерево");
   });
 
   it("clears the draft only after confirmation", async () => {
-    const wrapper = mount(TaskConstructorPage, { attachTo: document.body });
+    const wrapper = mountPage();
     await wrapper.find("input").setValue("Дерево");
     const clearButton = wrapper.findAll(".constructor__actions button")[0];
     await clearButton.trigger("click");
