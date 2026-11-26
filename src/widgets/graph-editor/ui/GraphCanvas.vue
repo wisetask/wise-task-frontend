@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
-import { findVertex, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
+import { findEdge, findVertex, type Graph, type GraphColor, type Vertex } from "@/entities/graph";
 import { motionAllowed } from "@/shared/lib/motion";
 import type { AlgorithmStep } from "../lib/algorithms";
-import { emptyCanvasText, litParts, snapVertex } from "../lib/canvasLook";
+import { focusPoints } from "../lib/align";
+import { componentOf, emptyCanvasText, litParts, snapVertex } from "../lib/canvasLook";
 import {
   reelStopTime,
   reelSymbol,
@@ -64,6 +65,7 @@ const props = withDefaults(
     comet?: Comet | null;
     glowIds?: string[];
     algorithmStep?: AlgorithmStep | null;
+    showComponents?: boolean;
   }>(),
   {
     tool: "select",
@@ -78,6 +80,7 @@ const props = withDefaults(
     comet: null,
     glowIds: () => [],
     algorithmStep: null,
+    showComponents: false,
   },
 );
 
@@ -94,6 +97,49 @@ const edgeSourceId = ref<string | null>(null);
 const hoveredVertexId = ref<string | null>(null);
 const snapTargetId = ref<string | null>(null);
 const guides = ref<Guide[]>([]);
+const GROW_DISTANCE = VERTEX_RADIUS * 2.5;
+
+const components = computed(() => {
+  if (!props.showComponents) {
+    return null;
+  }
+  return componentOf(props.graph);
+});
+
+function componentOfVertex(id: string): number | null {
+  if (components.value === null) {
+    return null;
+  }
+  const index = components.value[id];
+  return index === undefined ? null : index;
+}
+
+function componentOfEdge(edgeId: string): number | null {
+  if (components.value === null) {
+    return null;
+  }
+  const edge = findEdge(props.graph, edgeId);
+  if (edge === undefined) {
+    return null;
+  }
+  return componentOfVertex(edge.source);
+}
+
+function componentDelay(id: string): number {
+  const index = componentOfVertex(id);
+  if (index === null) {
+    return 0;
+  }
+  return Math.min(index * 120, 1200);
+}
+
+function farEnoughToGrow(sourceId: string, point: Point): boolean {
+  const source = findVertex(props.graph, sourceId);
+  if (source === undefined) {
+    return false;
+  }
+  return Math.hypot(point.x - source.x, point.y - source.y) >= GROW_DISTANCE;
+}
 
 interface Coin {
   key: number;
@@ -550,6 +596,8 @@ const edgeDrag = useEdgeDrag({
     }
     if (target !== null && target.id !== sourceId) {
       edits.connect(sourceId, target.id);
+    } else if (target === null && props.rules.canAdd && farEnoughToGrow(sourceId, point)) {
+      edits.growFrom(sourceId, limitToView(point));
     }
   },
 });
@@ -608,6 +656,16 @@ const edgeSource = computed(() => {
     return undefined;
   }
   return findVertex(props.graph, edgeSourceId.value);
+});
+
+const growPreview = computed(() => {
+  if (!edgeDrag.isDragging.value || !props.rules.canAdd || snapTargetId.value !== null) {
+    return false;
+  }
+  if (edgeSourceId.value === null || cursorPoint.value === null) {
+    return false;
+  }
+  return farEnoughToGrow(edgeSourceId.value, cursorPoint.value);
 });
 
 const canvasClasses = computed(() => {
@@ -769,6 +827,16 @@ function resetZoom() {
 function fitView() {
   closeMenu();
   fitTo(props.graph.vertices, true);
+}
+
+function fitSelection() {
+  const points = focusPoints(props.graph, props.selection);
+  if (points.length === 0) {
+    fitView();
+    return;
+  }
+  closeMenu();
+  fitTo(points, true);
 }
 
 function onWheel(event: WheelEvent) {
@@ -1039,6 +1107,7 @@ function moveSelected(dx: number, dy: number, record: boolean) {
 
 defineExpose({
   playOrbit: playOrbit,
+  fitSelection: fitSelection,
   expectJump: expectJump,
   zoomIn: onZoomIn,
   zoomOut: onZoomOut,
@@ -1104,6 +1173,13 @@ defineExpose({
           :y2="cursorPoint.y"
           class="graph-canvas__preview"
         />
+        <circle
+          v-if="growPreview && cursorPoint"
+          :cx="cursorPoint.x"
+          :cy="cursorPoint.y"
+          :r="VERTEX_RADIUS"
+          class="graph-canvas__grow"
+        />
 
         <g v-if="fadingGraph !== null" :key="'fade-' + fadingKey" class="graph-canvas__fading">
           <GraphEdgeItem
@@ -1129,6 +1205,7 @@ defineExpose({
           :key="shape.id"
           :appear-delay="edgeDelay(index)"
           :algo-state="algoEdgeState(shape.id)"
+          :component="componentOfEdge(shape.id)"
           :shape="shape"
           :selected="isSelected(selection, 'edge', shape.id)"
           :directed="graph.isDirected"
@@ -1180,6 +1257,8 @@ defineExpose({
           :algo-state="algoVertexState(vertex.id)"
           :algo-label="algoVertexLabel(vertex.id)"
           :label-override="labelOverrideOf(index)"
+          :component="componentOfVertex(vertex.id)"
+          :component-delay="componentDelay(vertex.id)"
           :vertex="vertex"
           :selected="isSelected(selection, 'vertex', vertex.id)"
           :highlighted="vertex.id === edgeSourceId"
@@ -1584,6 +1663,27 @@ defineExpose({
   to {
     opacity: 0;
     transform: scale(0.94);
+  }
+}
+
+.graph-canvas__grow {
+  fill: var(--color-accent-muted);
+  fill-opacity: 0.6;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+  animation:
+    graph-canvas-ants-line 500ms linear infinite,
+    graph-canvas-grow-in 200ms var(--ease-out);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes graph-canvas-grow-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
   }
 }
 

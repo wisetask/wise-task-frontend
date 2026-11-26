@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addEdge, addVertex, createEmptyGraph } from "@/entities/graph";
-import { emptyCanvasText, litParts, snapVertex } from "./canvasLook";
+import { componentOf, emptyCanvasText, litParts, snapVertex } from "./canvasLook";
 
 describe("litParts", () => {
   it("lights the edges and neighbours of the vertex under the cursor", () => {
@@ -39,5 +39,18 @@ describe("snapVertex", () => {
     expect(snapVertex(graph, { x: 125, y: 0 }, start, 40)).toBe(graph.vertices[2]);
     expect(snapVertex(graph, { x: 5, y: 5 }, start, 40)).toBeNull();
     expect(snapVertex(graph, { x: 60, y: 80 }, start, 40)).toBeNull();
+  });
+});
+
+describe("componentOf", () => {
+  it("gives every vertex the number of its component", () => {
+    let graph = createEmptyGraph(false);
+    graph = addVertex(graph, 0, 0);
+    graph = addVertex(graph, 50, 0);
+    graph = addVertex(graph, 100, 0);
+    graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
+    const parts = componentOf(graph);
+    expect(parts[graph.vertices[0].id]).toBe(parts[graph.vertices[1].id]);
+    expect(parts[graph.vertices[2].id]).not.toBe(parts[graph.vertices[0].id]);
   });
 });
