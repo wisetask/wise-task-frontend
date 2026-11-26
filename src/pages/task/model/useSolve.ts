@@ -2,9 +2,8 @@ import { ref, shallowRef } from "vue";
 import { toGraphInput, type Graph } from "@/entities/graph";
 import { apolloClient } from "@/shared/api";
 import { createId } from "@/shared/lib/createId";
+import { toCheckResult, type CheckResult, type TaskView } from "@/widgets/task-view";
 import { SolveTaskGraphMutation } from "../api/solveTask";
-import { toCheckResult, type CheckResult } from "./checkResult";
-import type { TaskView } from "./taskView";
 
 export function useSolve() {
   const checking = ref(false);

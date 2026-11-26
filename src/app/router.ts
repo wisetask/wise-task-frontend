@@ -4,7 +4,7 @@ import AppLayout from "./layouts/AppLayout.vue";
 
 // Разделы, которых пока нет: на каждом заглушка. Когда страница появится,
 // маршрут заменяем на настоящий.
-const comingSoonPaths = ["tracks", "graphs", "solutions", "plugins", "users", "profile"];
+const comingSoonPaths = ["tracks", "graphs", "plugins", "users", "profile"];
 
 const comingSoonRoutes: RouteRecordRaw[] = [];
 for (const path of comingSoonPaths) {
@@ -53,6 +53,16 @@ export const router = createRouter({
           path: "tasks/:id",
           name: "task",
           component: () => import("@/pages/task"),
+        },
+        {
+          path: "solutions",
+          name: "solutions",
+          component: () => import("@/pages/solutions"),
+        },
+        {
+          path: "solutions/:id",
+          name: "solution",
+          component: () => import("@/pages/solution"),
         },
         {
           path: "constructor",

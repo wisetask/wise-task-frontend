@@ -74,14 +74,14 @@ export function checkText(condition: BackendCondition): string {
   return "Проверка";
 }
 
-export function graphToLoad(task: BackendTask): string | null {
-  if (task.__typename !== "TaskGraph" || !task.graph) {
+export function graphToLoad(graph: BackendGraph | null | undefined): string | null {
+  if (!graph) {
     return null;
   }
-  if (task.graph.vertexList.length > 0 || !task.graph.id) {
+  if (graph.vertexList.length > 0 || !graph.id) {
     return null;
   }
-  return task.graph.id;
+  return graph.id;
 }
 
 export function toTaskView(
@@ -101,8 +101,10 @@ export function toTaskView(
   let skippedEdges = 0;
   if (backendGraph !== null) {
     const imported = fromBackendGraph(backendGraph);
-    graph = imported.graph;
-    skippedEdges = imported.skippedEdges;
+    if (imported.graph.vertices.length > 0) {
+      graph = imported.graph;
+      skippedEdges = imported.skippedEdges;
+    }
   }
   const checks: TaskCheck[] = [];
   for (const condition of task.conditions ?? []) {

@@ -68,17 +68,24 @@ describe("task view", () => {
 
   it("loads the graph separately when the task gives only its id", () => {
     const task = coloringTask();
-    expect(graphToLoad(task)).toBeNull();
+    expect(graphToLoad(task.graph)).toBeNull();
     const full = task.graph;
     if (!full) {
       return;
     }
     task.graph = { id: "g1", isDirect: true, vertexList: [], edgeList: [] };
-    expect(graphToLoad(task)).toBe("g1");
+    expect(graphToLoad(task.graph)).toBe("g1");
     const view = toTaskView(task, full);
     expect(view?.graph?.vertices.length).toBe(2);
-    task.graph = null;
-    expect(graphToLoad(task)).toBeNull();
+    expect(graphToLoad(null)).toBeNull();
+    expect(graphToLoad({ isDirect: false, vertexList: [], edgeList: [] })).toBeNull();
+  });
+
+  it("treats a graph without vertices as no graph", () => {
+    const task = coloringTask();
+    task.graph = { id: "g1", isDirect: false, vertexList: [], edgeList: [] };
+    const view = toTaskView(task);
+    expect(view?.graph).toBeNull();
   });
 
   it("does not open tasks on code", () => {

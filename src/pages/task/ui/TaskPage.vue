@@ -3,9 +3,15 @@ import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
 import { UiButton, UiCheckbox } from "@/shared/ui";
-import { GraphCanvas, GraphEditor } from "@/widgets/graph-editor";
+import { GraphEditor } from "@/widgets/graph-editor";
+import {
+  canPickDirection,
+  CheckResultNotice,
+  startAnswer,
+  TaskCondition,
+  taskHints,
+} from "@/widgets/task-view";
 import { isTaskMissing, loadTaskErrorText, solveErrorText } from "../model/errors";
-import { canPickDirection, startAnswer, taskHints } from "../model/taskView";
 import { useSolve } from "../model/useSolve";
 import { useTask } from "../model/useTask";
 
@@ -79,38 +85,7 @@ function onCheck() {
     </p>
 
     <div v-else-if="view !== null" class="task-page__body">
-      <aside class="task-page__condition">
-        <span v-if="view.category !== ''" class="task-page__category">{{ view.category }}</span>
-        <h1 class="task-page__name">{{ view.name }}</h1>
-        <span v-if="view.author !== ''" class="task-page__author">Автор: {{ view.author }}</span>
-        <p class="task-page__description">{{ view.description }}</p>
-        <ul v-if="hints.length > 0" class="task-page__hints">
-          <li v-for="hint in hints" :key="hint">{{ hint }}</li>
-        </ul>
-        <section
-          v-if="view.graph !== null"
-          class="task-page__section"
-          aria-labelledby="task-page-graph-title"
-        >
-          <h2 id="task-page-graph-title" class="task-page__section-title">Граф задачи</h2>
-          <p v-if="view.skippedEdges > 0" class="task-page__hint">
-            Часть рёбер не показана: редактор пока не умеет кратные рёбра.
-          </p>
-          <div class="task-page__canvas">
-            <GraphCanvas :graph="view.graph" readonly />
-          </div>
-        </section>
-        <section
-          v-if="view.checks.length > 0"
-          class="task-page__section"
-          aria-labelledby="task-page-checks-title"
-        >
-          <h2 id="task-page-checks-title" class="task-page__section-title">Что проверяется</h2>
-          <ol class="task-page__checks">
-            <li v-for="item in view.checks" :key="item.pluginId + item.text">{{ item.text }}</li>
-          </ol>
-        </section>
-      </aside>
+      <TaskCondition :view="view" :hints="hints" />
 
       <section class="task-page__answer" aria-labelledby="task-page-answer-title">
         <div class="task-page__answer-bar">
@@ -128,33 +103,8 @@ function onCheck() {
             Проверить решение
           </UiButton>
         </div>
-        <p
-          v-if="result !== null && result.isCorrect"
-          class="task-page__result task-page__result--success"
-          role="status"
-        >
-          Верно! Все проверки пройдены.
-        </p>
-        <div
-          v-else-if="result !== null"
-          class="task-page__result task-page__result--error"
-          role="alert"
-        >
-          <span>Пока неверно:</span>
-          <ul class="task-page__mistakes">
-            <li v-for="mistake in result.mistakes" :key="mistake.text + mistake.detail">
-              {{ mistake.text }}
-              <span v-if="mistake.detail !== ''" class="task-page__mistake-detail">
-                {{ mistake.detail }}
-              </span>
-            </li>
-          </ul>
-        </div>
-        <p
-          v-else-if="checkErrorText !== ''"
-          class="task-page__result task-page__result--error"
-          role="alert"
-        >
+        <CheckResultNotice v-if="result !== null" :result="result" />
+        <p v-else-if="checkErrorText !== ''" class="task-page__check-error" role="alert">
           {{ checkErrorText }}
         </p>
         <GraphEditor
@@ -215,72 +165,10 @@ function onCheck() {
   display: flex;
 }
 
-.task-page__condition {
-  flex: none;
-  width: 380px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-right: 1px solid var(--color-border);
-  overflow-y: auto;
-}
-
-.task-page__category,
-.task-page__author {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.task-page__name {
-  margin: 0;
-  font-size: var(--font-size-xl);
-}
-
-.task-page__description {
-  margin: 0;
-  line-height: 1.55;
-  white-space: pre-line;
-}
-
-.task-page__hints {
-  margin: 0;
-  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.task-page__hint {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.task-page__section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 .task-page__section-title {
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: 600;
-}
-
-.task-page__canvas {
-  height: 260px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.task-page__checks {
-  margin: 0;
-  padding-left: var(--space-5);
-  font-size: var(--font-size-md);
 }
 
 .task-page__answer {
@@ -303,30 +191,12 @@ function onCheck() {
   margin-left: auto;
 }
 
-.task-page__result {
+.task-page__check-error {
   margin: 0;
   padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--color-border);
-  font-size: var(--font-size-md);
-}
-
-.task-page__result--success {
-  background: var(--graph-green-fill);
-}
-
-.task-page__result--error {
   background: var(--graph-red-fill);
-}
-
-.task-page__mistakes {
-  margin: var(--space-1) 0 0;
-  padding-left: var(--space-5);
-}
-
-.task-page__mistake-detail {
-  display: block;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
 }
 
 .task-page__editor {
