@@ -61,6 +61,7 @@ const HELP_SOURCES: HelpSectionSource[] = [
       { title: "Отдалить", actions: ["zoom-out"] },
       { title: "Масштаб 100%", actions: ["zoom-reset"] },
       { title: "Показать весь граф", actions: ["zoom-fit"] },
+      { title: "Показать выделенное", actions: ["zoom-selection"] },
       { title: "Горячие клавиши", actions: ["help"] },
     ],
   },

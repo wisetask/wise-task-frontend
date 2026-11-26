@@ -51,6 +51,13 @@ export function useGraphEdits(options: GraphEditsOptions) {
     options.onSelect({ kind: "vertex", id: newVertex.id });
   }
 
+  function growFrom(sourceId: string, point: Point) {
+    const withVertex = addVertex(options.getGraph(), point.x, point.y);
+    const newVertex = withVertex.vertices[withVertex.vertices.length - 1];
+    apply(addEdge(withVertex, sourceId, newVertex.id));
+    options.onSelect({ kind: "vertex", id: newVertex.id });
+  }
+
   function connect(sourceId: string, targetId: string) {
     const graph = options.getGraph();
     const newGraph = addEdge(graph, sourceId, targetId);
@@ -139,6 +146,7 @@ export function useGraphEdits(options: GraphEditsOptions) {
     apply: apply,
     addVertexAt: addVertexAt,
     connect: connect,
+    growFrom: growFrom,
     addLoop: addLoop,
     deleteVertex: deleteVertex,
     deleteEdge: deleteEdge,
