@@ -1,29 +1,33 @@
 :root {
-  --color-text: #1f2328;
-  --color-text-muted: #59636e;
-  --color-border: #d1d9e0;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f6f8fa;
-  --color-surface-hover: #eef1f4;
-  --color-accent: #0969da;
-  --color-accent-hover: #0757b5;
-  --color-accent-muted: #ddf4ff;
-  --color-on-accent: #ffffff;
-  --color-danger: #cf222e;
-  --color-danger-hover: #a40e26;
-  --color-focus: #0969da;
+  color-scheme: light;
 
-  --graph-canvas-bg: #fbfbfb;
-  --graph-edge: #59636e;
-  --graph-vertex-fill: #e6e6e6;
-  --graph-vertex-stroke: #59636e;
-  --graph-vertex-text: #1f2328;
-  --graph-red-fill: #ffd8d3;
-  --graph-red-stroke: #cf222e;
-  --graph-green-fill: #d2f4d9;
-  --graph-green-stroke: #1a7f37;
-  --graph-blue-fill: #d6e8ff;
-  --graph-blue-stroke: #0550ae;
+  --color-page: #f3f6fb;
+  --color-text: #0d1730;
+  --color-text-muted: #5a6684;
+  --color-border: #e1e7f0;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f6fb;
+  --color-surface-hover: #eaf0fb;
+  --color-accent: #1257e6;
+  --color-accent-hover: #0d47c2;
+  --color-accent-muted: #e6eeff;
+  --color-on-accent: #ffffff;
+  --color-danger: #d63a4a;
+  --color-danger-hover: #b52a39;
+  --color-success: #119b5f;
+  --color-focus: #1257e6;
+
+  --graph-canvas-bg: #fbfcfe;
+  --graph-edge: #5a6684;
+  --graph-vertex-fill: #ffffff;
+  --graph-vertex-stroke: #5a6684;
+  --graph-vertex-text: #0d1730;
+  --graph-red-fill: #ffe1e4;
+  --graph-red-stroke: #d63a4a;
+  --graph-green-fill: #d9f5e7;
+  --graph-green-stroke: #119b5f;
+  --graph-blue-fill: #e0eaff;
+  --graph-blue-stroke: #1257e6;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -32,21 +36,66 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
 
+  --font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-size-sm: 13px;
   --font-size-md: 14px;
   --font-size-lg: 16px;
   --font-size-xl: 20px;
 
-  --control-height-sm: 28px;
-  --control-height-md: 36px;
+  --control-height-sm: 32px;
+  --control-height-md: 40px;
 
-  --header-height: 56px;
+  --header-height: 64px;
 
-  --shadow-popover: 0 6px 20px rgb(31 35 40 / 15%);
+  --shadow-popover: 0 12px 32px rgb(13 23 48 / 14%);
+  --shadow-card: 0 1px 2px rgb(13 23 48 / 6%);
+  --shadow-accent: 0 8px 20px rgb(18 87 230 / 28%);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 140ms;
+  --duration: 220ms;
+}
+
+:root[data-theme="night"] {
+  color-scheme: dark;
+
+  --color-page: #0b1430;
+  --color-text: #eef3ff;
+  --color-text-muted: #95a6cf;
+  --color-border: #22345f;
+  --color-surface: #111d40;
+  --color-surface-muted: #0f1a3a;
+  --color-surface-hover: #1a2a57;
+  --color-accent: #62d0ff;
+  --color-accent-hover: #8fdcff;
+  --color-accent-muted: #16305e;
+  --color-on-accent: #06142e;
+  --color-danger: #ff7a85;
+  --color-danger-hover: #ff98a1;
+  --color-success: #46d99a;
+  --color-focus: #62d0ff;
+
+  --graph-canvas-bg: #0e1836;
+  --graph-edge: #8ea3d1;
+  --graph-vertex-fill: #16234a;
+  --graph-vertex-stroke: #8ea3d1;
+  --graph-vertex-text: #eef3ff;
+  --graph-red-fill: #4a1f33;
+  --graph-red-stroke: #ff7a85;
+  --graph-green-fill: #12392f;
+  --graph-green-stroke: #46d99a;
+  --graph-blue-fill: #16305e;
+  --graph-blue-stroke: #62d0ff;
+
+  --shadow-popover: 0 16px 40px rgb(0 0 0 / 45%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-accent: 0 8px 22px rgb(98 208 255 / 28%);
 }
 
 *,
@@ -59,17 +108,31 @@ html,
 body {
   margin: 0;
   height: 100%;
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: var(--font-family);
   font-size: var(--font-size-md);
   color: var(--color-text);
-  background: var(--color-surface);
+  background: var(--color-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  transition:
+    background-color var(--duration) var(--ease-out),
+    color var(--duration) var(--ease-out);
+}
+
+::selection {
+  background: var(--color-accent-muted);
 }
 
 #app {
   height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+  }
 }

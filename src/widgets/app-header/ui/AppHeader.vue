@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
+import { ThemeToggle } from "@/features/theme-switch";
 import { UiButton } from "@/shared/ui";
 import { isSectionActive, userInitials, visibleSections } from "../lib/sections";
 import type { HeaderUser } from "../lib/sections";
@@ -79,11 +80,21 @@ onBeforeUnmount(() => {
 <template>
   <header class="app-header">
     <RouterLink to="/" class="app-header__logo">
-      <svg class="app-header__logo-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5 L5 19 L19 19 Z" fill="none" stroke="currentColor" stroke-width="1.5" />
-        <circle cx="12" cy="5" r="3" fill="currentColor" />
-        <circle cx="5" cy="19" r="3" fill="currentColor" />
-        <circle cx="19" cy="19" r="3" fill="currentColor" />
+      <svg class="app-header__logo-icon" viewBox="0 0 28 28" aria-hidden="true">
+        <path class="app-header__logo-edges" d="M14 6 L6 22 L22 22 Z" />
+        <circle class="app-header__logo-vertex app-header__logo-vertex--top" cx="14" cy="6" r="4" />
+        <circle
+          class="app-header__logo-vertex app-header__logo-vertex--left"
+          cx="6"
+          cy="22"
+          r="4"
+        />
+        <circle
+          class="app-header__logo-vertex app-header__logo-vertex--right"
+          cx="22"
+          cy="22"
+          r="4"
+        />
       </svg>
       <span>WiseTask</span>
     </RouterLink>
@@ -99,6 +110,8 @@ onBeforeUnmount(() => {
         {{ section.title }}
       </RouterLink>
     </nav>
+
+    <ThemeToggle />
 
     <div ref="userArea" class="app-header__user">
       <UiButton v-if="user === null" variant="primary" @click="router.push('/sign-in')">
@@ -125,14 +138,19 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .app-header {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4);
   height: var(--header-height);
   padding: 0 var(--space-5);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+  transition:
+    background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out);
 }
 
 .app-header__logo {
@@ -140,49 +158,129 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   align-items: center;
   gap: var(--space-2);
+  margin-right: var(--space-3);
   border-radius: var(--radius-md);
   color: var(--color-text);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  letter-spacing: -0.4px;
   text-decoration: none;
 }
 
 .app-header__logo:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: 4px;
 }
 
 .app-header__logo-icon {
-  width: 1.5em;
-  height: 1.5em;
-  color: var(--color-accent);
+  width: 28px;
+  height: 28px;
+  overflow: visible;
+}
+
+.app-header__logo-edges {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+}
+
+.app-header__logo-vertex {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.app-header__logo-vertex--top {
+  fill: var(--color-accent);
+}
+
+.app-header__logo-vertex--left {
+  fill: var(--graph-green-stroke);
+}
+
+.app-header__logo-vertex--right {
+  fill: var(--graph-red-stroke);
+}
+
+.app-header__logo:hover .app-header__logo-edges {
+  animation: app-header-draw 700ms var(--ease-out);
+}
+
+.app-header__logo:hover .app-header__logo-vertex {
+  animation: app-header-pop 520ms var(--ease-spring) both;
+}
+
+.app-header__logo:hover .app-header__logo-vertex--left {
+  animation-delay: 90ms;
+}
+
+.app-header__logo:hover .app-header__logo-vertex--right {
+  animation-delay: 180ms;
+}
+
+@keyframes app-header-draw {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes app-header-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.45);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* На узком экране разделы прокручиваются вбок и не налезают друг на друга */
 .app-header__nav {
   display: flex;
-  flex: 1;
+  flex: 0 1 auto;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
+  margin-right: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
   overflow-x: auto;
 }
 
 .app-header__link {
+  position: relative;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  height: var(--control-height-md);
-  padding: 0 var(--space-3);
+  height: var(--control-height-sm);
+  padding: 0 var(--space-4);
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .app-header__link:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
+}
+
+.app-header__link:active {
+  transform: scale(0.96);
 }
 
 .app-header__link:focus-visible {
@@ -192,9 +290,9 @@ onBeforeUnmount(() => {
 
 .app-header__link--active,
 .app-header__link--active:hover {
-  background: var(--color-accent-muted);
-  color: var(--color-text);
-  font-weight: 500;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 700;
 }
 
 .app-header__user {
@@ -210,17 +308,25 @@ onBeforeUnmount(() => {
   height: var(--control-height-md);
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: 50%;
+  border-radius: var(--radius-md);
   background: var(--color-accent-muted);
   color: var(--color-accent);
   font: inherit;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 
 .app-header__avatar:hover {
-  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.app-header__avatar:active {
+  transform: scale(0.94);
 }
 
 .app-header__avatar:focus-visible {

@@ -88,11 +88,19 @@ const message = computed(() => {
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out);
+}
+
+.ui-text-field__input:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
 }
 
 .ui-text-field__input:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -1px;
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 4px var(--color-accent-muted);
 }
 
 .ui-text-field__input:disabled {
@@ -111,7 +119,8 @@ const message = computed(() => {
 }
 
 .ui-text-field--invalid .ui-text-field__input:focus-visible {
-  outline-color: var(--color-danger);
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 4px var(--graph-red-fill);
 }
 
 .ui-text-field--invalid .ui-text-field__message {
