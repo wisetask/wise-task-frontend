@@ -3,6 +3,15 @@ import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { setDirected } from "@/entities/graph";
 import { useUserStore } from "@/entities/user";
+import {
+  addCondition,
+  conditionFromPlugin,
+  pluginFitsTask,
+  PluginPicker,
+  TaskConditionsEditor,
+  usePlugins,
+  type Plugin,
+} from "@/features/task-conditions";
 import { UiButton, UiCheckbox, UiTextArea, UiTextField } from "@/shared/ui";
 import {
   DIRECTION_TITLES,
@@ -27,6 +36,7 @@ import {
   type ConstructorTab,
 } from "../model/taskDraft";
 import { useCreateTask, type CreatedTask } from "../model/useCreateTask";
+import { graphTypeInput } from "../model/taskInput";
 import { createErrorMessage } from "../lib/createError";
 import { browserStorage, clearDraft, loadDraft, saveDraft } from "../lib/savedDraft";
 
@@ -36,6 +46,23 @@ const draft = ref(savedDraft === null ? createTaskDraft() : savedDraft);
 const isSaving = ref(storage !== null);
 const isClearing = ref(false);
 const activeTab = ref<ConstructorTab>("main");
+const loadCatalog = ref(false);
+const { plugins, loading: loadingPlugins, error: pluginsError, retry } = usePlugins(loadCatalog);
+const graphType = computed(() => graphTypeInput(draft.value.rules.direction));
+const incompatibleConditions = computed(() => {
+  const pluginsById = new Map<string, Plugin>();
+  for (const plugin of plugins.value) {
+    pluginsById.set(plugin.id, plugin);
+  }
+  const numbers: number[] = [];
+  for (const [index, condition] of draft.value.conditions.entries()) {
+    const plugin = pluginsById.get(condition.pluginId);
+    if (plugin !== undefined && !pluginFitsTask(plugin, graphType.value)) {
+      numbers.push(index + 1);
+    }
+  }
+  return numbers;
+});
 const editor = ref<InstanceType<typeof GraphEditor> | null>(null);
 
 const userStore = useUserStore();
@@ -117,10 +144,17 @@ watch(
 );
 
 watch(activeTab, (tab) => {
+  if (tab === "conditions") {
+    loadCatalog.value = true;
+  }
   if (tab === "student") {
     restartTrial();
   }
 });
+
+function addPlugin(plugin: Plugin) {
+  draft.value.conditions = addCondition(draft.value.conditions, conditionFromPlugin(plugin));
+}
 
 function restartTrial() {
   trialGraph.value = studentStartGraph(draft.value);
@@ -379,6 +413,23 @@ function onDirectionChange(event: Event) {
             {{ draft.description }}
           </p>
           <p v-else class="constructor__hint">Описание пока не заполнено.</p>
+          <section
+            v-if="draft.conditions.length > 0"
+            aria-labelledby="constructor-student-conditions-title"
+          >
+            <h3 id="constructor-student-conditions-title" class="constructor__task-graph-title">
+              Что будет проверяться
+            </h3>
+            <ol class="constructor__student-conditions">
+              <li v-for="condition in draft.conditions" :key="condition.id">
+                {{ condition.pluginName }}
+                <template v-if="condition.pluginType === 'GRAPH_CHARACTERISTIC'">
+                  {{ condition.sign }} {{ condition.value }}
+                </template>
+                <template v-else> — {{ condition.value.toLocaleLowerCase("ru") }} </template>
+              </li>
+            </ol>
+          </section>
           <ul v-if="trialHints.length > 0" class="constructor__task-hints">
             <li v-for="hint in trialHints" :key="hint">{{ hint }}</li>
           </ul>
@@ -434,11 +485,23 @@ function onDirectionChange(event: Event) {
       role="tabpanel"
       aria-labelledby="constructor-tab-conditions"
     >
-      <div class="constructor__form">
-        <p class="constructor__empty">
-          Здесь будут проверки решения: какой плагин запустить, с чем сравнить результат и какую
-          ошибку показать студенту.
-        </p>
+      <div class="constructor__conditions">
+        <div>
+          <p v-if="loadingPlugins" role="status">Загружаем плагины…</p>
+          <div v-else-if="pluginsError">
+            <p role="alert">Не удалось загрузить каталог: {{ pluginsError.message }}</p>
+            <UiButton size="sm" @click="retry">Повторить</UiButton>
+          </div>
+          <PluginPicker v-else :plugins="plugins" :graph-type="graphType" @pick="addPlugin" />
+        </div>
+        <div>
+          <ul v-if="incompatibleConditions.length > 0" class="constructor__condition-warnings">
+            <li v-for="number in incompatibleConditions" :key="number">
+              Проверка {{ number }} не подходит для такого вида графа
+            </li>
+          </ul>
+          <TaskConditionsEditor v-model="draft.conditions" />
+        </div>
       </div>
     </section>
   </main>
@@ -818,8 +881,26 @@ function onDirectionChange(event: Event) {
   min-height: 0;
 }
 
-.constructor__empty {
-  margin: 0;
-  color: var(--color-text-muted);
+.constructor__conditions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-6);
+}
+
+.constructor__condition-warnings {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  background: var(--graph-red-fill);
+}
+
+.constructor__student-conditions {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+@media (max-width: 720px) {
+  .constructor__conditions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

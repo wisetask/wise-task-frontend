@@ -1,4 +1,5 @@
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
+import { conditionError, type TaskCondition } from "@/features/task-conditions";
 import {
   allowEverything,
   directedByRules,
@@ -22,6 +23,7 @@ export interface TaskDraft {
   hasGraph: boolean;
   graph: Graph;
   rules: EditorRules;
+  conditions: TaskCondition[];
 }
 
 export function createTaskDraft(): TaskDraft {
@@ -33,6 +35,7 @@ export function createTaskDraft(): TaskDraft {
     hasGraph: false,
     graph: createEmptyGraph(false),
     rules: allowEverything(),
+    conditions: [],
   };
 }
 
@@ -41,7 +44,8 @@ export function draftTabs(draft: TaskDraft): TabOption[] {
   if (draft.hasGraph) {
     tabs.push({ id: "graph", title: "Граф" });
   }
-  tabs.push({ id: "conditions", title: "Условия" });
+  const checks = pluralize(draft.conditions.length, "проверка", "проверки", "проверок");
+  tabs.push({ id: "conditions", title: "Условия (" + checks + ")" });
   tabs.push({ id: "student", title: "Как увидит студент" });
   return tabs;
 }
@@ -94,6 +98,25 @@ export function draftReadiness(draft: TaskDraft): ReadinessItem[] {
       const vertices = pluralize(vertexCount, "вершина", "вершины", "вершин");
       const edges = pluralize(draft.graph.edges.length, "ребро", "ребра", "рёбер");
       items.push({ text: "Граф: " + vertices + ", " + edges, isDone: true });
+    }
+  }
+  const conditionCount = draft.conditions.length;
+  if (conditionCount === 0) {
+    items.push({
+      text: "Добавьте хотя бы одну проверку на вкладке «Условия»",
+      isDone: false,
+    });
+  } else {
+    let conditionNumber = 1;
+    for (const condition of draft.conditions) {
+      if (conditionError(condition) !== "") {
+        items.push({ text: "Исправьте проверку " + conditionNumber, isDone: false });
+        break;
+      }
+      conditionNumber++;
+    }
+    if (conditionNumber > conditionCount) {
+      items.push({ text: "Проверки: " + conditionCount, isDone: true });
     }
   }
   return items;

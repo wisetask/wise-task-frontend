@@ -38,6 +38,26 @@ function sampleDraft(): TaskDraft {
   let graph = addVertex(draft.graph, 10, 20);
   graph = addVertex(graph, 110, 20);
   draft.graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
+  draft.conditions = [
+    {
+      id: "condition-1",
+      pluginId: "colors",
+      pluginName: "Число цветов",
+      pluginType: "GRAPH_CHARACTERISTIC",
+      sign: "<",
+      value: "4",
+      mistakeText: "Слишком много цветов",
+    },
+    {
+      id: "condition-2",
+      pluginId: "coloring",
+      pluginName: "Правильная раскраска",
+      pluginType: "GRAPH_PROPERTY",
+      sign: "",
+      value: "Выполняется",
+      mistakeText: "Проверьте цвета соседних вершин",
+    },
+  ];
   return draft;
 }
 
@@ -56,6 +76,28 @@ describe("saved constructor draft", () => {
     expect(loaded.graph.vertices.length).toBe(2);
     expect(loaded.graph.edges.length).toBe(1);
     expect(loaded.graph.vertices[1].x).toBe(110);
+    expect(loaded.conditions).toEqual(sampleDraft().conditions);
+  });
+
+  it("opens an older draft with an empty condition list", () => {
+    const data = JSON.parse(draftToText(sampleDraft()));
+    delete data.conditions;
+    expect(draftFromText(JSON.stringify(data))?.conditions).toEqual([]);
+  });
+
+  it("rejects a draft containing a malformed condition", () => {
+    const data = JSON.parse(draftToText(sampleDraft()));
+    const condition = data.conditions[1];
+    delete condition.pluginId;
+    expect(draftFromText(JSON.stringify(data))).toBeNull();
+
+    condition.pluginId = "coloring";
+    condition.pluginType = "UNKNOWN";
+    expect(draftFromText(JSON.stringify(data))).toBeNull();
+
+    condition.pluginType = "GRAPH_PROPERTY";
+    condition.value = 4;
+    expect(draftFromText(JSON.stringify(data))).toBeNull();
   });
 
   it("opens a draft saved before the first error switch was removed", () => {

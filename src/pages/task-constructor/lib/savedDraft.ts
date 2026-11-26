@@ -1,4 +1,5 @@
 import { graphFromFileText, graphToFileText } from "@/entities/graph";
+import type { TaskCondition } from "@/features/task-conditions";
 import { DIRECTIONS, type EditorRules, type GraphDirection } from "@/widgets/graph-editor";
 import type { TaskDraft } from "../model/taskDraft";
 
@@ -18,6 +19,7 @@ interface SavedDraft {
   hasGraph: boolean;
   graph: string;
   rules: EditorRules;
+  conditions: TaskCondition[];
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -51,6 +53,59 @@ function readRules(value: unknown): EditorRules | null {
   };
 }
 
+function readConditions(value: unknown): TaskCondition[] | null {
+  if (value === undefined) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const conditions: TaskCondition[] = [];
+  for (const condition of value) {
+    if (!isObject(condition)) {
+      return null;
+    }
+    const {
+      id,
+      pluginId,
+      pluginName,
+      pluginType,
+      sign,
+      value: conditionValue,
+      mistakeText,
+    } = condition;
+    if (
+      typeof id !== "string" ||
+      typeof pluginId !== "string" ||
+      pluginId.trim() === "" ||
+      typeof pluginName !== "string" ||
+      typeof sign !== "string" ||
+      typeof conditionValue !== "string" ||
+      typeof mistakeText !== "string"
+    ) {
+      return null;
+    }
+    if (
+      pluginType !== "GRAPH_PROPERTY" &&
+      pluginType !== "GRAPH_CHARACTERISTIC" &&
+      pluginType !== "GRAPH_NEW_GRAPH" &&
+      pluginType !== "GRAPH_STRING"
+    ) {
+      return null;
+    }
+    conditions.push({
+      id,
+      pluginId,
+      pluginName,
+      pluginType,
+      sign,
+      value: conditionValue,
+      mistakeText,
+    });
+  }
+  return conditions;
+}
+
 export function draftToText(draft: TaskDraft): string {
   const saved: SavedDraft = {
     name: draft.name,
@@ -60,6 +115,7 @@ export function draftToText(draft: TaskDraft): string {
     hasGraph: draft.hasGraph,
     graph: graphToFileText(draft.graph),
     rules: draft.rules,
+    conditions: draft.conditions,
   };
   return JSON.stringify(saved);
 }
@@ -94,6 +150,10 @@ export function draftFromText(text: string): TaskDraft | null {
   if (!graph.ok) {
     return null;
   }
+  const conditions = readConditions(data.conditions);
+  if (conditions === null) {
+    return null;
+  }
   return {
     name: data.name as string,
     category: data.category as string,
@@ -102,6 +162,7 @@ export function draftFromText(text: string): TaskDraft | null {
     hasGraph: data.hasGraph === true,
     graph: graph.graph,
     rules: rules,
+    conditions,
   };
 }
 
