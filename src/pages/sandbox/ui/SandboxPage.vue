@@ -46,7 +46,6 @@ const directedTitle = computed(() =>
   graph.value.isDirected ? "Сделать неориентированным" : "Сделать ориентированным",
 );
 
-
 watch(graph, (value) => {
   saveGraph(storage, value);
 });
@@ -253,13 +252,13 @@ function clearGraph() {
         </p>
       </Transition>
     </div>
-      <input
-        ref="fileInput"
-        class="sandbox__file"
-        type="file"
-        accept=".json,application/json"
-        @change="onFileChosen"
-      />
+    <input
+      ref="fileInput"
+      class="sandbox__file"
+      type="file"
+      accept=".json,application/json"
+      @change="onFileChosen"
+    />
   </main>
 </template>
 
