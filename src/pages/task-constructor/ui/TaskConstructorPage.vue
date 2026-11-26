@@ -5,12 +5,14 @@ import { UiButton, UiCheckbox, UiTextArea, UiTextField } from "@/shared/ui";
 import {
   DIRECTION_TITLES,
   DIRECTIONS,
+  GraphCanvas,
   GraphEditor,
   GraphRulesForm,
   withDirection,
   type GraphDirection,
 } from "@/widgets/graph-editor";
 import {
+  canPickAnswerDirection,
   createTaskDraft,
   draftProblems,
   draftReadiness,
@@ -19,6 +21,7 @@ import {
   studentHints,
   studentRules,
   studentStartGraph,
+  taskGraph,
   type ConstructorTab,
 } from "../model/taskDraft";
 import { browserStorage, clearDraft, loadDraft, saveDraft } from "../lib/savedDraft";
@@ -46,9 +49,8 @@ const trialGraph = ref(studentStartGraph(draft.value));
 const trialKey = ref(0);
 const trialRules = computed(() => studentRules(draft.value));
 const trialHints = computed(() => studentHints(draft.value));
-const canPickTrialDirection = computed(() => {
-  return !draft.value.hasGraph && draft.value.rules.direction === "any";
-});
+const canPickTrialDirection = computed(() => canPickAnswerDirection(draft.value));
+const taskPicture = computed(() => taskGraph(draft.value));
 
 const pageTitle = computed(() => {
   const name = draft.value.name.trim();
@@ -216,12 +218,8 @@ function onDirectionChange(event: Event) {
           <div class="constructor__checks">
             <UiCheckbox v-model="draft.hasGraph" label="Граф задан" />
             <p class="constructor__hint">
-              Студент получит готовый граф. Нарисовать его и решить, что с ним можно делать, — на
-              вкладке «Граф».
-            </p>
-            <UiCheckbox v-model="draft.isHiddenMistake" label="Показывать только первую ошибку" />
-            <p class="constructor__hint">
-              Если решение не прошло несколько проверок, студент увидит только первую.
+              Граф будет частью условия: студент увидит его, но изменить не сможет. Нарисовать граф
+              и решить, что можно делать в ответе, — на вкладке «Граф».
             </p>
             <UiCheckbox v-model="draft.isPublic" label="Публичная задача" />
           </div>
@@ -272,7 +270,15 @@ function onDirectionChange(event: Event) {
       aria-labelledby="constructor-tab-graph"
     >
       <div class="constructor__rules">
-        <GraphRulesForm v-model="draft.rules" :show-direction="false" />
+        <GraphRulesForm
+          v-model="draft.rules"
+          :show-direction="false"
+          title="В своём ответе студент может:"
+        />
+        <p class="constructor__rules-hint">
+          Этот граф студент увидит в условии и не сможет изменить. Если запретить добавлять, ответ
+          начнётся с копии графа, иначе — с пустого поля.
+        </p>
       </div>
       <GraphEditor ref="editor" v-model:graph="draft.graph" class="constructor__editor" />
     </section>
@@ -304,26 +310,48 @@ function onDirectionChange(event: Event) {
           <ul v-if="trialHints.length > 0" class="constructor__task-hints">
             <li v-for="hint in trialHints" :key="hint">{{ hint }}</li>
           </ul>
-          <UiCheckbox
-            v-if="canPickTrialDirection"
-            :model-value="trialGraph.isDirected"
-            label="Ориентированный граф"
-            @update:model-value="onTrialDirectedChange"
-          />
-          <UiButton
-            variant="primary"
-            disabled
-            title="Проверка появится вместе с сохранением задачи"
+          <section
+            v-if="taskPicture !== null"
+            class="constructor__task-graph"
+            aria-labelledby="constructor-task-graph-title"
           >
-            Проверить решение
-          </UiButton>
+            <h3 id="constructor-task-graph-title" class="constructor__task-graph-title">
+              Граф задачи
+            </h3>
+            <p v-if="taskPicture.vertices.length === 0" class="constructor__hint">
+              Граф пока пустой: нарисуйте его на вкладке «Граф».
+            </p>
+            <div v-else class="constructor__task-canvas">
+              <GraphCanvas :graph="taskPicture" readonly />
+            </div>
+          </section>
         </aside>
-        <GraphEditor
-          :key="trialKey"
-          v-model:graph="trialGraph"
-          :rules="trialRules"
-          class="constructor__editor"
-        />
+        <section class="constructor__answer" aria-labelledby="constructor-answer-title">
+          <div class="constructor__answer-bar">
+            <h2 id="constructor-answer-title" class="constructor__answer-title">Ваш ответ</h2>
+            <UiCheckbox
+              v-if="canPickTrialDirection"
+              :model-value="trialGraph.isDirected"
+              label="Ориентированный граф"
+              @update:model-value="onTrialDirectedChange"
+            />
+            <UiButton
+              variant="primary"
+              size="sm"
+              class="constructor__check"
+              disabled
+              title="Проверка появится вместе с сохранением задачи"
+            >
+              Проверить решение
+            </UiButton>
+          </div>
+          <GraphEditor
+            :key="trialKey"
+            v-model:graph="trialGraph"
+            :rules="trialRules"
+            class="constructor__editor"
+          />
+        </section>
       </div>
     </section>
 
@@ -596,7 +624,7 @@ function onDirectionChange(event: Event) {
 
 .constructor__task {
   flex: none;
-  width: 300px;
+  width: 360px;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -631,9 +659,66 @@ function onDirectionChange(event: Event) {
 }
 
 .constructor__rules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
   padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-muted);
+}
+
+.constructor__rules-hint {
+  flex: 1 1 280px;
+  max-width: 420px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.constructor__task-graph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.constructor__task-graph-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.constructor__task-canvas {
+  height: 260px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.constructor__answer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.constructor__answer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.constructor__answer-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.constructor__check {
+  margin-left: auto;
 }
 
 .constructor__editor {

@@ -14,9 +14,11 @@ import {
 withDefaults(
   defineProps<{
     showDirection?: boolean;
+    title?: string;
   }>(),
   {
     showDirection: true,
+    title: "Что можно делать с графом",
   },
 );
 
@@ -34,7 +36,7 @@ function onDirectionChange(event: Event) {
 
 <template>
   <fieldset class="graph-rules">
-    <legend class="graph-rules__legend">Что можно делать с графом</legend>
+    <legend class="graph-rules__legend">{{ title }}</legend>
     <UiCheckbox
       v-for="option in RULE_FLAGS"
       :key="option.flag"

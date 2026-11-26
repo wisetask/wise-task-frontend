@@ -33,7 +33,6 @@ function sampleDraft(): TaskDraft {
   draft.category = "Раскраска графов";
   draft.description = "Раскрасьте вершины";
   draft.hasGraph = true;
-  draft.isHiddenMistake = true;
   draft.rules.canAdd = false;
   draft.rules.direction = "undirected";
   let graph = addVertex(draft.graph, 10, 20);
@@ -53,11 +52,22 @@ describe("saved constructor draft", () => {
     }
     expect(loaded.name).toBe("Правильная раскраска");
     expect(loaded.hasGraph).toBe(true);
-    expect(loaded.isHiddenMistake).toBe(true);
     expect(loaded.rules).toEqual(sampleDraft().rules);
     expect(loaded.graph.vertices.length).toBe(2);
     expect(loaded.graph.edges.length).toBe(1);
     expect(loaded.graph.vertices[1].x).toBe(110);
+  });
+
+  it("opens a draft saved before the first error switch was removed", () => {
+    const data = JSON.parse(draftToText(sampleDraft()));
+    data.isHiddenMistake = true;
+    const loaded = draftFromText(JSON.stringify(data));
+    expect(loaded).not.toBeNull();
+    if (loaded === null) {
+      return;
+    }
+    expect(loaded.name).toBe("Правильная раскраска");
+    expect("isHiddenMistake" in loaded).toBe(false);
   });
 
   it("returns nothing when nothing was saved or storage is off", () => {

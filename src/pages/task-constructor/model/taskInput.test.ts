@@ -65,6 +65,7 @@ describe("task for the backend", () => {
       expect(input.graph.isDirect).toBe(true);
     }
     expect(input.condition).toEqual([]);
+    expect(input.isHiddenMistake).toBe(false);
   });
 
   it("sends no graph and allows everything when the student draws the graph", () => {

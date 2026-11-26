@@ -19,7 +19,6 @@ export interface TaskDraft {
   category: string;
   description: string;
   isPublic: boolean;
-  isHiddenMistake: boolean;
   hasGraph: boolean;
   graph: Graph;
   rules: EditorRules;
@@ -31,7 +30,6 @@ export function createTaskDraft(): TaskDraft {
     category: "",
     description: "",
     isPublic: false,
-    isHiddenMistake: false,
     hasGraph: false,
     graph: createEmptyGraph(false),
     rules: allowEverything(),
@@ -126,22 +124,41 @@ export function studentRules(draft: TaskDraft): EditorRules {
   return withDirection(allowEverything(), draft.rules.direction);
 }
 
+export function taskGraph(draft: TaskDraft): Graph | null {
+  if (!draft.hasGraph) {
+    return null;
+  }
+  return graphForRules(draft.graph, draft.rules);
+}
+
+export function answerStartsFromTask(draft: TaskDraft): boolean {
+  return draft.hasGraph && !draft.rules.canAdd;
+}
+
 export function studentStartGraph(draft: TaskDraft): Graph {
-  if (draft.hasGraph) {
+  if (answerStartsFromTask(draft)) {
     return graphForRules(draft.graph, draft.rules);
   }
   return createEmptyGraph(draft.rules.direction === "directed");
+}
+
+export function canPickAnswerDirection(draft: TaskDraft): boolean {
+  return !answerStartsFromTask(draft) && draft.rules.direction === "any";
 }
 
 export function studentHints(draft: TaskDraft): string[] {
   const hints: string[] = [];
   if (!draft.hasGraph) {
     hints.push("Граф студент рисует сам.");
+  } else if (answerStartsFromTask(draft)) {
+    hints.push("Ответ начинается с копии графа задачи.");
+  } else {
+    hints.push("Ответ строится на пустом поле, граф задачи остаётся в условии.");
   }
   if (draft.rules.direction === "directed") {
-    hints.push("Граф может быть только ориентированным.");
+    hints.push("Граф в ответе может быть только ориентированным.");
   } else if (draft.rules.direction === "undirected") {
-    hints.push("Граф может быть только неориентированным.");
+    hints.push("Граф в ответе может быть только неориентированным.");
   }
   if (draft.hasGraph) {
     const summary = rulesSummary(draft.rules);
