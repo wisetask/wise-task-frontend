@@ -1,4 +1,5 @@
 import { useMutation } from "@vue/apollo-composable";
+import { createId } from "@/shared/lib/createId";
 import { CreateTaskGraphMutation } from "../api/createTask";
 import { toTaskGraphInput } from "./taskInput";
 import type { TaskDraft } from "./taskDraft";
@@ -12,7 +13,12 @@ export function useCreateTask() {
   const { mutate, loading, error } = useMutation(CreateTaskGraphMutation, { throws: "never" });
 
   async function createTask(draft: TaskDraft): Promise<CreatedTask | null> {
-    const result = await mutate({ task: toTaskGraphInput(draft) });
+    const input = toTaskGraphInput(draft);
+    input.id = createId();
+    if (input.graph !== null) {
+      input.graph.id = createId();
+    }
+    const result = await mutate({ task: input });
     const task = result?.data?.createTaskGraph;
     if (!task) {
       return null;

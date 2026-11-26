@@ -22,6 +22,7 @@ export interface PluginInfoInput {
 }
 
 export interface TaskGraphInput {
+  id?: string;
   name: string;
   description: string;
   category: string;
