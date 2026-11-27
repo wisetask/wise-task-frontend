@@ -386,7 +386,7 @@ function onDirectionChange(event: Event) {
           задают, что можно делать с копией.
         </p>
       </div>
-      <GraphEditor ref="editor" v-model:graph="draft.graph" class="constructor__editor" />
+      <GraphEditor ref="editor" v-model:graph="draft.graph" class="constructor__editor" analysis />
     </section>
 
     <section

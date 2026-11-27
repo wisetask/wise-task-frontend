@@ -4,14 +4,20 @@ import type { GraphColor } from "@/entities/graph";
 import { MENU_WIDTH, type MenuAction, type MenuItem } from "../lib/contextMenu";
 import GraphColorSwatches from "./GraphColorSwatches.vue";
 
-defineProps<{
-  left: number;
-  top: number;
-  items: MenuItem[];
-  submenuOnLeft: boolean;
-  showColors: boolean;
-  currentColor: GraphColor | null;
-}>();
+withDefaults(
+  defineProps<{
+    left: number;
+    top: number;
+    items: MenuItem[];
+    submenuOnLeft: boolean;
+    showColors: boolean;
+    currentColor: GraphColor | null;
+    title?: string;
+  }>(),
+  {
+    title: "",
+  },
+);
 
 const emit = defineEmits<{
   choose: [action: MenuAction];
@@ -69,6 +75,7 @@ onBeforeUnmount(() => {
     :style="{ left: left + 'px', top: top + 'px', width: MENU_WIDTH + 'px' }"
     @contextmenu.prevent
   >
+    <p v-if="title !== ''" class="graph-menu__title">{{ title }}</p>
     <GraphColorSwatches
       v-if="showColors"
       class="graph-menu__colors"
@@ -108,7 +115,8 @@ onBeforeUnmount(() => {
             class="graph-menu__item"
             @click="emit('choose', child.action)"
           >
-            {{ child.label }}
+            <span>{{ child.label }}</span>
+            <kbd v-if="child.hint !== ''" class="graph-menu__hint">{{ child.hint }}</kbd>
           </button>
         </div>
       </div>
@@ -121,7 +129,8 @@ onBeforeUnmount(() => {
         @mouseenter="openSubmenu = null"
         @click="emit('choose', item.action)"
       >
-        {{ item.label }}
+        <span>{{ item.label }}</span>
+        <kbd v-if="item.hint !== ''" class="graph-menu__hint">{{ item.hint }}</kbd>
       </button>
     </template>
   </div>
@@ -138,6 +147,29 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-popover);
+  transform-origin: top left;
+  animation: graph-menu-in var(--duration) var(--ease-out);
+}
+
+@keyframes graph-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.graph-menu__title {
+  margin: 0 0 var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .graph-menu__colors {
@@ -147,6 +179,10 @@ onBeforeUnmount(() => {
 }
 
 .graph-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   height: 36px;
   padding: 0 var(--space-3);
   border: none;
@@ -156,10 +192,24 @@ onBeforeUnmount(() => {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    padding-left var(--duration-fast) var(--ease-out);
 }
 
 .graph-menu__item:hover {
+  padding-left: calc(var(--space-3) + 4px);
   background: var(--color-surface-hover);
+}
+
+.graph-menu__hint {
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .graph-menu__group {

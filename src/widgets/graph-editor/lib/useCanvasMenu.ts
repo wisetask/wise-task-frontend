@@ -5,6 +5,7 @@ import {
   hasColorChoice,
   menuHeight,
   menuPosition,
+  menuTitle,
   submenuOnLeft,
   targetColor,
   type MenuTarget,
@@ -34,6 +35,13 @@ export function useCanvasMenu(
     return buildMenuItems(getGraph(), menu.value.target, getRules());
   });
 
+  const title = computed(() => {
+    if (menu.value === null) {
+      return "";
+    }
+    return menuTitle(getGraph(), menu.value.target);
+  });
+
   const showColors = computed(() => {
     return menu.value !== null && hasColorChoice(menu.value.target, getRules());
   });
@@ -51,7 +59,7 @@ export function useCanvasMenu(
     if (count === 0 && !withColors) {
       return;
     }
-    const height = menuHeight(count, withColors);
+    const height = menuHeight(count, withColors, menuTitle(getGraph(), target) !== "");
     const position = menuPosition(point.x, point.y, height, boxWidth, boxHeight);
     menu.value = {
       target: target,
@@ -77,6 +85,7 @@ export function useCanvasMenu(
   return {
     menu: menu,
     items: items,
+    title: title,
     showColors: showColors,
     currentColor: currentColor,
     open: open,

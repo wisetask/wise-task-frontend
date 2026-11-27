@@ -84,11 +84,19 @@ const message = computed(() => {
   font: inherit;
   line-height: 1.5;
   resize: vertical;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out);
+}
+
+.ui-text-area__input:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
 }
 
 .ui-text-area__input:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -1px;
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 4px var(--color-accent-muted);
 }
 
 .ui-text-area__input:disabled {

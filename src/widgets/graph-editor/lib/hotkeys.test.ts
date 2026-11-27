@@ -56,6 +56,7 @@ describe("editor hotkeys", () => {
     expect(find("Digit0", false, false)).toBe("zoom-reset");
     expect(find("Digit0", false, true)).toBeNull();
     expect(find("Digit1", false, true)).toBe("zoom-fit");
+    expect(find("Digit2", false, true)).toBe("zoom-selection");
   });
 
   it("leaves browser zoom with Ctrl alone", () => {

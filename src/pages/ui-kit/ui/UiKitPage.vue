@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { pathsOfLength, power } from "@/entities/relation";
-import { UiButton, UiCheckbox, UiTextField } from "@/shared/ui";
+import {
+  UiButton,
+  UiCheckbox,
+  UiIconButton,
+  UiSegmented,
+  UiTextField,
+  type UiSegmentedOption,
+} from "@/shared/ui";
 import {
   countFilled,
   countMistakes,
@@ -17,6 +24,14 @@ const name = ref("");
 const email = ref("");
 const password = ref("");
 const remember = ref(true);
+const mode = ref("edit");
+const gridShown = ref(false);
+
+const MODE_OPTIONS: UiSegmentedOption[] = [
+  { value: "edit", label: "Правка" },
+  { value: "view", label: "Просмотр" },
+  { value: "check", label: "Проверка" },
+];
 const isSaving = ref(false);
 
 const emailError = computed(() => {
@@ -121,6 +136,26 @@ function fakeSave() {
       <div class="ui-kit__row">
         <UiCheckbox v-model="remember" label="Запомнить меня" />
         <UiCheckbox :model-value="true" label="Недоступная галочка" disabled />
+      </div>
+    </section>
+
+    <section class="ui-kit__section">
+      <h2 class="ui-kit__heading">Переключатели и кнопки-иконки</h2>
+      <div class="ui-kit__row">
+        <UiSegmented v-model="mode" :options="MODE_OPTIONS" label="Режим" />
+        <UiSegmented v-model="mode" :options="MODE_OPTIONS" label="Недоступный режим" disabled />
+      </div>
+      <div class="ui-kit__row">
+        <UiIconButton label="Показать сетку" :pressed="gridShown" @click="gridShown = !gridShown">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 9 H20 M4 15 H20 M9 4 V20 M15 4 V20" />
+          </svg>
+        </UiIconButton>
+        <UiIconButton label="Недоступная кнопка" disabled>
+          <svg viewBox="0 0 24 24">
+            <path d="M6 6 L18 18 M18 6 L6 18" />
+          </svg>
+        </UiIconButton>
       </div>
     </section>
 

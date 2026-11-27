@@ -1,5 +1,7 @@
-import { computed, ref, type Ref } from "vue";
+import { computed, onBeforeUnmount, ref, type Ref } from "vue";
+import { motionAllowed } from "@/shared/lib/motion";
 import { VERTEX_RADIUS, type Point } from "./geometry";
+import { blendViewport, easeOutCubic } from "./motionMath";
 import { toCanvasPoint } from "./pointer";
 import {
   createViewport,
@@ -20,8 +22,51 @@ import {
   type Viewport,
 } from "./viewport";
 
+const ZOOM_DURATION = 320;
+
 export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
   const viewport = ref<Viewport>(createViewport());
+  let goal: Viewport | null = null;
+  let frame = 0;
+
+  function stopMoving() {
+    if (frame !== 0) {
+      window.cancelAnimationFrame(frame);
+      frame = 0;
+    }
+    goal = null;
+  }
+
+  function latest(): Viewport {
+    if (goal !== null) {
+      return goal;
+    }
+    return viewport.value;
+  }
+
+  function moveTo(target: Viewport, animated: boolean) {
+    stopMoving();
+    if (!animated || !motionAllowed() || typeof window.requestAnimationFrame !== "function") {
+      viewport.value = target;
+      return;
+    }
+    const from = viewport.value;
+    const startTime = performance.now();
+    goal = target;
+    function step(now: number) {
+      const t = Math.min(1, (now - startTime) / ZOOM_DURATION);
+      viewport.value = blendViewport(from, target, easeOutCubic(t));
+      if (t < 1) {
+        frame = window.requestAnimationFrame(step);
+      } else {
+        frame = 0;
+        goal = null;
+      }
+    }
+    frame = window.requestAnimationFrame(step);
+  }
+
+  onBeforeUnmount(stopMoving);
 
   const transform = computed(() => viewportTransform(viewport.value));
   const percent = computed(() => zoomPercent(viewport.value));
@@ -48,15 +93,15 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
   }
 
   function zoomIn() {
-    viewport.value = zoomAt(viewport.value, center(), ZOOM_STEP);
+    moveTo(zoomAt(latest(), center(), ZOOM_STEP), true);
   }
 
   function zoomOut() {
-    viewport.value = zoomAt(viewport.value, center(), 1 / ZOOM_STEP);
+    moveTo(zoomAt(latest(), center(), 1 / ZOOM_STEP), true);
   }
 
   function setPercent(percent: number) {
-    viewport.value = zoomToPercent(viewport.value, center(), percent);
+    moveTo(zoomToPercent(latest(), center(), percent), true);
   }
 
   function toScreen(point: Point): Point {
@@ -64,6 +109,7 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
   }
 
   function applyWheel(event: WheelEvent) {
+    stopMoving();
     const gesture = wheelGesture(event);
     if (gesture.kind === "pan") {
       viewport.value = panBy(viewport.value, gesture.dx, gesture.dy);
@@ -74,21 +120,22 @@ export function useViewport(svgElement: Ref<SVGSVGElement | null>) {
   }
 
   function pan(dx: number, dy: number) {
+    stopMoving();
     viewport.value = panBy(viewport.value, dx, dy);
   }
 
   function reset() {
-    viewport.value = createViewport();
+    moveTo(createViewport(), true);
   }
 
-  function fitTo(points: Point[]) {
+  function fitTo(points: Point[], animated: boolean) {
     const area = pointsArea(points);
     if (area === null || svgElement.value === null) {
-      reset();
+      moveTo(createViewport(), animated);
       return;
     }
     const box = svgElement.value.getBoundingClientRect();
-    viewport.value = fitArea(area, box.width, box.height, FIT_PADDING);
+    moveTo(fitArea(area, box.width, box.height, FIT_PADDING), animated);
   }
 
   return {

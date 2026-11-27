@@ -1,58 +1,50 @@
 <script setup lang="ts">
+import { onBeforeUnmount, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { SignInForm, getRedirectPath } from "@/features/auth-by-email";
+import { motionAllowed } from "@/shared/lib/motion";
+import { AuthLayout } from "@/widgets/auth-scene";
 
 const route = useRoute();
 const router = useRouter();
 
-function onSuccess() {
-  router.push(getRedirectPath(route.query.redirect));
+const progress = ref(0);
+const state = ref<"idle" | "error" | "success">("idle");
+let stateTimer = 0;
+
+function onFailed() {
+  state.value = "error";
+  window.clearTimeout(stateTimer);
+  stateTimer = window.setTimeout(() => {
+    state.value = "idle";
+  }, 700);
 }
+
+function onSuccess() {
+  state.value = "success";
+  window.clearTimeout(stateTimer);
+  const delay = motionAllowed() ? 650 : 0;
+  stateTimer = window.setTimeout(() => {
+    router.push(getRedirectPath(route.query.redirect));
+  }, delay);
+}
+
+onBeforeUnmount(() => {
+  window.clearTimeout(stateTimer);
+});
 </script>
 
 <template>
-  <main class="auth-page">
-    <section class="auth-page__card">
-      <h1 class="auth-page__title">Вход</h1>
-      <SignInForm @success="onSuccess" />
-      <p class="auth-page__switch">
-        Нет аккаунта?
-        <RouterLink :to="{ name: 'sign-up', query: route.query }">Зарегистрироваться</RouterLink>
-      </p>
-    </section>
-  </main>
+  <AuthLayout
+    title="Вход"
+    subtitle="С возвращением! Граф соскучился."
+    :progress="progress"
+    :state="state"
+  >
+    <SignInForm @progress="progress = $event" @failed="onFailed" @success="onSuccess" />
+    <template #footer>
+      Нет аккаунта?
+      <RouterLink :to="{ name: 'sign-up', query: route.query }">Зарегистрироваться</RouterLink>
+    </template>
+  </AuthLayout>
 </template>
-
-<style scoped>
-.auth-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: var(--space-4);
-  background: var(--color-surface-muted);
-}
-
-.auth-page__card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  width: 100%;
-  max-width: 400px;
-  padding: var(--space-6);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-.auth-page__title {
-  margin: 0;
-  font-size: var(--font-size-xl);
-}
-
-.auth-page__switch {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-md);
-}
-</style>

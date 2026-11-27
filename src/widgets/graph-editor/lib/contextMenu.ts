@@ -1,4 +1,5 @@
 import { findEdge, findVertex, hasEdge, type Graph, type GraphColor } from "@/entities/graph";
+import { DEFAULT_HOTKEYS, hotkeyText, type HotkeyAction } from "./hotkeys";
 import { canLayout, type LayoutKind } from "./layout";
 import { allowEverything, canRunMenuAction, type EditorRules } from "./rules";
 import { commonColor, type GraphSelection } from "./selection";
@@ -11,6 +12,7 @@ export type MenuTarget =
   | { kind: "view" };
 
 export type MenuAction =
+  | "rename"
   | "add-vertex"
   | "layout"
   | "add-loop"
@@ -27,13 +29,23 @@ export interface MenuItem {
   action: MenuAction;
   label: string;
   danger: boolean;
+  hint: string;
   submenu: MenuItem[];
 }
 
-export const MENU_WIDTH = 220;
+export const MENU_WIDTH = 260;
 const ITEM_HEIGHT = 36;
 const COLORS_HEIGHT = 52;
 const MENU_PADDING = 8;
+const TITLE_HEIGHT = 44;
+const MAX_NEIGHBORS = 4;
+
+const MENU_HOTKEYS: Partial<Record<MenuAction, HotkeyAction>> = {
+  rename: "rename",
+  delete: "delete",
+  "fit-view": "zoom-fit",
+  "reset-zoom": "zoom-reset",
+};
 
 interface LayoutItem {
   action: MenuAction;
@@ -49,8 +61,88 @@ const LAYOUT_ITEMS: LayoutItem[] = [
   { action: "layout-bipartite", kind: "bipartite", label: "В две доли" },
 ];
 
+export function menuHint(action: MenuAction): string {
+  const hotkey = MENU_HOTKEYS[action];
+  if (hotkey === undefined) {
+    return "";
+  }
+  return hotkeyText(hotkey, DEFAULT_HOTKEYS);
+}
+
 function menuItem(action: MenuAction, label: string, danger: boolean): MenuItem {
-  return { action: action, label: label, danger: danger, submenu: [] };
+  return { action: action, label: label, danger: danger, hint: menuHint(action), submenu: [] };
+}
+
+function vertexName(graph: Graph, id: string): string {
+  const vertex = findVertex(graph, id);
+  if (vertex === undefined || vertex.label === "") {
+    return "без подписи";
+  }
+  return vertex.label;
+}
+
+export function neighborNames(graph: Graph, id: string): string[] {
+  const ids: string[] = [];
+  for (const edge of graph.edges) {
+    let other = "";
+    if (edge.source === id) {
+      other = edge.target;
+    } else if (edge.target === id) {
+      other = edge.source;
+    }
+    if (other !== "" && other !== id && !ids.includes(other)) {
+      ids.push(other);
+    }
+  }
+  const names: string[] = [];
+  for (const other of ids) {
+    names.push(vertexName(graph, other));
+  }
+  return names;
+}
+
+function degreeOf(graph: Graph, id: string): number {
+  let degree = 0;
+  for (const edge of graph.edges) {
+    if (edge.source === id) {
+      degree = degree + 1;
+    }
+    if (edge.target === id) {
+      degree = degree + 1;
+    }
+  }
+  return degree;
+}
+
+export function vertexSummary(graph: Graph, id: string): string {
+  const summary = "степень " + degreeOf(graph, id);
+  const names = neighborNames(graph, id);
+  if (names.length === 0) {
+    return summary + " · нет соседей";
+  }
+  let text = summary + " · соседи " + names.slice(0, MAX_NEIGHBORS).join(", ");
+  if (names.length > MAX_NEIGHBORS) {
+    text = text + " и ещё " + (names.length - MAX_NEIGHBORS);
+  }
+  return text;
+}
+
+export function menuTitle(graph: Graph, target: MenuTarget): string {
+  if (target.kind === "vertex") {
+    return "Вершина " + vertexName(graph, target.id) + " · " + vertexSummary(graph, target.id);
+  }
+  if (target.kind === "edge") {
+    const edge = findEdge(graph, target.id);
+    if (edge === undefined) {
+      return "Ребро";
+    }
+    const arrow = graph.isDirected ? " → " : " — ";
+    return "Ребро " + vertexName(graph, edge.source) + arrow + vertexName(graph, edge.target);
+  }
+  if (target.kind === "group") {
+    return "Выбрано несколько объектов";
+  }
+  return "";
 }
 
 export function layoutOfAction(action: MenuAction): LayoutKind | null {
@@ -78,7 +170,7 @@ export function buildMenuItems(
 
 function allMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
   if (target.kind === "vertex") {
-    const items: MenuItem[] = [];
+    const items: MenuItem[] = [menuItem("rename", "Переименовать", false)];
     if (!hasEdge(graph, target.id, target.id)) {
       items.push(menuItem("add-loop", "Добавить петлю", false));
     }
@@ -86,7 +178,7 @@ function allMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
     return items;
   }
   if (target.kind === "edge") {
-    return [menuItem("delete", "Удалить ребро", true)];
+    return [menuItem("rename", "Подписать", false), menuItem("delete", "Удалить ребро", true)];
   }
   if (target.kind === "group") {
     return [menuItem("delete", "Удалить выбранное", true)];
@@ -101,7 +193,13 @@ function allMenuItems(graph: Graph, target: MenuTarget): MenuItem[] {
       }
     }
     if (layouts.length > 0) {
-      items.push({ action: "layout", label: "Расположить", danger: false, submenu: layouts });
+      items.push({
+        action: "layout",
+        label: "Расположить",
+        danger: false,
+        hint: "",
+        submenu: layouts,
+      });
     }
   }
   if (graph.vertices.length > 0) {
@@ -121,10 +219,13 @@ export function hasColorChoice(
   return target.kind === "vertex" || target.kind === "edge" || target.kind === "group";
 }
 
-export function menuHeight(itemCount: number, withColors: boolean): number {
+export function menuHeight(itemCount: number, withColors: boolean, withTitle = false): number {
   let height = itemCount * ITEM_HEIGHT + MENU_PADDING;
   if (withColors) {
     height = height + COLORS_HEIGHT;
+  }
+  if (withTitle) {
+    height = height + TITLE_HEIGHT;
   }
   return height;
 }
