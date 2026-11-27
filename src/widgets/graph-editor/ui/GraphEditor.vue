@@ -60,6 +60,7 @@ const selection = ref<GraphSelection | null>(null);
 const panelOpen = ref(true);
 const helpOpen = ref(false);
 const showDegrees = ref(false);
+const showComponents = ref(false);
 const wave = ref<VertexWave | null>(null);
 const celebration = ref<CelebrationKind | null>(null);
 const algorithm = ref<AlgorithmRun | null>(null);
@@ -211,6 +212,8 @@ function runHotkey(action: HotkeyAction, isRepeat: boolean) {
     canvas.value.resetZoom();
   } else if (action === "zoom-fit") {
     canvas.value.fitView();
+  } else if (action === "zoom-selection") {
+    canvas.value.fitSelection();
   } else if (action === "select-all") {
     canvas.value.selectAll();
   } else if (action === "copy" || action === "cut") {
@@ -484,10 +487,18 @@ function fitView() {
   }
 }
 
+function playWave() {
+  if (!motionAllowed() || graph.value.vertices.length === 0) {
+    return;
+  }
+  startWave(waveSteps(graph.value));
+}
+
 defineExpose({
   replaceGraph: replaceGraph,
   startOver: startOver,
   fitView: fitView,
+  playWave: playWave,
 });
 </script>
 
@@ -510,6 +521,7 @@ defineExpose({
           :comet="comet"
           :glow-ids="glowIds"
           :algorithm-step="algorithmStep"
+          :show-components="analysis && showComponents"
           @before-change="onBeforeChange"
           @triple-click="celebrate('stars', [])"
         />
@@ -627,10 +639,12 @@ defineExpose({
           v-model:graph="graph"
           v-model:selection="selection"
           v-model:show-degrees="showDegrees"
+          v-model:show-components="showComponents"
           class="graph-editor__properties"
           :rules="rules"
           :analysis="analysis"
           @run-algorithm="startAlgorithm"
+          @arrange="replaceGraph"
           @before-change="onBeforeChange"
           @help="helpOpen = true"
         />

@@ -8,6 +8,8 @@ declare module "vue-router" {
   interface RouteMeta {
     requiresAuth?: boolean;
     roles?: Role[];
+    // AppLayout не перезапускает анимацию перехода между страницами с одним именем маршрута
+    samePage?: boolean;
   }
 }
 
@@ -93,7 +95,7 @@ export const router = createRouter({
         {
           path: "solutions/:id",
           name: "solution",
-          meta: SIGNED_IN,
+          meta: { ...SIGNED_IN, samePage: true },
           component: () => import("@/pages/solution"),
         },
         {

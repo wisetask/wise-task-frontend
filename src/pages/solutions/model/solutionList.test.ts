@@ -1,29 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { ApolloError } from "@apollo/client/core";
 import {
+  attemptsText,
   emptySolutionsText,
-  filterToCorrect,
-  keepForFilter,
-  wrongCount,
+  groupCategories,
+  groupMatches,
+  groupSolutions,
+  groupSummary,
+  groupsFoundText,
   loadSolutionsErrorText,
+  shownDots,
+  stuckGroups,
   toSolutionItem,
+  type SolutionListItem,
 } from "./solutionList";
 
+function solution(id: string, taskId: string | null, isCorrect: boolean): SolutionListItem {
+  return {
+    id: id,
+    taskId: taskId,
+    taskName: taskId === null ? "Задача удалена" : "Задача " + taskId,
+    category: taskId === "t1" ? "Деревья" : "Раскраска",
+    isCorrect: isCorrect,
+    isGraph: true,
+  };
+}
+
 describe("solution list", () => {
-  it("turns the filter into the backend isCorrect", () => {
-    expect(filterToCorrect("all")).toBeNull();
-    expect(filterToCorrect("correct")).toBe(true);
-    expect(filterToCorrect("wrong")).toBeNull();
-  });
-
-  it("drops correct solutions on the page for the wrong filter", () => {
-    const correct = toSolutionItem({ id: "s1", isCorrect: true, task: null });
-    const wrong = toSolutionItem({ id: "s2", isCorrect: false, task: null });
-    expect(keepForFilter(correct, "wrong")).toBe(false);
-    expect(keepForFilter(wrong, "wrong")).toBe(true);
-    expect(keepForFilter(correct, "all")).toBe(true);
-  });
-
   it("makes a list item from the backend solution", () => {
     const item = toSolutionItem({
       __typename: "SolutionGraph",
@@ -33,6 +36,7 @@ describe("solution list", () => {
     });
     expect(item).toEqual({
       id: "s1",
+      taskId: "t1",
       taskName: "Раскраска",
       category: "Раскраска графов",
       isCorrect: true,
@@ -48,20 +52,93 @@ describe("solution list", () => {
       task: null,
     });
     expect(item.taskName).toBe("Задача удалена");
-    expect(item.category).toBe("");
+    expect(item.taskId).toBeNull();
     expect(item.isGraph).toBe(false);
   });
 
-  it("counts wrong solutions as all minus correct", () => {
-    expect(wrongCount(5, 2)).toBe(3);
-    expect(wrongCount(null, 2)).toBeNull();
-    expect(wrongCount(5, null)).toBeNull();
+  it("groups attempts by task, newest task first", () => {
+    const groups = groupSolutions([
+      solution("s1", "t1", false),
+      solution("s2", "t2", false),
+      solution("s3", "t1", true),
+      solution("s4", null, false),
+      solution("s5", "t2", false),
+    ]);
+    expect(groups.length).toBe(3);
+    expect(groups[0].taskId).toBe("t2");
+    expect(groups[0].attempts.length).toBe(2);
+    expect(groups[0].solved).toBe(false);
+    expect(groups[0].lastId).toBe("s5");
+    expect(groups[1].taskId).toBeNull();
+    expect(groups[2].taskId).toBe("t1");
+    expect(groups[2].solved).toBe(true);
+    expect(groups[2].lastCorrect).toBe(true);
   });
 
-  it("explains an empty list for each filter", () => {
-    expect(emptySolutionsText("all")).toContain("ещё не решали");
-    expect(emptySolutionsText("correct")).toBe("Верных решений пока нет.");
-    expect(emptySolutionsText("wrong")).toBe("Неверных решений нет.");
+  it("filters groups by state, name and category", () => {
+    const groups = groupSolutions([solution("s1", "t1", true), solution("s2", "t2", false)]);
+    expect(groupMatches(groups[1], "solved", "", "")).toBe(true);
+    expect(groupMatches(groups[1], "unsolved", "", "")).toBe(false);
+    expect(groupMatches(groups[0], "unsolved", "задача T2", "")).toBe(true);
+    expect(groupMatches(groups[0], "all", "нет такой", "")).toBe(false);
+    expect(groupMatches(groups[0], "all", "", "Деревья")).toBe(false);
+  });
+
+  it("lists categories by how often they appear", () => {
+    const groups = groupSolutions([
+      solution("s1", "t1", true),
+      solution("s2", "t2", false),
+      solution("s3", "t3", false),
+    ]);
+    expect(groupCategories(groups, 5)).toEqual(["Раскраска", "Деревья"]);
+    expect(groupCategories(groups, 1)).toEqual(["Раскраска"]);
+  });
+
+  it("finds unsolved tasks with the most attempts", () => {
+    const groups = groupSolutions([
+      solution("s1", "t1", false),
+      solution("s2", "t2", false),
+      solution("s3", "t2", false),
+      solution("s4", "t3", true),
+    ]);
+    const stuck = stuckGroups(groups, 5);
+    expect(stuck.length).toBe(2);
+    expect(stuck[0].taskId).toBe("t2");
+  });
+
+  it("shows only the last attempts as dots", () => {
+    const attempts: { id: string; isCorrect: boolean }[] = [];
+    for (let index = 0; index < 15; index++) {
+      attempts.push({ id: String(index), isCorrect: false });
+    }
+    const shown = shownDots(attempts, 12);
+    expect(shown.hidden).toBe(3);
+    expect(shown.dots.length).toBe(12);
+    expect(shown.dots[0].id).toBe("3");
+    expect(shownDots(attempts.slice(0, 2), 12).hidden).toBe(0);
+  });
+
+  it("describes the attempts in words", () => {
+    expect(attemptsText(1)).toBe("1 попытка");
+    expect(attemptsText(3)).toBe("3 попытки");
+    expect(attemptsText(11)).toBe("11 попыток");
+    expect(groupsFoundText(21)).toBe("Найдено 21 задача");
+    const once = groupSolutions([solution("s1", "t1", true)]);
+    expect(groupSummary(once[0])).toBe("Решена с первой попытки");
+    const third = groupSolutions([
+      solution("s1", "t1", false),
+      solution("s2", "t1", false),
+      solution("s3", "t1", true),
+    ]);
+    expect(groupSummary(third[0])).toBe("Решена с 3-й попытки");
+    const none = groupSolutions([solution("s1", "t1", false)]);
+    expect(groupSummary(none[0])).toBe("Пока не решена");
+  });
+
+  it("explains an empty list", () => {
+    expect(emptySolutionsText("all", false)).toContain("ещё не решали");
+    expect(emptySolutionsText("solved", false)).toBe("Решённых задач пока нет.");
+    expect(emptySolutionsText("all", true)).toBe("По этому запросу ничего не нашлось.");
   });
 
   it("tells a network problem from other errors", () => {

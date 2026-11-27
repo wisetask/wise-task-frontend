@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { UiButton, UiTextField } from "@/shared/ui";
+import { looksLikeEmail } from "../lib/formChecks";
 import { getAuthErrorMessage } from "../lib/getAuthErrorMessage";
 import { useSendResetLink } from "../model/useSendResetLink";
+
+const emit = defineEmits<{ success: []; progress: [value: number]; failed: [] }>();
 
 // Бэк разрешает одно письмо на почту раз в 2 минуты (reset-password.send-limit в wise-task-profile).
 const RESEND_DELAY_SECONDS = 120;
@@ -11,6 +14,9 @@ const email = ref("");
 const sentTo = ref("");
 const secondsLeft = ref(0);
 let timer: ReturnType<typeof setInterval> | undefined;
+
+const emailOk = computed(() => looksLikeEmail(email.value));
+watch(emailOk, (value) => emit("progress", value ? 1 : 0), { immediate: true });
 
 const { sendResetLink, loading, error } = useSendResetLink();
 const errorMessage = computed(() => getAuthErrorMessage(error.value, "send-reset-link"));
@@ -42,6 +48,9 @@ async function send(address: string) {
   if (isSent) {
     sentTo.value = address;
     startCooldown();
+    emit("success");
+  } else {
+    emit("failed");
   }
 }
 
@@ -76,7 +85,13 @@ function changeEmail() {
       Укажите почту, с которой вы регистрировались. Пришлём на неё ссылку для смены пароля.
     </p>
     <p v-if="errorMessage" class="auth-form__error" role="alert">{{ errorMessage }}</p>
-    <UiTextField v-model="email" label="Почта" type="email" autocomplete="email" required />
+    <UiTextField v-model="email" label="Почта" type="email" autocomplete="email" required>
+      <template v-if="emailOk" #trailing>
+        <svg class="auth-form__check" viewBox="0 0 16 16" aria-label="Почта выглядит верно">
+          <path d="M4 8.5 L7 11 L12 5" />
+        </svg>
+      </template>
+    </UiTextField>
     <UiButton type="submit" variant="primary" :loading="loading">Отправить ссылку</UiButton>
   </form>
 </template>
@@ -98,5 +113,45 @@ function changeEmail() {
   margin: 0;
   color: var(--color-danger);
   font-size: var(--font-size-md);
+  animation: auth-form-error 360ms var(--ease-out);
+}
+
+.auth-form__check {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  fill: none;
+  stroke: var(--color-success);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 14;
+  animation: auth-form-check 320ms var(--ease-out) both;
+}
+
+@keyframes auth-form-check {
+  from {
+    stroke-dashoffset: 14;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes auth-form-error {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(-6px);
+  }
+  60% {
+    transform: translateX(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
 </style>

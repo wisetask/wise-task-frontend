@@ -75,4 +75,34 @@ describe("task for the backend", () => {
     expect(input.graph).toBeNull();
     expect(input.rule).toEqual({ isColor: true, isEdit: true, isMove: true, isDelete: true });
   });
+
+  it("sends conditions in draft order starting at one", () => {
+    const draft = createTaskDraft();
+    draft.conditions = [
+      {
+        id: "condition-1",
+        pluginId: "color-count",
+        pluginName: "Число цветов",
+        pluginType: "GRAPH_CHARACTERISTIC",
+        sign: "<",
+        value: "4",
+        mistakeText: "Используйте меньше четырёх цветов",
+      },
+      {
+        id: "condition-2",
+        pluginId: "proper-coloring",
+        pluginName: "Правильная раскраска",
+        pluginType: "GRAPH_PROPERTY",
+        sign: "",
+        value: "Выполняется",
+        mistakeText: "Соседние вершины должны быть разного цвета",
+      },
+    ];
+
+    const input = toTaskGraphInput(draft);
+    expect(input.condition).toMatchObject([
+      { pluginId: "color-count", order: 1 },
+      { pluginId: "proper-coloring", order: 2 },
+    ]);
+  });
 });

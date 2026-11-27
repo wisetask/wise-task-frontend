@@ -12,3 +12,4 @@ export {
   toPluginInfoInput,
   type TaskCondition,
 } from "./model/taskCondition";
+export type { PluginInfoInput } from "./model/taskCondition";

@@ -1,4 +1,5 @@
 import { createEmptyGraph, setDirected, type Graph } from "@/entities/graph";
+import { conditionError, type TaskCondition } from "@/features/task-conditions";
 import {
   allowEverything,
   directedByRules,
@@ -6,6 +7,7 @@ import {
   withDirection,
   type EditorRules,
 } from "@/widgets/graph-editor";
+import type { TaskCheck, TaskView } from "@/widgets/task-view";
 
 export type ConstructorTab = "main" | "graph" | "conditions" | "student";
 
@@ -22,6 +24,7 @@ export interface TaskDraft {
   hasGraph: boolean;
   graph: Graph;
   rules: EditorRules;
+  conditions: TaskCondition[];
 }
 
 export function createTaskDraft(): TaskDraft {
@@ -33,6 +36,7 @@ export function createTaskDraft(): TaskDraft {
     hasGraph: false,
     graph: createEmptyGraph(false),
     rules: allowEverything(),
+    conditions: [],
   };
 }
 
@@ -41,14 +45,18 @@ export function draftTabs(draft: TaskDraft): TabOption[] {
   if (draft.hasGraph) {
     tabs.push({ id: "graph", title: "Граф" });
   }
-  tabs.push({ id: "conditions", title: "Условия" });
+  const checks = pluralize(draft.conditions.length, "проверка", "проверки", "проверок");
+  tabs.push({ id: "conditions", title: "Условия (" + checks + ")" });
   tabs.push({ id: "student", title: "Как увидит студент" });
   return tabs;
 }
 
+export type ReadinessTarget = "name" | "category" | "description" | "graph" | "conditions";
+
 export interface ReadinessItem {
   text: string;
   isDone: boolean;
+  target: ReadinessTarget;
 }
 
 export function pluralize(count: number, one: string, few: string, many: string): string {
@@ -69,19 +77,23 @@ export function pluralize(count: number, one: string, few: string, many: string)
 export function draftReadiness(draft: TaskDraft): ReadinessItem[] {
   const items: ReadinessItem[] = [];
   if (draft.name.trim() === "") {
-    items.push({ text: "Введите название задачи", isDone: false });
+    items.push({ text: "Введите название задачи", isDone: false, target: "name" });
   } else {
-    items.push({ text: "Название", isDone: true });
+    items.push({ text: "Название", isDone: true, target: "name" });
   }
   if (draft.category.trim() === "") {
-    items.push({ text: "Введите категорию", isDone: false });
+    items.push({ text: "Введите категорию", isDone: false, target: "category" });
   } else {
-    items.push({ text: "Категория", isDone: true });
+    items.push({ text: "Категория", isDone: true, target: "category" });
   }
   if (draft.description.trim() === "") {
-    items.push({ text: "Опишите, что нужно сделать студенту", isDone: false });
+    items.push({
+      text: "Опишите, что нужно сделать студенту",
+      isDone: false,
+      target: "description",
+    });
   } else {
-    items.push({ text: "Описание", isDone: true });
+    items.push({ text: "Описание", isDone: true, target: "description" });
   }
   if (draft.hasGraph) {
     const vertexCount = draft.graph.vertices.length;
@@ -89,11 +101,36 @@ export function draftReadiness(draft: TaskDraft): ReadinessItem[] {
       items.push({
         text: "Нарисуйте граф на вкладке «Граф» или снимите галочку «Граф задан»",
         isDone: false,
+        target: "graph",
       });
     } else {
       const vertices = pluralize(vertexCount, "вершина", "вершины", "вершин");
       const edges = pluralize(draft.graph.edges.length, "ребро", "ребра", "рёбер");
-      items.push({ text: "Граф: " + vertices + ", " + edges, isDone: true });
+      items.push({ text: "Граф: " + vertices + ", " + edges, isDone: true, target: "graph" });
+    }
+  }
+  const conditionCount = draft.conditions.length;
+  if (conditionCount === 0) {
+    items.push({
+      text: "Добавьте хотя бы одну проверку на вкладке «Условия»",
+      isDone: false,
+      target: "conditions",
+    });
+  } else {
+    let conditionNumber = 1;
+    for (const condition of draft.conditions) {
+      if (conditionError(condition) !== "") {
+        items.push({
+          text: "Исправьте проверку " + conditionNumber,
+          isDone: false,
+          target: "conditions",
+        });
+        break;
+      }
+      conditionNumber++;
+    }
+    if (conditionNumber > conditionCount) {
+      items.push({ text: "Проверки: " + conditionCount, isDone: true, target: "conditions" });
     }
   }
   return items;
@@ -165,4 +202,54 @@ export function studentHints(draft: TaskDraft): string[] {
     }
   }
   return hints;
+}
+
+export function draftTitle(draft: TaskDraft): string {
+  const name = draft.name.trim();
+  return name === "" ? "Новая задача" : name;
+}
+
+export function targetTab(target: ReadinessTarget): ConstructorTab {
+  if (target === "graph") {
+    return "graph";
+  }
+  if (target === "conditions") {
+    return "conditions";
+  }
+  return "main";
+}
+
+export function tabIsDone(draft: TaskDraft, tab: ConstructorTab): boolean {
+  if (tab === "student") {
+    return false;
+  }
+  for (const item of draftReadiness(draft)) {
+    if (targetTab(item.target) === tab && !item.isDone) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function studentView(draft: TaskDraft): TaskView {
+  let graph = taskGraph(draft);
+  if (graph !== null && graph.vertices.length === 0) {
+    graph = null;
+  }
+  const checks: TaskCheck[] = [];
+  for (const condition of draft.conditions) {
+    checks.push({ pluginId: condition.id, text: condition.pluginName, mistakeText: "" });
+  }
+  return {
+    id: "draft",
+    name: draftTitle(draft),
+    category: draft.category.trim(),
+    description: draft.description.trim(),
+    author: "",
+    isHiddenMistake: false,
+    graph: graph,
+    skippedEdges: 0,
+    rules: studentRules(draft),
+    checks: checks,
+  };
 }

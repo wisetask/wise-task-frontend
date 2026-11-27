@@ -1,5 +1,10 @@
 export { default as TaskCondition } from "./ui/TaskCondition.vue";
 export { default as CheckResultNotice } from "./ui/CheckResultNotice.vue";
+export { default as TaskGraphThumb } from "./ui/TaskGraphThumb.vue";
+export { default as GraphMiniature } from "./ui/GraphMiniature.vue";
+export { loadThumbGraph } from "./lib/thumbGraph";
+export { loadSolutionGraph, loadTaskAttempts, type AttemptItem } from "./lib/solutionGraph";
+export { handOffAnswer, takeHandedAnswer } from "./lib/answerHandoff";
 export {
   answerStartsFromTask,
   canPickDirection,
@@ -16,11 +21,16 @@ export {
   type TaskView,
 } from "./lib/taskView";
 export {
+  checkMarks,
+  failedChecksText,
+  failureSummary,
   mistakeDetail,
   mistakeText,
   toCheckResult,
   type BackendPluginResult,
+  type CheckMark,
   type CheckResult,
   type Mistake,
 } from "./lib/checkResult";
 export { loadFullGraph, tryLoadFullGraph } from "./lib/loadGraph";
+export { PREVIEW_RADIUS, previewBox, type PreviewBox } from "./lib/graphPreview";

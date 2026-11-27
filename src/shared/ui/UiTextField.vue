@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from "vue";
+import { computed, useId, useSlots } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -32,6 +32,9 @@ const messageId = inputId + "-message";
 
 const hasError = computed(() => props.error !== "");
 
+const slots = useSlots();
+const hasTrailing = computed(() => slots.trailing !== undefined);
+
 const message = computed(() => {
   if (props.error !== "") {
     return props.error;
@@ -41,24 +44,32 @@ const message = computed(() => {
 </script>
 
 <template>
-  <div class="ui-text-field" :class="{ 'ui-text-field--invalid': hasError }">
+  <div
+    class="ui-text-field"
+    :class="{ 'ui-text-field--invalid': hasError, 'ui-text-field--trailing': hasTrailing }"
+  >
     <label :for="inputId" class="ui-text-field__label">
       {{ label }}
       <span v-if="required" class="ui-text-field__required" aria-hidden="true">*</span>
     </label>
-    <input
-      :id="inputId"
-      v-model="model"
-      class="ui-text-field__input"
-      :type="type"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      :required="required"
-      :autocomplete="autocomplete"
-      :inputmode="inputmode"
-      :aria-invalid="hasError"
-      :aria-describedby="message !== '' ? messageId : undefined"
-    />
+    <div class="ui-text-field__control">
+      <input
+        :id="inputId"
+        v-model="model"
+        class="ui-text-field__input"
+        :type="type"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :required="required"
+        :autocomplete="autocomplete"
+        :inputmode="inputmode"
+        :aria-invalid="hasError"
+        :aria-describedby="message !== '' ? messageId : undefined"
+      />
+      <span v-if="hasTrailing" class="ui-text-field__trailing">
+        <slot name="trailing" />
+      </span>
+    </div>
     <p v-if="message !== ''" :id="messageId" class="ui-text-field__message">{{ message }}</p>
   </div>
 </template>
@@ -80,7 +91,29 @@ const message = computed(() => {
   color: var(--color-danger);
 }
 
+.ui-text-field__control {
+  position: relative;
+  display: flex;
+}
+
+.ui-text-field__trailing {
+  position: absolute;
+  top: 0;
+  right: var(--space-2);
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ui-text-field--trailing .ui-text-field__input {
+  padding-right: 44px;
+}
+
 .ui-text-field__input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   height: var(--control-height-md);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border);

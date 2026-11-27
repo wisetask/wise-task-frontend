@@ -4,9 +4,14 @@ import {
   DESCRIPTION_LENGTH,
   emptyFilter,
   emptyListText,
+  filterFromQuery,
   filterValue,
+  foundText,
+  highlightParts,
   isFilterEmpty,
   loadErrorText,
+  popularCategories,
+  queryFromFilter,
   shortDescription,
   toListItem,
 } from "./taskList";
@@ -45,6 +50,7 @@ describe("task list", () => {
       name: "Остов",
       category: "Деревья",
       description: "Найдите остовное дерево",
+      fullDescription: "Найдите остовное дерево",
       author: "Петров Иван",
       isPublic: false,
     });
@@ -68,5 +74,48 @@ describe("task list", () => {
     const network = new ApolloError({ networkError: new Error("Failed to fetch") });
     expect(loadErrorText(network)).toBe("Нет связи с сервером.");
     expect(loadErrorText(new Error("что-то"))).toBe("Не получилось загрузить задачи.");
+  });
+});
+
+describe("task search helpers", () => {
+  it("marks every match regardless of case", () => {
+    expect(highlightParts("Остовное дерево и дерево", "ДЕРЕВО")).toEqual([
+      { text: "Остовное ", match: false },
+      { text: "дерево", match: true },
+      { text: " и ", match: false },
+      { text: "дерево", match: true },
+    ]);
+    expect(highlightParts("Граф", " ")).toEqual([{ text: "Граф", match: false }]);
+  });
+
+  it("says how many tasks were found in proper Russian", () => {
+    expect(foundText(1)).toBe("Найдено 1 задача");
+    expect(foundText(3)).toBe("Найдено 3 задачи");
+    expect(foundText(12)).toBe("Найдено 12 задач");
+    expect(foundText(1655)).toBe("Найдено 1655 задач");
+    expect(foundText(21)).toBe("Найдено 21 задача");
+  });
+
+  it("picks the most common categories", () => {
+    function item(category: string) {
+      return toListItem({
+        id: "1",
+        name: "a",
+        description: "",
+        category: category,
+        isPublic: true,
+      });
+    }
+    const base = item("Деревья");
+    const other = item("Раскраска");
+    const empty = item(" ");
+    expect(popularCategories([other, base, base, empty], 5)).toEqual(["Деревья", "Раскраска"]);
+    expect(popularCategories([other, base, base], 1)).toEqual(["Деревья"]);
+  });
+
+  it("keeps the search in the address", () => {
+    expect(filterFromQuery({ q: "дерево", category: 5 })).toEqual({ name: "дерево", category: "" });
+    expect(queryFromFilter({ name: " дерево ", category: "" })).toEqual({ q: "дерево" });
+    expect(queryFromFilter(emptyFilter())).toEqual({});
   });
 });

@@ -22,7 +22,16 @@ const props = defineProps<{
   algoState?: string;
   algoLabel?: string;
   labelOverride?: string;
+  component?: number | null;
+  componentDelay?: number;
 }>();
+
+const componentStyle = computed(() => {
+  if (props.componentDelay === undefined || props.componentDelay === 0) {
+    return undefined;
+  }
+  return { animationDelay: props.componentDelay + "ms" };
+});
 
 const paintKey = ref(0);
 
@@ -90,6 +99,15 @@ const emit = defineEmits<{
     @contextmenu.prevent="emit('menu', $event)"
     @dblclick.stop="emit('rename')"
   >
+    <circle
+      v-if="component !== null && component !== undefined"
+      :cx="vertex.x"
+      :cy="vertex.y"
+      :r="VERTEX_RADIUS + 9"
+      class="graph-vertex__component"
+      :class="'graph-vertex__component--' + (component % 6)"
+      :style="componentStyle"
+    />
     <circle
       v-if="paintKey > 0"
       :key="'paint-' + paintKey"
@@ -360,6 +378,52 @@ const emit = defineEmits<{
 
 .graph-vertex--snapped .graph-vertex__body {
   transform: scale(1.18);
+}
+
+.graph-vertex .graph-vertex__component {
+  fill-opacity: 0.3;
+  stroke-width: 2;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graph-vertex-component 450ms var(--ease-spring) backwards;
+}
+
+.graph-vertex .graph-vertex__component--0 {
+  fill: #7c5cff;
+  stroke: #7c5cff;
+}
+
+.graph-vertex .graph-vertex__component--1 {
+  fill: #00b3a4;
+  stroke: #00b3a4;
+}
+
+.graph-vertex .graph-vertex__component--2 {
+  fill: #ff8a3d;
+  stroke: #ff8a3d;
+}
+
+.graph-vertex .graph-vertex__component--3 {
+  fill: #e84393;
+  stroke: #e84393;
+}
+
+.graph-vertex .graph-vertex__component--4 {
+  fill: #3fa9f5;
+  stroke: #3fa9f5;
+}
+
+.graph-vertex .graph-vertex__component--5 {
+  fill: #9bc53d;
+  stroke: #9bc53d;
+}
+
+@keyframes graph-vertex-component {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
 }
 
 .graph-vertex .graph-vertex__paint {

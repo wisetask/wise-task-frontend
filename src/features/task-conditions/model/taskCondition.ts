@@ -20,7 +20,7 @@ interface ConditionChanges {
   mistakeText?: string;
 }
 
-interface PluginInfoInput {
+export interface PluginInfoInput {
   pluginId: string;
   pluginType: PluginType;
   sign: string;
