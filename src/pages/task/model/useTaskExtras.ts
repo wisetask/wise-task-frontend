@@ -1,45 +1,14 @@
 import { ref, shallowRef } from "vue";
-import { fromBackendGraph, type Graph } from "@/entities/graph";
+import type { Graph } from "@/entities/graph";
 import { apolloClient } from "@/shared/api";
-import { tryLoadFullGraph } from "@/widgets/task-view";
-import { GetAttemptGraphQuery, GetTaskAttemptsQuery } from "../api/getAttempts";
+import { loadSolutionGraph, loadTaskAttempts } from "@/widgets/task-view";
 import { GetNextTasksQuery } from "../api/getNextTasks";
 import { pickNextTask, recentAttempts, type Attempt, type TaskLink } from "./nextTask";
 
 export const NEXT_POOL_SIZE = 30;
-export const ATTEMPTS_PAGE_SIZE = 100;
-
-const attemptGraphs = new Map<string, Promise<Graph | null>>();
-
-async function fetchAttemptGraph(id: string): Promise<Graph | null> {
-  try {
-    const { data } = await apolloClient.query({
-      query: GetAttemptGraphQuery,
-      variables: { id: id },
-    });
-    const solution = data.getTaskSolution;
-    if (solution.__typename !== "SolutionGraph") {
-      return null;
-    }
-    const full = await tryLoadFullGraph(solution.graph);
-    if (full === null) {
-      return null;
-    }
-    const graph = fromBackendGraph(full).graph;
-    return graph.vertices.length === 0 ? null : graph;
-  } catch {
-    return null;
-  }
-}
 
 export function loadAttemptGraph(id: string): Promise<Graph | null> {
-  const known = attemptGraphs.get(id);
-  if (known !== undefined) {
-    return known;
-  }
-  const promise = fetchAttemptGraph(id);
-  attemptGraphs.set(id, promise);
-  return promise;
+  return loadSolutionGraph(id);
 }
 
 export function useAttempts() {
@@ -48,31 +17,14 @@ export function useAttempts() {
   let lastRequest = 0;
 
   async function load(taskId: string, authorId: string) {
-    if (taskId === "" || authorId === "") {
-      attempts.value = [];
-      total.value = 0;
-      return;
-    }
     lastRequest = lastRequest + 1;
     const request = lastRequest;
-    try {
-      const { data } = await apolloClient.query({
-        query: GetTaskAttemptsQuery,
-        variables: { taskId: taskId, authorId: authorId, pageSize: ATTEMPTS_PAGE_SIZE },
-        fetchPolicy: "network-only",
-      });
-      if (request !== lastRequest) {
-        return;
-      }
-      const items: Attempt[] = [];
-      for (const item of data.getAllTaskSolutions.items ?? []) {
-        items.push({ id: item.id, isCorrect: item.isCorrect });
-      }
-      total.value = items.length;
-      attempts.value = recentAttempts(items);
-    } catch {
+    const items = await loadTaskAttempts(taskId, authorId);
+    if (request !== lastRequest || items === null) {
       return;
     }
+    total.value = items.length;
+    attempts.value = recentAttempts(items);
   }
 
   return { attempts, total, load };

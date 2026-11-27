@@ -19,14 +19,17 @@ export function useSolution() {
   const error = shallowRef<unknown>(null);
   let lastRequest = 0;
 
+  function clear() {
+    view.value = null;
+    answer.value = null;
+    result.value = null;
+  }
+
   async function load(id: string) {
     lastRequest = lastRequest + 1;
     const request = lastRequest;
     loading.value = true;
     error.value = null;
-    view.value = null;
-    answer.value = null;
-    result.value = null;
     isUnsupported.value = false;
     try {
       const { data } = await apolloClient.query({
@@ -38,6 +41,7 @@ export function useSolution() {
       const task = solution.task;
       if (solution.__typename !== "SolutionGraph" || !task || task.__typename !== "TaskGraph") {
         if (request === lastRequest) {
+          clear();
           isUnsupported.value = true;
         }
         return;
@@ -49,16 +53,16 @@ export function useSolution() {
       }
       const taskView = toTaskView(task, taskGraph);
       if (taskView === null) {
+        clear();
         isUnsupported.value = true;
         return;
       }
       view.value = taskView;
-      if (answerGraph !== null) {
-        answer.value = fromBackendGraph(answerGraph).graph;
-      }
+      answer.value = answerGraph === null ? null : fromBackendGraph(answerGraph).graph;
       result.value = toCheckResult(solution.isCorrect, solution.pluginResults ?? [], taskView);
     } catch (caught) {
       if (request === lastRequest) {
+        clear();
         error.value = caught;
       }
     } finally {

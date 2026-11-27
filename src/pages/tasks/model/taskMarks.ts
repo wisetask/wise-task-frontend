@@ -1,11 +1,11 @@
+export { CATEGORY_COLORS, categoryColor } from "@/shared/lib/categoryColor";
+
 export type TaskMark = "solved" | "tried";
 
 export interface SolutionMarkItem {
   isCorrect: boolean;
   task?: { id: string } | null;
 }
-
-export const CATEGORY_COLORS = 6;
 
 export function taskMarks(items: SolutionMarkItem[]): Record<string, TaskMark> {
   const marks: Record<string, TaskMark> = {};
@@ -30,13 +30,4 @@ export function markTitle(mark: TaskMark | undefined): string {
     return "Были попытки";
   }
   return "";
-}
-
-export function categoryColor(category: string): number {
-  const text = category.trim().toLowerCase();
-  let hash = 0;
-  for (let index = 0; index < text.length; index++) {
-    hash = (hash * 31 + text.charCodeAt(index)) % 100003;
-  }
-  return hash % CATEGORY_COLORS;
 }

@@ -3,6 +3,8 @@ export { default as CheckResultNotice } from "./ui/CheckResultNotice.vue";
 export { default as TaskGraphThumb } from "./ui/TaskGraphThumb.vue";
 export { default as GraphMiniature } from "./ui/GraphMiniature.vue";
 export { loadThumbGraph } from "./lib/thumbGraph";
+export { loadSolutionGraph, loadTaskAttempts, type AttemptItem } from "./lib/solutionGraph";
+export { handOffAnswer, takeHandedAnswer } from "./lib/answerHandoff";
 export {
   answerStartsFromTask,
   canPickDirection,
@@ -31,3 +33,4 @@ export {
   type Mistake,
 } from "./lib/checkResult";
 export { loadFullGraph, tryLoadFullGraph } from "./lib/loadGraph";
+export { PREVIEW_RADIUS, previewBox, type PreviewBox } from "./lib/graphPreview";
