@@ -21,6 +21,15 @@ function filledDraft(): TaskDraft {
   draft.name = "Дерево";
   draft.category = "Деревья";
   draft.description = "Нарисуйте дерево с 6 вершинами";
+  draft.conditions.push({
+    id: "condition-1",
+    pluginId: "vertices",
+    pluginName: "Число вершин",
+    pluginType: "GRAPH_CHARACTERISTIC",
+    sign: "=",
+    value: "6",
+    mistakeText: "Нужно шесть вершин",
+  });
   return draft;
 }
 
@@ -40,6 +49,7 @@ describe("task draft", () => {
     expect(draft.graph.vertices.length).toBe(0);
     expect(draft.rules.canAdd).toBe(true);
     expect(draft.rules.direction).toBe("any");
+    expect(draft.conditions).toEqual([]);
   });
 
   it("shows the graph tab only when the graph is given", () => {
@@ -50,11 +60,28 @@ describe("task draft", () => {
   });
 
   it("lists what is missing before the task can be saved", () => {
-    expect(draftProblems(createTaskDraft()).length).toBe(3);
+    expect(draftProblems(createTaskDraft()).length).toBe(4);
     const draft = filledDraft();
     expect(draftProblems(draft)).toEqual([]);
     draft.name = "   ";
     expect(draftProblems(draft)).toEqual(["Введите название задачи"]);
+  });
+
+  it("requires at least one valid check and reports the position of an invalid check", () => {
+    const draft = filledDraft();
+    expect(draftReadiness(draft)).toContainEqual({ text: "Проверки: 1", isDone: true });
+    draft.conditions.push({
+      id: "condition-2",
+      pluginId: "connected",
+      pluginName: "Граф связный",
+      pluginType: "GRAPH_PROPERTY",
+      sign: "",
+      value: "Выполняется",
+      mistakeText: "",
+    });
+    expect(draftProblems(draft)).toEqual(["Исправьте проверку 2"]);
+    draft.conditions = [];
+    expect(draftProblems(draft)).toEqual(["Добавьте хотя бы одну проверку на вкладке «Условия»"]);
   });
 
   it("asks for a graph when the graph is given but empty", () => {
@@ -95,6 +122,7 @@ describe("task draft", () => {
       { text: "Категория", isDone: true },
       { text: "Описание", isDone: true },
       { text: "Граф: 2 вершины, 1 ребро", isDone: true },
+      { text: "Проверки: 1", isDone: true },
     ]);
     draft.category = "";
     expect(draftReadiness(draft)[1]).toEqual({ text: "Введите категорию", isDone: false });

@@ -1,5 +1,5 @@
 import { toGraphInput, type GraphInput } from "@/entities/graph";
-import type { PluginType } from "@/shared/api";
+import { toPluginInfoInput, type PluginInfoInput } from "@/features/task-conditions";
 import { allowEverything, type EditorRules, type GraphDirection } from "@/widgets/graph-editor";
 import { graphForRules, type TaskDraft } from "./taskDraft";
 
@@ -10,15 +10,6 @@ export interface RuleInput {
   isEdit: boolean;
   isMove: boolean;
   isDelete: boolean;
-}
-
-export interface PluginInfoInput {
-  pluginId: string;
-  value: string;
-  mistakeText: string | null;
-  sign: string | null;
-  pluginType: PluginType;
-  order: number;
 }
 
 export interface TaskGraphInput {
@@ -90,6 +81,6 @@ export function toTaskGraphInput(draft: TaskDraft): TaskGraphInput {
     isHiddenMistake: false,
     graph: graph,
     rule: rule,
-    condition: [],
+    condition: toPluginInfoInput(draft.conditions),
   };
 }
