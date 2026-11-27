@@ -11,6 +11,7 @@ import {
   checkMarks,
   CheckResultNotice,
   startAnswer,
+  takeHandedAnswer,
   TaskCondition,
   taskHints,
 } from "@/widgets/task-view";
@@ -87,6 +88,11 @@ watch(view, (value) => {
   restartAnswer();
   if (value !== null) {
     rememberRecentTask({ id: value.id, name: value.name });
+    const handed = takeHandedAnswer(value.id);
+    if (handed !== null) {
+      answer.value = handed;
+      answerKey.value = answerKey.value + 1;
+    }
   }
   refreshAttempts();
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
-import { RouterView, useRouter } from "vue-router";
+import { RouterView, useRouter, type RouteLocationNormalizedLoaded } from "vue-router";
 import { useUserStore } from "@/entities/user";
 import { AppHeader } from "@/widgets/app-header";
 
@@ -11,6 +11,13 @@ const router = useRouter();
 const progress = ref("");
 const progressKey = ref(0);
 let progressTimer = 0;
+
+function pageKey(route: RouteLocationNormalizedLoaded): string {
+  if (route.meta.samePage === true) {
+    return String(route.name);
+  }
+  return route.path;
+}
 
 async function onSignOut() {
   await userStore.logOut();
@@ -57,7 +64,7 @@ onBeforeUnmount(() => {
     <div class="app-layout__page">
       <RouterView v-slot="{ Component, route }">
         <Transition name="app-page" mode="out-in">
-          <component :is="Component" :key="route.path" />
+          <component :is="Component" :key="pageKey(route)" />
         </Transition>
       </RouterView>
     </div>

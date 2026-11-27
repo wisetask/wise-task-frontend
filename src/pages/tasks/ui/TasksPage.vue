@@ -1555,11 +1555,11 @@ onBeforeUnmount(() => {
 }
 
 .tasks-cat-4 {
-  --cat: color-mix(in srgb, var(--color-accent) 45%, var(--color-danger));
+  --cat: color-mix(in oklch, var(--color-accent), var(--color-danger));
 }
 
 .tasks-cat-5 {
-  --cat: color-mix(in srgb, var(--graph-active) 55%, var(--color-success));
+  --cat: color-mix(in oklch, var(--graph-active), var(--color-success));
 }
 
 .tasks__card-mark {

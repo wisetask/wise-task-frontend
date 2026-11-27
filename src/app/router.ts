@@ -63,6 +63,7 @@ export const router = createRouter({
           path: "solutions/:id",
           name: "solution",
           component: () => import("@/pages/solution"),
+          meta: { samePage: true },
         },
         {
           path: "constructor",
