@@ -4,7 +4,9 @@ import { isMotionOff, setMotionOff } from "@/shared/lib/motion";
 
 const off = computed(() => isMotionOff());
 
-const title = computed(() => (off.value ? "Включить анимации" : "Выключить анимации"));
+const title = computed(() =>
+  off.value ? "Выключить спокойный режим" : "Спокойный режим: без анимаций и украшений",
+);
 
 function onToggle() {
   setMotionOff(!off.value);

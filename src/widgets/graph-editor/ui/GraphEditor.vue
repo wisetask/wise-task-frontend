@@ -487,10 +487,18 @@ function fitView() {
   }
 }
 
+function playWave() {
+  if (!motionAllowed() || graph.value.vertices.length === 0) {
+    return;
+  }
+  startWave(waveSteps(graph.value));
+}
+
 defineExpose({
   replaceGraph: replaceGraph,
   startOver: startOver,
   fitView: fitView,
+  playWave: playWave,
 });
 </script>
 
