@@ -7,6 +7,7 @@ export { default as GraphToolbar } from "./ui/GraphToolbar.vue";
 export { graphToSvg, imageFileName } from "./lib/graphImage";
 export type { GraphImage } from "./lib/graphImage";
 export { DEFAULT_HOTKEYS } from "./lib/hotkeys";
+export { edgeText, pluralize } from "./lib/labels";
 export type { Hotkey, HotkeyAction } from "./lib/hotkeys";
 export {
   allowEverything,

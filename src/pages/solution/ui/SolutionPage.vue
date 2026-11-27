@@ -50,12 +50,13 @@ watch(solutionId, (id) => load(id), { immediate: true });
             Решить ещё раз
           </RouterLink>
         </div>
-        <CheckResultNotice
-          v-if="result !== null"
-          :result="result"
-          success-text="Решение верное: все проверки пройдены."
-          failure-text="Решение неверное:"
-        />
+        <div v-if="result !== null" class="solution-page__result">
+          <CheckResultNotice
+            :result="result"
+            success-title="Решение верное"
+            failure-title="Решение неверное"
+          />
+        </div>
         <div v-if="answer !== null" class="solution-page__canvas">
           <GraphCanvas :graph="answer" readonly />
         </div>
@@ -152,8 +153,18 @@ watch(solutionId, (id) => load(id), { immediate: true });
   outline-offset: 2px;
 }
 
+.solution-page__result {
+  padding: var(--space-3) var(--space-4) 0;
+}
+
 .solution-page__canvas {
   flex: 1;
   min-height: 0;
+}
+
+@media (max-width: 800px) {
+  .solution-page__body {
+    flex-direction: column;
+  }
 }
 </style>
