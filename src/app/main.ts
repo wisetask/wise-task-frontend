@@ -10,22 +10,23 @@ import { useUserStore } from "@/entities/user";
 const pinia = createPinia();
 const userStore = useUserStore(pinia);
 
-const AUTH_ROUTE_NAMES = ["sign-in", "sign-up"];
+const AUTH_ROUTE_NAMES = ["sign-in", "sign-up", "forgot-password", "reset-password"];
 
 setUnauthorizedHandler(() => {
   userStore.clearUser();
-  if (AUTH_ROUTE_NAMES.includes(String(router.currentRoute.value.name))) {
+  const current = router.currentRoute.value;
+  if (AUTH_ROUTE_NAMES.includes(String(current.name))) {
     return;
   }
-  router.push({ name: "sign-in" });
+  router.push({ name: "sign-in", query: { redirect: current.fullPath } });
 });
 
 provideApolloClient(apolloClient);
+
+userStore.loadProfile();
 
 const app = createApp(App);
 
 app.use(pinia);
 app.use(router);
 app.mount("#app");
-
-userStore.loadProfile();

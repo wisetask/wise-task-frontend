@@ -124,7 +124,7 @@ body {
 }
 
 ::selection {
-  background: var(--color-accent-muted);
+  background: rgb(18 87 230 / 25%);
 }
 
 #app {

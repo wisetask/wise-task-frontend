@@ -16,6 +16,9 @@ function onSuccess() {
       <h1 class="auth-page__title">Вход</h1>
       <SignInForm @success="onSuccess" />
       <p class="auth-page__switch">
+        <RouterLink :to="{ name: 'forgot-password' }">Забыли пароль?</RouterLink>
+      </p>
+      <p class="auth-page__switch">
         Нет аккаунта?
         <RouterLink :to="{ name: 'sign-up', query: route.query }">Зарегистрироваться</RouterLink>
       </p>

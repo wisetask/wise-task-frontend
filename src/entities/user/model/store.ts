@@ -11,7 +11,19 @@ export const useUserStore = defineStore("user", () => {
 
   const isLoggedIn = computed(() => user.value !== null);
 
-  async function loadProfile(): Promise<void> {
+  let loading: Promise<void> | null = null;
+
+  function loadProfile(): Promise<void> {
+    loading = fetchProfile();
+    return loading;
+  }
+
+  // ждем текущей загрузки профиля. пока профиль грузится, роль неизвестна
+  function whenReady(): Promise<void> {
+    return loading ?? Promise.resolve();
+  }
+
+  async function fetchProfile(): Promise<void> {
     const token = getToken();
     const tokenData = token ? parseToken(token) : null;
 
@@ -62,5 +74,5 @@ export const useUserStore = defineStore("user", () => {
     user.value = null;
   }
 
-  return { user, isLoading, isLoggedIn, loadProfile, logIn, logOut, clearUser };
+  return { user, isLoading, isLoggedIn, loadProfile, whenReady, logIn, logOut, clearUser };
 });
