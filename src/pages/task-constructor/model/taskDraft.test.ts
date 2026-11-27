@@ -7,11 +7,15 @@ import {
   draftProblems,
   draftReadiness,
   draftTabs,
+  draftTitle,
   graphForRules,
   pluralize,
   studentHints,
   studentRules,
   studentStartGraph,
+  studentView,
+  tabIsDone,
+  targetTab,
   taskGraph,
   type TaskDraft,
 } from "./taskDraft";
@@ -69,7 +73,11 @@ describe("task draft", () => {
 
   it("requires at least one valid check and reports the position of an invalid check", () => {
     const draft = filledDraft();
-    expect(draftReadiness(draft)).toContainEqual({ text: "Проверки: 1", isDone: true });
+    expect(draftReadiness(draft)).toContainEqual({
+      text: "Проверки: 1",
+      isDone: true,
+      target: "conditions",
+    });
     draft.conditions.push({
       id: "condition-2",
       pluginId: "connected",
@@ -118,14 +126,18 @@ describe("task draft", () => {
     graph = addVertex(graph, 100, 0);
     draft.graph = addEdge(graph, graph.vertices[0].id, graph.vertices[1].id);
     expect(draftReadiness(draft)).toEqual([
-      { text: "Название", isDone: true },
-      { text: "Категория", isDone: true },
-      { text: "Описание", isDone: true },
-      { text: "Граф: 2 вершины, 1 ребро", isDone: true },
-      { text: "Проверки: 1", isDone: true },
+      { text: "Название", isDone: true, target: "name" },
+      { text: "Категория", isDone: true, target: "category" },
+      { text: "Описание", isDone: true, target: "description" },
+      { text: "Граф: 2 вершины, 1 ребро", isDone: true, target: "graph" },
+      { text: "Проверки: 1", isDone: true, target: "conditions" },
     ]);
     draft.category = "";
-    expect(draftReadiness(draft)[1]).toEqual({ text: "Введите категорию", isDone: false });
+    expect(draftReadiness(draft)[1]).toEqual({
+      text: "Введите категорию",
+      isDone: false,
+      target: "category",
+    });
     expect(draftProblems(draft)).toEqual(["Введите категорию"]);
   });
 
@@ -188,5 +200,44 @@ describe("task draft", () => {
       "Граф в ответе может быть только неориентированным.",
       "В этой задаче нельзя двигать вершины.",
     ]);
+  });
+
+  it("names the draft and finds the tab for each readiness item", () => {
+    const draft = createTaskDraft();
+    expect(draftTitle(draft)).toBe("Новая задача");
+    draft.name = "  Дерево ";
+    expect(draftTitle(draft)).toBe("Дерево");
+    expect(targetTab("name")).toBe("main");
+    expect(targetTab("description")).toBe("main");
+    expect(targetTab("graph")).toBe("graph");
+    expect(targetTab("conditions")).toBe("conditions");
+  });
+
+  it("marks a tab done when everything on it is filled", () => {
+    const draft = filledDraft();
+    expect(tabIsDone(draft, "main")).toBe(true);
+    expect(tabIsDone(draft, "conditions")).toBe(true);
+    expect(tabIsDone(draft, "student")).toBe(false);
+    draft.hasGraph = true;
+    expect(tabIsDone(draft, "graph")).toBe(false);
+    draft.graph = addVertex(draft.graph, 0, 0);
+    expect(tabIsDone(draft, "graph")).toBe(true);
+    draft.description = "";
+    expect(tabIsDone(draft, "main")).toBe(false);
+  });
+
+  it("builds the student view with check names only", () => {
+    const draft = filledDraft();
+    draft.hasGraph = true;
+    let view = studentView(draft);
+    expect(view.name).toBe("Дерево");
+    expect(view.graph).toBeNull();
+    expect(view.checks).toEqual([
+      { pluginId: "condition-1", text: "Число вершин", mistakeText: "" },
+    ]);
+    draft.graph = addVertex(draft.graph, 0, 0);
+    view = studentView(draft);
+    expect(view.graph).not.toBeNull();
+    expect(JSON.stringify(view)).not.toContain("Нужно шесть вершин");
   });
 });

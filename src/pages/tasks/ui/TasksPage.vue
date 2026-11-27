@@ -40,6 +40,7 @@ import { useTaskMarks } from "../model/useTaskMarks";
 import GraphFactCard from "./GraphFactCard.vue";
 import KonigsbergScene from "./KonigsbergScene.vue";
 import TaskPreviewPopover from "./TaskPreviewPopover.vue";
+import TasksBackdrop from "./TasksBackdrop.vue";
 import TasksConstellation from "./TasksConstellation.vue";
 
 const SEARCH_DELAY = 350;
@@ -579,6 +580,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="tasks-page">
+    <TasksBackdrop v-if="lively" :category="activeCategory" />
     <aside class="tasks-side tasks-side--left" aria-label="Категории">
       <p class="tasks-side__title">Категории</p>
       <ul class="tasks-side__list">
@@ -1923,6 +1925,8 @@ onBeforeUnmount(() => {
 }
 
 .tasks-page {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
 }
