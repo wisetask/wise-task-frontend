@@ -16,6 +16,7 @@ export function visibleSections(role: string | null): HeaderSection[] {
     { title: "Треки", to: "/tracks" },
     { title: "Задачи", to: "/tasks" },
     { title: "Библиотека графов", to: "/graphs" },
+    { title: "Отношения", to: "/relations" },
   ];
 
   if (role === null) {

@@ -6,8 +6,10 @@ import {
   UiCheckbox,
   UiIconButton,
   UiSegmented,
+  UiSelect,
   UiTextField,
   type UiSegmentedOption,
+  type UiSelectOption,
 } from "@/shared/ui";
 import {
   countFilled,
@@ -31,6 +33,13 @@ const MODE_OPTIONS: UiSegmentedOption[] = [
   { value: "edit", label: "Правка" },
   { value: "view", label: "Просмотр" },
   { value: "check", label: "Проверка" },
+];
+const relationKind = ref("any");
+const KIND_OPTIONS: UiSelectOption[] = [
+  { value: "any", label: "Любое" },
+  { value: "symmetric", label: "Симметричное" },
+  { value: "antisymmetric", label: "Антисимметричное" },
+  { value: "asymmetric", label: "Асимметричное" },
 ];
 const isSaving = ref(false);
 
@@ -128,6 +137,14 @@ function fakeSave() {
         />
         <UiTextField v-model="password" label="Пароль" type="password" required />
         <UiTextField model-value="Нельзя изменить" label="Недоступное поле" disabled />
+        <UiSelect v-model="relationKind" label="Тип отношения" :options="KIND_OPTIONS" />
+        <UiSelect
+          v-model="relationKind"
+          label="Недоступный список"
+          :options="KIND_OPTIONS"
+          hint="Список нельзя открыть"
+          disabled
+        />
       </div>
     </section>
 

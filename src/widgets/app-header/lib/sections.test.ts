@@ -10,12 +10,18 @@ function titles(role: string | null): string[] {
 }
 
 describe("visibleSections", () => {
-  it("shows three sections to a guest", () => {
-    expect(titles(null)).toEqual(["Треки", "Задачи", "Библиотека графов"]);
+  it("shows four sections to a guest", () => {
+    expect(titles(null)).toEqual(["Треки", "Задачи", "Библиотека графов", "Отношения"]);
   });
 
   it("adds «Мои решения» for a signed-in user", () => {
-    expect(titles("USER")).toEqual(["Треки", "Задачи", "Библиотека графов", "Мои решения"]);
+    expect(titles("USER")).toEqual([
+      "Треки",
+      "Задачи",
+      "Библиотека графов",
+      "Отношения",
+      "Мои решения",
+    ]);
   });
 
   it("adds «Конструктор задач» for an author", () => {
@@ -23,6 +29,7 @@ describe("visibleSections", () => {
       "Треки",
       "Задачи",
       "Библиотека графов",
+      "Отношения",
       "Мои решения",
       "Конструктор задач",
     ]);
@@ -33,6 +40,7 @@ describe("visibleSections", () => {
       "Треки",
       "Задачи",
       "Библиотека графов",
+      "Отношения",
       "Мои решения",
       "Конструктор задач",
       "Плагины",
@@ -41,13 +49,20 @@ describe("visibleSections", () => {
   });
 
   it("treats an unknown role as a regular signed-in user", () => {
-    expect(titles("SOMETHING")).toEqual(["Треки", "Задачи", "Библиотека графов", "Мои решения"]);
+    expect(titles("SOMETHING")).toEqual([
+      "Треки",
+      "Задачи",
+      "Библиотека графов",
+      "Отношения",
+      "Мои решения",
+    ]);
   });
 
   it("gives every section its address", () => {
     const sections = visibleSections("ADMIN");
     expect(sections[0]).toEqual({ title: "Треки", to: "/tracks" });
-    expect(sections[6]).toEqual({ title: "Пользователи", to: "/users" });
+    expect(sections[3]).toEqual({ title: "Отношения", to: "/relations" });
+    expect(sections[7]).toEqual({ title: "Пользователи", to: "/users" });
   });
 });
 
