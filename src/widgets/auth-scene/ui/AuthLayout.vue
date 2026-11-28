@@ -73,10 +73,6 @@ const FEATURES: Feature[] = [
         </footer>
       </section>
     </div>
-
-    <p class="auth-layout__hint">
-      Заполняйте форму — вершины загораются. Кликните по пустому месту — граф подрастёт.
-    </p>
   </main>
 </template>
 
@@ -275,21 +271,6 @@ const FEATURES: Feature[] = [
   background-size: 100% 2px;
 }
 
-.auth-layout__hint {
-  position: absolute;
-  bottom: var(--space-4);
-  left: clamp(24px, 7vw, 120px);
-  margin: 0;
-  padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
-  backdrop-filter: blur(8px);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  pointer-events: none;
-  animation: auth-layout-rise 600ms var(--ease-out) 500ms both;
-}
-
 @keyframes auth-layout-rise {
   from {
     opacity: 0;
@@ -316,8 +297,7 @@ const FEATURES: Feature[] = [
     max-width: none;
   }
 
-  .auth-layout__features,
-  .auth-layout__hint {
+  .auth-layout__features {
     display: none;
   }
 

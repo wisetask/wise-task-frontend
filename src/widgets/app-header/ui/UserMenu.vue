@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
-import { roleTitle } from "../lib/sections";
+import { roleTitle } from "@/entities/user";
 import type { HeaderUser } from "../lib/sections";
 
 const props = defineProps<{ user: HeaderUser }>();

@@ -1,11 +1,11 @@
 import type { ApolloError } from "@apollo/client/core";
 
-const SIGN_IN_FAILED = ["NOT_FOUND", "UNAUTHORIZED", "BAD_REQUEST"];
+export type AuthAction = "sign-in" | "sign-up" | "send-reset-link" | "reset-password";
 
-export function getAuthErrorMessage(
-  error: ApolloError | null,
-  action: "sign-in" | "sign-up",
-): string {
+const SIGN_IN_FAILED = ["NOT_FOUND", "UNAUTHORIZED", "BAD_REQUEST"];
+const DATA_ERRORS = ["NOT_FOUND", "BAD_REQUEST"];
+
+export function getAuthErrorMessage(error: ApolloError | null, action: AuthAction): string {
   if (!error) {
     return "";
   }
@@ -16,16 +16,25 @@ export function getAuthErrorMessage(
 
   const graphqlError = error.graphQLErrors[0];
   const classification = graphqlError?.extensions?.classification;
+  const isDataError = typeof classification === "string" && DATA_ERRORS.includes(classification);
 
-  if (
-    action === "sign-in" &&
-    typeof classification === "string" &&
-    SIGN_IN_FAILED.includes(classification)
-  ) {
-    return "Неверная почта или пароль";
-  }
-
-  if (action === "sign-up" && classification === "BAD_REQUEST") {
+  if (action === "sign-in") {
+    if (typeof classification === "string" && SIGN_IN_FAILED.includes(classification)) {
+      return "Неверная почта или пароль";
+    }
+  } else if (action === "send-reset-link") {
+    if (classification === "NOT_FOUND") {
+      return "Если такая почта есть, мы отправили на неё ссылку";
+    }
+    if (isDataError) {
+      return graphqlError.message;
+    }
+  } else if (action === "reset-password") {
+    // Бэк отказывает, только если ссылка неверная или её 10 минут истекли.
+    if (isDataError) {
+      return "Ссылка недействительна или устарела. Запросите новую.";
+    }
+  } else if (classification === "BAD_REQUEST") {
     return graphqlError.message;
   }
 

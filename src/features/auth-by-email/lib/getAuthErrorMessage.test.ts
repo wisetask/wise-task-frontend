@@ -44,6 +44,24 @@ describe("getAuthErrorMessage", () => {
     );
   });
 
+  it("при запросе ссылки говорит, что почты нет, и показывает ошибки проверки", () => {
+    expect(
+      getAuthErrorMessage(backendError("NOT_FOUND", "Профиль не найден"), "send-reset-link"),
+    ).toBe("Если такая почта есть, мы отправили на неё ссылку");
+    expect(
+      getAuthErrorMessage(
+        backendError("BAD_REQUEST", "Email имеет некорректный вид"),
+        "send-reset-link",
+      ),
+    ).toBe("Email имеет некорректный вид");
+  });
+
+  it("при смене пароля по ссылке говорит, что ссылка устарела", () => {
+    expect(
+      getAuthErrorMessage(backendError("BAD_REQUEST", "Некорректный токен"), "reset-password"),
+    ).toBe("Ссылка недействительна или устарела. Запросите новую.");
+  });
+
   it("при сбое на бэке не показывает его текст", () => {
     const error = backendError("INTERNAL_ERROR", "NullPointerException");
 

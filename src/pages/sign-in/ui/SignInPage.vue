@@ -43,8 +43,23 @@ onBeforeUnmount(() => {
   >
     <SignInForm @progress="progress = $event" @failed="onFailed" @success="onSuccess" />
     <template #footer>
-      Нет аккаунта?
-      <RouterLink :to="{ name: 'sign-up', query: route.query }">Зарегистрироваться</RouterLink>
+      <p class="sign-in__footer-line">
+        <RouterLink :to="{ name: 'forgot-password' }">Забыли пароль?</RouterLink>
+      </p>
+      <p class="sign-in__footer-line">
+        Нет аккаунта?
+        <RouterLink :to="{ name: 'sign-up', query: route.query }">Зарегистрироваться</RouterLink>
+      </p>
     </template>
   </AuthLayout>
 </template>
+
+<style scoped>
+.sign-in__footer-line {
+  margin: 0;
+}
+
+.sign-in__footer-line + .sign-in__footer-line {
+  margin-top: var(--space-2);
+}
+</style>

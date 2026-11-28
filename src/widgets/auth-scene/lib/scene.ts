@@ -131,21 +131,29 @@ export function driftOffset(node: SceneNode, time: number): ScenePoint {
   };
 }
 
-export function repelOffset(point: ScenePoint, pointer: ScenePoint | null): ScenePoint {
-  const radius = 170;
-  const strength = 46;
-  if (pointer === null) {
+// scale от 0 до 1 — насколько сейчас действует курсор: плавно растёт, когда курсор
+// появился над графом, и плавно падает, когда ушёл, чтобы вершины не прыгали.
+export function repelOffset(point: ScenePoint, pointer: ScenePoint | null, scale = 1): ScenePoint {
+  const radius = 130;
+  const strength = 12;
+  if (pointer === null || scale <= 0) {
     return { x: 0, y: 0 };
   }
   const gap = distance(point, pointer);
   if (gap >= radius || gap === 0) {
     return { x: 0, y: 0 };
   }
-  const push = ((radius - gap) / radius) * strength;
+  const push = ((radius - gap) / radius) * strength * scale;
   return {
     x: ((point.x - pointer.x) / gap) * push,
     y: ((point.y - pointer.y) / gap) * push,
   };
+}
+
+// Плавное приближение current к target. rate — насколько быстро (в долях за секунду),
+// dt — прошедшее время в секундах. Не зависит от частоты кадров.
+export function approach(current: number, target: number, rate: number, dt: number): number {
+  return current + (target - current) * (1 - Math.exp(-rate * dt));
 }
 
 export function nearestNode(points: ScenePoint[], pointer: ScenePoint, radius: number): number {

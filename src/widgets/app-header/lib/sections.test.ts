@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSectionActive, roleTitle, userInitials, visibleSections } from "./sections";
+import { isSectionActive, visibleSections } from "./sections";
 
 function titles(role: string | null): string[] {
   const result: string[] = [];
@@ -66,47 +66,5 @@ describe("isSectionActive", () => {
 
   it("does not confuse sections with a common prefix", () => {
     expect(isSectionActive("/tasks-archive", "/tasks")).toBe(false);
-  });
-});
-
-describe("roleTitle", () => {
-  it("translates known roles", () => {
-    expect(roleTitle("USER")).toBe("Студент");
-    expect(roleTitle("AUTHOR")).toBe("Автор");
-    expect(roleTitle("ADMIN")).toBe("Администратор");
-  });
-
-  it("returns an unknown role as is", () => {
-    expect(roleTitle("MODERATOR")).toBe("MODERATOR");
-  });
-});
-
-describe("userInitials", () => {
-  it("takes the last name first, then the first name", () => {
-    expect(userInitials("Иван", "Петров", "test@test.ru")).toBe("ПИ");
-  });
-
-  it("makes letters uppercase", () => {
-    expect(userInitials("иван", "петров", "")).toBe("ПИ");
-  });
-
-  it("works with only a first name", () => {
-    expect(userInitials("Иван", "", "test@test.ru")).toBe("И");
-  });
-
-  it("works with only a last name", () => {
-    expect(userInitials("", "Петров", "test@test.ru")).toBe("П");
-  });
-
-  it("falls back to the email when there is no name", () => {
-    expect(userInitials("", "", "test@test.ru")).toBe("T");
-  });
-
-  it("ignores spaces around names", () => {
-    expect(userInitials("  ", " ", "a@b.ru")).toBe("A");
-  });
-
-  it("returns «?» when nothing is known", () => {
-    expect(userInitials("", "", "")).toBe("?");
   });
 });
