@@ -18,6 +18,6 @@ export {
   withDirection,
 } from "./lib/rules";
 export type { EditorRules, GraphDirection } from "./lib/rules";
-export { isSelectionValid } from "./lib/selection";
+export { isSelectionValid, makeSelection } from "./lib/selection";
 export type { EditorTool, GraphSelection } from "./lib/selection";
 export { toolHint } from "./lib/toolHints";

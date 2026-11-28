@@ -45,6 +45,11 @@ export const router = createRouter({
           component: () => import("@/pages/sandbox"),
         },
         {
+          path: "relations",
+          name: "relations",
+          component: () => import("@/pages/relations"),
+        },
+        {
           path: "tasks",
           name: "tasks",
           component: () => import("@/pages/tasks"),
