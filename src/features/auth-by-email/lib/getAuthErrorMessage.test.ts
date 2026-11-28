@@ -47,7 +47,7 @@ describe("getAuthErrorMessage", () => {
   it("при запросе ссылки говорит, что почты нет, и показывает ошибки проверки", () => {
     expect(
       getAuthErrorMessage(backendError("NOT_FOUND", "Профиль не найден"), "send-reset-link"),
-    ).toBe("Пользователь с такой почтой не найден");
+    ).toBe("Если такая почта есть, мы отправили на неё ссылку");
     expect(
       getAuthErrorMessage(
         backendError("BAD_REQUEST", "Email имеет некорректный вид"),

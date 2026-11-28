@@ -24,7 +24,6 @@ const comingSoonPages: { path: string; meta?: RouteMeta }[] = [
   { path: "graphs" },
   { path: "plugins", meta: ADMINS },
   { path: "users", meta: ADMINS },
-  { path: "profile", meta: SIGNED_IN },
 ];
 
 const comingSoonRoutes: RouteRecordRaw[] = [];
@@ -95,7 +94,7 @@ export const router = createRouter({
         {
           path: "solutions/:id",
           name: "solution",
-          meta: { ...SIGNED_IN, samePage: true },
+          meta: { requiresAuth: true, samePage: true },
           component: () => import("@/pages/solution"),
         },
         {
@@ -103,6 +102,12 @@ export const router = createRouter({
           name: "constructor",
           meta: AUTHORS,
           component: () => import("@/pages/task-constructor"),
+        },
+        {
+          path: "profile",
+          name: "profile",
+          meta: SIGNED_IN,
+          component: () => import("@/pages/profile"),
         },
         {
           path: "forbidden",

@@ -2,6 +2,7 @@ import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/clien
 import { onError } from "@apollo/client/link/error";
 import { setContext } from "@apollo/client/link/context";
 import { env } from "@/shared/config/env";
+import { shouldEndSession } from "./session";
 import { getToken, removeToken } from "./token";
 
 let unauthorizedHandler: (() => void) | null = null;
@@ -28,14 +29,26 @@ const authLink = setContext((_, { headers, skipAuth }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError }) => {
-  const isHttp401 =
-    networkError != null && "statusCode" in networkError && networkError.statusCode === 401;
-  const isGraphqlUnauthorized = graphQLErrors?.some(
-    (error) => error.extensions?.classification === "UNAUTHORIZED",
-  );
+const errorLink = onError((response) => {
+  const networkError = response.networkError;
+  const httpStatus =
+    networkError != null && "statusCode" in networkError ? networkError.statusCode : null;
 
-  if (isHttp401 || isGraphqlUnauthorized) {
+  const classifications: string[] = [];
+  for (const error of response.graphQLErrors ?? []) {
+    const classification = error.extensions?.classification;
+    if (typeof classification === "string") {
+      classifications.push(classification);
+    }
+  }
+
+  const endSession = shouldEndSession({
+    httpStatus: httpStatus,
+    classifications: classifications,
+    keepSession: response.operation.getContext().keepSession === true,
+  });
+
+  if (endSession) {
     removeToken();
     unauthorizedHandler?.();
   }

@@ -19,6 +19,10 @@ const userStore = useUserStore();
 
 Роли в токене нет, в нём только `sub` (id), `email`, `iat`, `exp`. Поэтому профиль с ролью загружается запросом `getMyProfile` (`api/myProfile.ts`): после входа и при старте приложения, если токен сохранён (`loadProfile()` вызывается в `app/main.ts`).
 
+## Подписи
+
+`lib/userLabels.ts`: `roleTitle(role)` — «Студент», «Автор», «Администратор»; `userInitials(firstName, lastName, email)` — две буквы для кружка; `fullName(lastName, firstName, patronymic)` — ФИО без пустых частей. Нужны шапке и профилю.
+
 ## Доступ к страницам
 
 `checkAccess(user, rule)` (`lib/checkAccess.ts`) решает, можно ли пользователю на страницу. `rule` - пометки маршрута: `{ requiresAuth: true }` (нужен вход) или `{ roles: ["AUTHOR", "ADMIN"] }` (только эти роли, вход тоже нужен). Возвращает `"allow"`, `"sign-in"` или `"forbidden"`. Пометки стоят в `meta` маршрутов в `app/router.ts`, там же guard, который по ответу ведёт на `/sign-in?redirect=...` или на `/forbidden`.

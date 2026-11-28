@@ -3,8 +3,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { MotionToggle } from "@/features/motion-switch";
 import { ThemeToggle } from "@/features/theme-switch";
+import { userInitials } from "@/entities/user";
 import { UiButton } from "@/shared/ui";
-import { isSectionActive, userInitials, visibleSections } from "../lib/sections";
+import { isSectionActive, visibleSections } from "../lib/sections";
 import type { HeaderUser } from "../lib/sections";
 import UserMenu from "./UserMenu.vue";
 
@@ -342,5 +343,36 @@ onBeforeUnmount(() => {
 .app-header__avatar:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
+}
+
+/* Телефон: в одну строку разделы сжимались в узкую полоску. Делим шапку на две строки:
+   сверху логотип, переключатели и аватар, снизу разделы на всю ширину с прокруткой вбок.
+   Высоту шапки меняем и в общей переменной — по ней отступают фоны страниц и полоска загрузки. */
+@media (max-width: 720px) {
+  :global(:root) {
+    --header-height: 108px;
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+    align-content: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .app-header__logo {
+    margin-right: auto;
+  }
+
+  .app-header__nav {
+    flex-basis: 100%;
+    order: 1;
+    margin-right: 0;
+    scrollbar-width: none;
+  }
+
+  .app-header__nav::-webkit-scrollbar {
+    display: none;
+  }
 }
 </style>

@@ -24,7 +24,7 @@ export function getAuthErrorMessage(error: ApolloError | null, action: AuthActio
     }
   } else if (action === "send-reset-link") {
     if (classification === "NOT_FOUND") {
-      return "Пользователь с такой почтой не найден";
+      return "Если такая почта есть, мы отправили на неё ссылку";
     }
     if (isDataError) {
       return graphqlError.message;
