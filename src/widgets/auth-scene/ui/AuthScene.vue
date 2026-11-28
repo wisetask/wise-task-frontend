@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { motionAllowed } from "@/shared/lib/motion";
 import {
+  approach,
   buildNodes,
   driftOffset,
   litCount,
@@ -28,6 +29,9 @@ const props = withDefaults(
 const BASE_COUNT = 18;
 const MAX_EXTRA = 12;
 const NODE_RADIUS = 9;
+// Как быстро вершины догоняют курсор и как быстро курсор начинает и перестаёт на них действовать.
+const FOLLOW_RATE = 4;
+const FADE_RATE = 3;
 
 const baseNodes = buildNodes(BASE_COUNT, 11);
 const baseEdges = nearestEdges(baseNodes, 2);
@@ -36,9 +40,15 @@ const baseOrder = litOrder(baseNodes, baseEdges, 0);
 const extraNodes = ref<SceneNode[]>([]);
 const extraEdges = ref<SceneEdge[]>([]);
 const time = ref(0);
+// pointer — где курсор сейчас; smoothPointer плавно его догоняет, и вершины расступаются
+// вокруг smoothPointer. influence плавно растёт до 1, пока курсор над графом, и падает до 0,
+// когда ушёл. Без этого вершины дёргались за быстрым курсором и прыгали на место при уходе.
 const pointer = ref<ScenePoint | null>(null);
+const smoothPointer = ref<ScenePoint | null>(null);
+const influence = ref(0);
 const svgElement = ref<SVGSVGElement | null>(null);
 let frame = 0;
+let lastFrame = 0;
 let nextId = BASE_COUNT;
 
 const nodes = computed(() => baseNodes.concat(extraNodes.value));
@@ -56,7 +66,7 @@ const points = computed(() => {
   return nodes.value.map((node) => {
     const drift = driftOffset(node, time.value);
     const base = { x: node.x + drift.x, y: node.y + drift.y };
-    const push = repelOffset(base, pointer.value);
+    const push = repelOffset(base, smoothPointer.value, influence.value);
     return { x: base.x + push.x, y: base.y + push.y };
   });
 });
@@ -150,10 +160,34 @@ function onClick(event: MouseEvent) {
   extraEdges.value = keptEdges;
 }
 
+function followPointer(dt: number) {
+  const target = pointer.value;
+  if (target !== null) {
+    const from = smoothPointer.value ?? target;
+    smoothPointer.value = {
+      x: approach(from.x, target.x, FOLLOW_RATE, dt),
+      y: approach(from.y, target.y, FOLLOW_RATE, dt),
+    };
+    influence.value = approach(influence.value, 1, FADE_RATE, dt);
+    return;
+  }
+  if (smoothPointer.value === null) {
+    return;
+  }
+  influence.value = approach(influence.value, 0, FADE_RATE, dt);
+  if (influence.value < 0.01) {
+    influence.value = 0;
+    smoothPointer.value = null;
+  }
+}
+
 function tick(now: number) {
+  const dt = lastFrame === 0 ? 0 : Math.min((now - lastFrame) / 1000, 0.1);
+  lastFrame = now;
   if (motionAllowed()) {
     time.value = now / 1000;
   }
+  followPointer(dt);
   frame = window.requestAnimationFrame(tick);
 }
 
@@ -204,7 +238,7 @@ onBeforeUnmount(() => {
         }"
         :cx="points[index].x"
         :cy="points[index].y"
-        :r="hotId === node.id ? NODE_RADIUS + 5 : NODE_RADIUS"
+        :r="hotId === node.id ? NODE_RADIUS + 2 : NODE_RADIUS"
         :style="{ animationDelay: waveDelay(node.id) }"
       />
     </svg>
@@ -281,7 +315,7 @@ onBeforeUnmount(() => {
   transition:
     fill var(--duration) var(--ease-out),
     stroke var(--duration) var(--ease-out),
-    r var(--duration-fast) var(--ease-out);
+    r var(--duration) var(--ease-out);
 }
 
 .auth-scene__node--lit {

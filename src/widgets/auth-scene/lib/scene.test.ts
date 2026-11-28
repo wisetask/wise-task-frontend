@@ -6,6 +6,7 @@ import {
   litCount,
   litOrder,
   nearestEdges,
+  approach,
   nearestNode,
   repelOffset,
 } from "./scene";
@@ -56,5 +57,20 @@ describe("auth scene", () => {
     expect(push.y).toBe(0);
     expect(nearestNode([node, { x: 100, y: 100 }], { x: 110, y: 90 }, 60)).toBe(1);
     expect(nearestNode([node], { x: 0, y: 0 }, 60)).toBe(-1);
+  });
+
+  it("weakens the push while the pointer fades in or out", () => {
+    const node = { x: 500, y: 500 };
+    const full = repelOffset(node, { x: 450, y: 500 });
+    const half = repelOffset(node, { x: 450, y: 500 }, 0.5);
+    expect(half.x).toBeCloseTo(full.x / 2);
+    expect(repelOffset(node, { x: 450, y: 500 }, 0)).toEqual({ x: 0, y: 0 });
+  });
+
+  it("approaches the target smoothly and never overshoots", () => {
+    expect(approach(0, 100, 8, 0)).toBe(0);
+    const step = approach(0, 100, 8, 1 / 60);
+    expect(step > 0 && step < 100).toBe(true);
+    expect(approach(0, 100, 8, 10)).toBeCloseTo(100);
   });
 });
